@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-FROM ubuntu:24.10
+FROM ubuntu:26.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=America/Sao_Paulo
@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     doxygen \
     gcovr \
+    gfortran \
     git \
     gnupg \
     liblapack-dev \
@@ -25,7 +26,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libopenblas-dev \
     ninja-build \
     pkg-config \
-    python3.12 \
+    python3 \
     software-properties-common \
     unzip \
     zip \
