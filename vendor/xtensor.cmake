@@ -10,8 +10,10 @@ find_package(OpenBLAS QUIET)
 
 if(NOT TARGET OpenBLAS::OpenBLAS)
     add_library(OpenBLAS::OpenBLAS INTERFACE IMPORTED)
-    target_link_libraries(OpenBLAS::OpenBLAS INTERFACE ${OpenBLAS_LIBRARIES})
-    target_include_directories(OpenBLAS::OpenBLAS INTERFACE ${OpenBLAS_INCLUDE_DIRS})
+    set_target_properties(
+        OpenBLAS::OpenBLAS PROPERTIES INTERFACE_LINK_LIBRARIES "${OpenBLAS_LIBRARIES}"
+                                      INTERFACE_INCLUDE_DIRECTORIES "${OpenBLAS_INCLUDE_DIRS}"
+    )
 endif()
 
 FetchContent_Declare(
