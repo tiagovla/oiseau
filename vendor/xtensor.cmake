@@ -5,8 +5,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 find_package(LAPACK REQUIRED)
-find_package(OpenBLAS QUIET)
 find_package(OpenMP QUIET)
+find_package(OpenBLAS QUIET)
 
 FetchContent_Declare(
     xtl

@@ -13,5 +13,7 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(mdspan)
+
+add_library(std::mdspan ALIAS mdspan)
 # target_compile_definitions(mdspan INTERFACE MDSPAN_IMPL_STANDARD_NAMESPACE=std)
 # target_compile_definitions(mdspan INTERFACE MDSPAN_IMPL_PROPOSED_NAMESPACE=experimental)
