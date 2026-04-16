@@ -6,15 +6,7 @@
 
 find_package(LAPACK REQUIRED)
 find_package(OpenMP QUIET)
-find_package(OpenBLAS QUIET)
-
-if(NOT TARGET OpenBLAS::OpenBLAS)
-    add_library(OpenBLAS::OpenBLAS INTERFACE IMPORTED)
-    set_target_properties(
-        OpenBLAS::OpenBLAS PROPERTIES INTERFACE_LINK_LIBRARIES "${OpenBLAS_LIBRARIES}"
-                                      INTERFACE_INCLUDE_DIRECTORIES "${OpenBLAS_INCLUDE_DIRS}"
-    )
-endif()
+find_package(BLAS QUIET)
 
 FetchContent_Declare(
     xtl
@@ -48,10 +40,11 @@ FetchContent_MakeAvailable(xtl xtensor xtensor-blas)
 add_library(xtensor_stack INTERFACE)
 target_link_libraries(xtensor_stack INTERFACE xtl xtensor xtensor-blas LAPACK::LAPACK)
 
-if(OpenBLAS_FOUND AND OpenMP_FOUND)
-    target_compile_definitions(xtensor-blas INTERFACE WITH_OPENBLAS)
-    target_link_libraries(xtensor_stack INTERFACE OpenBLAS::OpenBLAS)
-    message(STATUS "xtensor_stack: OpenBLAS found, linking against OpenBLAS")
+if(BLAS_FOUND AND OpenMP_FOUND)
+    target_compile_definitions(xtensor-blas INTERFACE WITH_BLAS)
+    target_link_libraries(xtensor_stack INTERFACE BLAS::BLAS)
+    target_link_libraries(xtensor_stack INTERFACE OpenMP::OpenMP_CXX)
+    message(STATUS "xtensor_stack: BLAS found, linking against BLAS")
 endif()
 
 get_target_property(XTL_INCLUDES xtl INTERFACE_INCLUDE_DIRECTORIES)
