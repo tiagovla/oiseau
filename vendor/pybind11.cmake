@@ -16,6 +16,8 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(pybind11)
 
+message(STATUS "Python environment found by pybind11: ${Python_EXECUTABLE}")
+
 execute_process(
     COMMAND "${Python_EXECUTABLE}" -c "import matplotlib"
     RESULT_VARIABLE MATPLOTLIB_RESULT
