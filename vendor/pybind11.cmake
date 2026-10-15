@@ -15,3 +15,12 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(pybind11)
+
+execute_process(
+    COMMAND "${Python_EXECUTABLE}" -c "import matplotlib"
+    RESULT_VARIABLE MATPLOTLIB_RESULT
+    ERROR_QUIET
+)
+if(NOT MATPLOTLIB_RESULT EQUAL 0)
+    message(FATAL_ERROR "Matplotlib is required by ${Python_EXECUTABLE}")
+endif()
