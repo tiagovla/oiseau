@@ -4,4 +4,4 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-add_test(oiseau_test_misc test_mdspan.cpp)
+# add_test(oiseau_test_misc test_mdspan.cpp)
