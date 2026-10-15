@@ -28,6 +28,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config \
     python3 \
     python3-dev \
+    python3-matplotlib \
+    python3-pyqt6 \
     software-properties-common \
     unzip \
     zip \
