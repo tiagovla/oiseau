@@ -26,3 +26,12 @@ execute_process(
 if(NOT MATPLOTLIB_RESULT EQUAL 0)
     message(FATAL_ERROR "Matplotlib is required by ${Python_EXECUTABLE}")
 endif()
+
+execute_process(
+    COMMAND "${Python_EXECUTABLE}" -c "import PyQt6"
+    RESULT_VARIABLE PYQT6_RESULT
+    ERROR_QUIET
+)
+if(NOT PYQT6_RESULT EQUAL 0)
+    message(FATAL_ERROR "PyQt6 is required by ${Python_EXECUTABLE}")
+endif()
