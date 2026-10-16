@@ -30,7 +30,7 @@ RefTetrahedron::RefTetrahedron(unsigned order) : RefElement(order) {
   this->m_np = ((order + 1) * (order + 2) * (order + 3)) / 6;
   this->m_nfp = ((order + 1) * (order + 2)) / 2;
   this->m_r = detail::equilateral_xyz_to_rst(detail::generate_tetrahedron_nodes(this->m_order));
-  this->m_v = this->vandermonde(this->m_r);
+  this->m_v = RefTetrahedron::vandermonde(this->m_r);
   this->m_gv = this->grad_vandermonde(this->m_r);
   this->m_d = this->grad_operator(this->m_v, this->m_gv);
 }

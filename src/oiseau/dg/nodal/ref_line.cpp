@@ -25,7 +25,7 @@ RefLine::RefLine(unsigned order) : RefElement(order) {
   this->m_np = order + 1;
   this->m_nfp = 1;
   this->m_r = detail::generate_line_nodes(this->m_order);
-  this->m_v = this->vandermonde(this->m_r);
+  this->m_v = RefLine::vandermonde(this->m_r);
   this->m_gv = this->grad_vandermonde(this->m_r);
   this->m_d = this->grad_operator(this->m_v, this->m_gv);
 }

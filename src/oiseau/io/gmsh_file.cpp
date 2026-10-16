@@ -53,7 +53,7 @@ std::array<T, N> from_file(std::istream& f, bool is_binary = false) {
   if (is_binary) {
     f.read(reinterpret_cast<char*>(arr.data()), sizeof(T) * N);
   } else {
-    for (std::size_t i = 0; i < N; i++) f >> arr.at(i);
+    for (auto& value : arr) f >> value;
   }
   return arr;
 }

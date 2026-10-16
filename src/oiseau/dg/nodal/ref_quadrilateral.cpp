@@ -25,7 +25,7 @@ RefQuadrilateral::RefQuadrilateral(unsigned order) : RefElement(order) {
   this->m_np = (order + 1) * (order + 1);
   this->m_nfp = order + 1;
   this->m_r = detail::generate_quadrilateral_nodes(this->m_order);
-  this->m_v = this->vandermonde(this->m_r);
+  this->m_v = RefQuadrilateral::vandermonde(this->m_r);
   this->m_gv = this->grad_vandermonde(this->m_r);
   this->m_d = grad_operator(this->m_v, this->m_gv);
 }

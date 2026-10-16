@@ -74,7 +74,7 @@ void Topology::calculate_connectivity() {
         }
         key.push_back(cell_vertices[static_cast<std::size_t>(local_vertex)]);
       }
-      std::sort(key.begin(), key.end());
+      std::ranges::sort(key);
       e_to_f[cell_index][face_index] = face_index;
 
       const auto [owner, inserted] =
