@@ -1,6 +1,6 @@
-.PHONY: all configure build test website serve tidy clean
+.PHONY: all configure build test precommit website serve tidy clean
 
-all: build test
+all: build test precommit
 
 configure:
 	@echo "Configuring project with CMake..."
@@ -26,6 +26,10 @@ build:
 test: build
 	@echo "Running tests..."
 	@ctest --test-dir=build --parallel --progress --stop-on-failure --output-on-failure
+
+precommit:
+	@echo "Running pre-commit hooks..."
+	@pre-commit run --all-files
 
 website:
 	@echo "Generating website..."
