@@ -28,7 +28,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build Docker image
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/oiseau-baseline-builder:latest .github/docker/oiseau-baseline-builder/
+          image=ghcr.io/${{ github.repository_owner }}/oiseau-baseline-builder
+          docker build \
+            -t "$image:latest" \
+            -t "$image:${GITHUB_SHA}" \
+            .github/docker/oiseau-baseline-builder/
       - name: Push Docker image
         run: |
-          docker push ghcr.io/${{ github.repository_owner }}/oiseau-baseline-builder:latest
+          image=ghcr.io/${{ github.repository_owner }}/oiseau-baseline-builder
+          docker push "$image:${GITHUB_SHA}"
+          docker push "$image:latest"

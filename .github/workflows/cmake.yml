@@ -7,22 +7,63 @@ name: C++ Build, Test, and Static Analysis
 on:
   push:
     branches: [master]
+    paths-ignore:
+      - .github/docker/oiseau-baseline-builder/**
+      - .github/workflows/docker-builder.yml
   pull_request:
     branches: [master]
+  workflow_run:
+    workflows: [oiseau-baseline-builder]
+    branches: [master]
+    types: [completed]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
 jobs:
-  build-and-test:
-    name: Build and Test
+  detect_image_changes:
+    name: Detect baseline image changes
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/tiagovla/oiseau-baseline-builder:latest
+    outputs:
+      image_changed: ${{ steps.detect.outputs.image_changed }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check changed paths
+        id: detect
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" != "push" ]]; then
+            echo "image_changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          changed_files=$(git diff --name-only "$BEFORE" "$GITHUB_SHA")
+          if grep -Eq '^(\.github/docker/oiseau-baseline-builder/|\.github/workflows/docker-builder\.yml$)' <<< "$changed_files"; then
+            echo "image_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "image_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    needs: detect_image_changes
+    if: needs.detect_image_changes.outputs.image_changed != 'true' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/oiseau-baseline-builder:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'latest' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Configure CMake
         run: |
           cmake -S . -B build \
             -G Ninja \
-            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             -DOISEAU_BUILD_DOCS=OFF \
             -DOISEAU_BUILD_COVERAGE=OFF \
             -DOISEAU_BUILD_SHARED=OFF
@@ -33,16 +74,19 @@ jobs:
   clang-tidy:
     name: Clang-Tidy Analysis
     runs-on: ubuntu-latest
+    needs: detect_image_changes
+    if: needs.detect_image_changes.outputs.image_changed != 'true' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
     container:
-      image: ghcr.io/tiagovla/oiseau-baseline-builder:latest
+      image: ghcr.io/${{ github.repository_owner }}/oiseau-baseline-builder:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'latest' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Configure CMake
         run: |
           cmake -S . -B build \
             -G Ninja \
-            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             -DOISEAU_BUILD_DOCS=OFF \
             -DOISEAU_BUILD_COVERAGE=OFF \
             -DOISEAU_BUILD_SHARED=OFF
@@ -57,11 +101,15 @@ jobs:
   cppcheck:
     name: Cppcheck Analysis
     runs-on: ubuntu-latest
+    needs: detect_image_changes
+    if: needs.detect_image_changes.outputs.image_changed != 'true' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
     container:
-      image: ghcr.io/tiagovla/oiseau-baseline-builder:latest
+      image: ghcr.io/${{ github.repository_owner }}/oiseau-baseline-builder:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'latest' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Run cppcheck
         run: |
           cppcheck \
