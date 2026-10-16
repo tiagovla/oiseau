@@ -13,14 +13,15 @@ namespace oiseau::mesh {
 class Geometry {
  public:
   Geometry();
-  Geometry(std::vector<double> &&x, unsigned dim);
-  Geometry(Geometry &&) = default;
-  Geometry(const Geometry &) = default;
-  Geometry &operator=(Geometry &&) = default;
-  Geometry &operator=(const Geometry &) = default;
+  Geometry(std::vector<double>&& x, unsigned dim);
+  Geometry(Geometry&&) = default;
+  Geometry(const Geometry&) = default;
+  Geometry& operator=(Geometry&&) = default;
+  Geometry& operator=(const Geometry&) = default;
   ~Geometry();
 
   std::span<double> x();
+  std::span<const double> x() const;
   std::span<double> x_at(std::size_t pos);
   unsigned dim() const;
 

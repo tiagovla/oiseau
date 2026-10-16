@@ -8,11 +8,11 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <numeric>
+#include <map>
 #include <span>
+#include <stdexcept>
 #include <utility>
 #include <vector>
-#include <xtensor/containers/xadapt.hpp>
 
 #include "oiseau/mesh/cell.hpp"
 
@@ -25,54 +25,73 @@ Topology::Topology(std::vector<std::vector<std::size_t>>&& conn, std::vector<Cel
     : m_conn(std::move(conn)), m_cell_types(std::move(cell_types)) {};
 
 std::span<CellType> Topology::cell_types() { return m_cell_types; };
+std::span<const CellType> Topology::cell_types() const { return m_cell_types; };
 
 std::span<std::vector<std::size_t>> Topology::conn() { return m_conn; };
+std::span<const std::vector<std::size_t>> Topology::conn() const { return m_conn; };
 std::span<std::vector<std::size_t>> Topology::e_to_e() { return m_e_to_e; };
 std::span<std::vector<std::size_t>> Topology::e_to_f() { return m_e_to_f; };
 
 std::size_t Topology::n_cells() const { return m_conn.size(); }
 
 void Topology::calculate_connectivity() {
-  // this should be extended to 3d and for mixed cells squares/triangles
-  std::vector<std::vector<std::vector<std::size_t>>> faces;
-  for (std::size_t i = 0; i < m_conn.size(); i++) {
-    auto cell = m_cell_types[i];
-    if (cell->kind() != CellKind::Triangle) continue;
-    auto _conn = m_conn[i];
-
-    auto face_vertices = cell->get_entity_vertices(1);
-    std::vector<std::vector<std::size_t>> face(face_vertices.size());
-    for (std::size_t j = 0; j < face_vertices.size(); j++) {
-      face[j].resize(face_vertices[j].size());
-      for (std::size_t k = 0; k < face_vertices[j].size(); k++) {
-        face[j][k] = _conn[face_vertices[j][k]];
-      }
-      std::sort(face[j].begin(), face[j].end());
-    }
-    faces.push_back(std::move(face));
-  }
-  m_e_to_e.resize(faces.size());
-  m_e_to_f.resize(faces.size());
-  for (std::size_t i = 0; i < m_e_to_e.size(); i++) {
-    m_e_to_e[i] = std::vector<std::size_t>(faces[i].size(), i);
-    m_e_to_f[i].resize(faces[i].size());
-    std::iota(m_e_to_f[i].begin(), m_e_to_f[i].end(), 0);
+  if (m_conn.size() != m_cell_types.size()) {
+    throw std::invalid_argument("Cell connectivity and cell type counts must match");
   }
 
-  // TODO(tiagovla): this is not efficient, should use a hash map
-  for (std::size_t i = 0; i < faces.size(); i++) {
-    for (std::size_t j = 0; j < faces[i].size(); j++) {
-      for (std::size_t ii = i + 1; ii < faces.size(); ii++) {
-        for (std::size_t jj = 0; jj < faces[ii].size(); jj++) {
-          if (m_e_to_e[i][j] != i || m_e_to_e[ii][jj] != ii) continue;
-          if (faces[i][j] == faces[ii][jj]) {
-            m_e_to_e[i][j] = ii;
-            m_e_to_e[ii][jj] = i;
-            m_e_to_f[i][j] = jj;
-            m_e_to_f[ii][jj] = j;
-          }
+  int mesh_dimension = 0;
+  for (const auto* cell : m_cell_types) {
+    if (cell == nullptr) throw std::invalid_argument("Cell type cannot be null");
+    mesh_dimension = std::max(mesh_dimension, cell->dimension());
+  }
+  if (mesh_dimension > 2) {
+    throw std::invalid_argument("Face connectivity currently supports 2D meshes only");
+  }
+
+  // Each canonical face key records the first cell/local-face that uses it.
+  // A second use creates the two-way adjacency; a third is non-manifold.
+  std::map<std::vector<std::size_t>, std::pair<std::size_t, std::size_t>> face_owner;
+  std::vector<std::vector<std::size_t>> e_to_e(m_conn.size());
+  std::vector<std::vector<std::size_t>> e_to_f(m_conn.size());
+
+  for (std::size_t cell_index = 0; cell_index < m_conn.size(); ++cell_index) {
+    const auto* cell = m_cell_types[cell_index];
+    // Gmsh meshes commonly include lower-dimensional boundary entities. They
+    // are not volume cells and therefore do not participate in this adjacency.
+    if (cell->dimension() != mesh_dimension) continue;
+
+    const auto face_vertices = cell->get_entity_vertices(1);
+    const auto& cell_vertices = m_conn[cell_index];
+    e_to_e[cell_index].resize(face_vertices.size(), cell_index);
+    e_to_f[cell_index].resize(face_vertices.size());
+
+    for (std::size_t face_index = 0; face_index < face_vertices.size(); ++face_index) {
+      std::vector<std::size_t> key;
+      key.reserve(face_vertices[face_index].size());
+      for (const int local_vertex : face_vertices[face_index]) {
+        if (local_vertex < 0 || static_cast<std::size_t>(local_vertex) >= cell_vertices.size()) {
+          throw std::invalid_argument("Cell connectivity does not match its cell type");
         }
+        key.push_back(cell_vertices[static_cast<std::size_t>(local_vertex)]);
+      }
+      std::sort(key.begin(), key.end());
+      e_to_f[cell_index][face_index] = face_index;
+
+      const auto [owner, inserted] =
+          face_owner.emplace(std::move(key), std::make_pair(cell_index, face_index));
+      if (!inserted) {
+        const auto [other_cell, other_face] = owner->second;
+        if (other_cell == cell_index || e_to_e[other_cell][other_face] != other_cell) {
+          throw std::invalid_argument("Non-manifold face is shared by more than two cells");
+        }
+        e_to_e[cell_index][face_index] = other_cell;
+        e_to_f[cell_index][face_index] = other_face;
+        e_to_e[other_cell][other_face] = cell_index;
+        e_to_f[other_cell][other_face] = face_index;
       }
     }
   }
+
+  m_e_to_e = std::move(e_to_e);
+  m_e_to_f = std::move(e_to_f);
 }

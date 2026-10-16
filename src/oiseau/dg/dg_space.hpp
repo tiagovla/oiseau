@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <iostream>
 #include <span>
 #include <vector>
@@ -27,11 +28,13 @@ class DGSpace {
   inline const mesh::Mesh& mesh() const { return m_mesh; };
   std::span<const nodal::Element> elements() const;
   std::span<const unsigned> orders() const;
+  std::span<const std::size_t> cell_indices() const;
 
  private:
   const mesh::Mesh& m_mesh;
   std::vector<nodal::Element> m_elements;
   const std::vector<unsigned> m_orders;
+  std::vector<std::size_t> m_cell_indices;
 };
 
 }  // namespace oiseau::dg

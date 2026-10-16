@@ -13,6 +13,7 @@ macro(oiseau_add_executable name)
 endmacro()
 
 oiseau_add_executable(nodaldg)
+oiseau_add_executable(dg_space)
 oiseau_add_executable(mesh)
 oiseau_add_executable(io)
 oiseau_add_executable(plotting)
