@@ -7,6 +7,7 @@
 file(
     GLOB_RECURSE
     OISEAU_CORE_SOURCES
+    CONFIGURE_DEPENDS
     "oiseau/dg/*.cpp"
     "oiseau/io/*.cpp"
     "oiseau/mesh/*.cpp"
