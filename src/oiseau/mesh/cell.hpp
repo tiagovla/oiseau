@@ -32,9 +32,9 @@ CellType get_cell_type(const CellKind cell);
 
 class Cell {
  protected:
-  CellKind m_kind;
+  CellKind m_kind = CellKind::Undefined;
   std::string m_name;
-  int m_dim;
+  int m_dim{};
   std::vector<std::vector<std::vector<std::vector<int>>>> m_topology;
   std::pair<std::vector<double>, std::array<std::size_t, 2>> m_geometry;
   CellType m_facet = nullptr;

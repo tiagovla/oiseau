@@ -36,7 +36,7 @@ RefTetrahedron::RefTetrahedron(unsigned order) : RefElement(order) {
 }
 
 xt::xarray<double> RefTetrahedron::basis_function(const xt::xarray<double> &abc, int i, int j,
-                                                  int k) const {
+                                                  int k) {
   xt::xarray<double> a = xt::col(abc, 0);
   xt::xarray<double> b = xt::col(abc, 1);
   xt::xarray<double> c = xt::col(abc, 2);
@@ -47,7 +47,7 @@ xt::xarray<double> RefTetrahedron::basis_function(const xt::xarray<double> &abc,
 }
 
 xt::xarray<double> RefTetrahedron::grad_basis_function(const xt::xarray<double> &abc, int i, int j,
-                                                       int k) const {
+                                                       int k) {
   xt::xarray<double> a = xt::col(abc, 0);
   xt::xarray<double> b = xt::col(abc, 1);
   xt::xarray<double> c = xt::col(abc, 2);
@@ -123,7 +123,7 @@ xt::xarray<double> RefTetrahedron::grad_vandermonde(const xt::xarray<double> &rs
 }
 //
 xt::xarray<double> RefTetrahedron::grad_operator(const xt::xarray<double> &v,
-                                                 const xt::xarray<double> &gv) const {
+                                                 const xt::xarray<double> &gv) {
   auto gvr = xt::view(gv, xt::all(), xt::all(), 0);
   auto gvs = xt::view(gv, xt::all(), xt::all(), 1);
   auto gvt = xt::view(gv, xt::all(), xt::all(), 2);

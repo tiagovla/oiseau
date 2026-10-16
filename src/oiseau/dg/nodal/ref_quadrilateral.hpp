@@ -90,7 +90,7 @@ class RefQuadrilateral : public RefElement {
    * @param rs 2D array (shape: N_points × 2) of (r, s) coordinates.
    * @return   2D array (shape: N_points × N_basis) representing the Vandermonde matrix.
    */
-  xt::xarray<double> vandermonde(const xt::xarray<double>& rs) const;
+  xt::xarray<double> vandermonde(const xt::xarray<double>& rs) const override;
 
   /**
    * @brief Computes the gradient Vandermonde matrix for the reference quadrilateral.
@@ -112,7 +112,8 @@ class RefQuadrilateral : public RefElement {
    * @param gv 3D array (N_nodes × N_basis × 2) gradient Vandermonde.
    * @return   3D array (N_nodes × N_basis × 2) containing Dr ([:,:,0]) and Ds ([:,:,1]).
    */
-  xt::xarray<double> grad_operator(const xt::xarray<double>& v, const xt::xarray<double>& gv) const;
+  static xt::xarray<double> grad_operator(const xt::xarray<double>& v,
+                                          const xt::xarray<double>& gv);
 };
 
 namespace detail {

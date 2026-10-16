@@ -31,7 +31,7 @@ RefHexahedron::RefHexahedron(unsigned order) : RefElement(order) {
 }
 
 xt::xarray<double> RefHexahedron::basis_function(const xt::xarray<double> &rst, int i, int j,
-                                                 int k) const {
+                                                 int k) {
   xt::xarray<double> r = xt::col(rst, 0);
   xt::xarray<double> s = xt::col(rst, 1);
   xt::xarray<double> t = xt::col(rst, 2);
@@ -44,7 +44,7 @@ xt::xarray<double> RefHexahedron::basis_function(const xt::xarray<double> &rst, 
 }
 
 xt::xarray<double> RefHexahedron::grad_basis_function(const xt::xarray<double> &rst, int i, int j,
-                                                      int k) const {
+                                                      int k) {
   xt::xarray<double> r = xt::col(rst, 0);
   xt::xarray<double> s = xt::col(rst, 1);
   xt::xarray<double> t = xt::col(rst, 2);
@@ -98,7 +98,7 @@ xt::xarray<double> RefHexahedron::grad_vandermonde(const xt::xarray<double> &rst
 }
 
 xt::xarray<double> RefHexahedron::grad_operator(const xt::xarray<double> &v,
-                                                const xt::xarray<double> &gv) const {
+                                                const xt::xarray<double> &gv) {
   auto gvr = xt::view(gv, xt::all(), xt::all(), 0);
   auto gvs = xt::view(gv, xt::all(), xt::all(), 1);
   auto gvt = xt::view(gv, xt::all(), xt::all(), 2);

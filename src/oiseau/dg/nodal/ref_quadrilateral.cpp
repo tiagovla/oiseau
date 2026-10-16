@@ -85,7 +85,7 @@ xt::xarray<double> RefQuadrilateral::grad_vandermonde(const xt::xarray<double> &
 }
 
 xt::xarray<double> RefQuadrilateral::grad_operator(const xt::xarray<double> &v,
-                                                   const xt::xarray<double> &gv) const {
+                                                   const xt::xarray<double> &gv) {
   auto gvr = xt::view(gv, xt::all(), xt::all(), 0);
   auto gvs = xt::view(gv, xt::all(), xt::all(), 1);
 

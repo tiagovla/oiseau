@@ -59,7 +59,7 @@ xt::xarray<double> RefLine::grad_vandermonde(const xt::xarray<double>& r) const 
 }
 
 xt::xarray<double> RefLine::grad_operator(const xt::xarray<double>& v,
-                                          const xt::xarray<double>& gv) const {
+                                          const xt::xarray<double>& gv) {
   auto gvr = xt::view(gv, xt::all(), xt::all(), 0);
 
   const auto vt = xt::transpose(v);

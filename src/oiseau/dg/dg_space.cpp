@@ -83,10 +83,9 @@ DGSpace::DGSpace(const mesh::Mesh& mesh, const std::vector<unsigned>& orders)
     if (cell_vertices.size() != expected_vertices) {
       throw std::invalid_argument("Cell connectivity does not match its cell type");
     }
-    for (const auto vertex : cell_vertices) {
-      if (vertex >= shape[0]) {
-        throw std::out_of_range("Cell references a vertex outside the mesh geometry");
-      }
+    if (std::any_of(cell_vertices.begin(), cell_vertices.end(),
+                    [&shape](const auto vertex) { return vertex >= shape[0]; })) {
+      throw std::out_of_range("Cell references a vertex outside the mesh geometry");
     }
     if (orders[order_index] == 0) {
       throw std::invalid_argument("Polynomial orders must be greater than zero");

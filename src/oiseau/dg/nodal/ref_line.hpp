@@ -59,7 +59,7 @@ class RefLine : public RefElement {
    * @param r Reference coordinates.
    * @return The Vandermonde matrix used for interpolation.
    */
-  xt::xarray<double> vandermonde(const xt::xarray<double>& r) const;
+  xt::xarray<double> vandermonde(const xt::xarray<double>& r) const override;
 
   /**
    * @brief Computes the gradient of the Vandermonde matrix for the given reference coordinates.
@@ -74,7 +74,8 @@ class RefLine : public RefElement {
    * @param gv The gradient of the Vandermonde matrix.
    * @return The gradient (differentiation) operator matrix.
    */
-  xt::xarray<double> grad_operator(const xt::xarray<double>& v, const xt::xarray<double>& gv) const;
+  static xt::xarray<double> grad_operator(const xt::xarray<double>& v,
+                                          const xt::xarray<double>& gv);
 };
 
 namespace detail {

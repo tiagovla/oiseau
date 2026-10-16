@@ -51,8 +51,8 @@ void Topology::calculate_connectivity() {
   // Each canonical face key records the first cell/local-face that uses it.
   // A second use creates the two-way adjacency; a third is non-manifold.
   std::map<std::vector<std::size_t>, std::pair<std::size_t, std::size_t>> face_owner;
-  std::vector<std::vector<std::size_t>> e_to_e(m_conn.size());
-  std::vector<std::vector<std::size_t>> e_to_f(m_conn.size());
+  std::vector<std::vector<std::size_t>> element_to_element(m_conn.size());
+  std::vector<std::vector<std::size_t>> element_to_face(m_conn.size());
 
   for (std::size_t cell_index = 0; cell_index < m_conn.size(); ++cell_index) {
     const auto* cell = m_cell_types[cell_index];
@@ -62,8 +62,8 @@ void Topology::calculate_connectivity() {
 
     const auto face_vertices = cell->get_entity_vertices(1);
     const auto& cell_vertices = m_conn[cell_index];
-    e_to_e[cell_index].resize(face_vertices.size(), cell_index);
-    e_to_f[cell_index].resize(face_vertices.size());
+    element_to_element[cell_index].resize(face_vertices.size(), cell_index);
+    element_to_face[cell_index].resize(face_vertices.size());
 
     for (std::size_t face_index = 0; face_index < face_vertices.size(); ++face_index) {
       std::vector<std::size_t> key;
@@ -75,23 +75,23 @@ void Topology::calculate_connectivity() {
         key.push_back(cell_vertices[static_cast<std::size_t>(local_vertex)]);
       }
       std::ranges::sort(key);
-      e_to_f[cell_index][face_index] = face_index;
+      element_to_face[cell_index][face_index] = face_index;
 
       const auto [owner, inserted] =
           face_owner.emplace(std::move(key), std::make_pair(cell_index, face_index));
       if (!inserted) {
         const auto [other_cell, other_face] = owner->second;
-        if (other_cell == cell_index || e_to_e[other_cell][other_face] != other_cell) {
+        if (other_cell == cell_index || element_to_element[other_cell][other_face] != other_cell) {
           throw std::invalid_argument("Non-manifold face is shared by more than two cells");
         }
-        e_to_e[cell_index][face_index] = other_cell;
-        e_to_f[cell_index][face_index] = other_face;
-        e_to_e[other_cell][other_face] = cell_index;
-        e_to_f[other_cell][other_face] = face_index;
+        element_to_element[cell_index][face_index] = other_cell;
+        element_to_face[cell_index][face_index] = other_face;
+        element_to_element[other_cell][other_face] = cell_index;
+        element_to_face[other_cell][other_face] = face_index;
       }
     }
   }
 
-  m_e_to_e = std::move(e_to_e);
-  m_e_to_f = std::move(e_to_f);
+  m_e_to_e = std::move(element_to_element);
+  m_e_to_f = std::move(element_to_face);
 }

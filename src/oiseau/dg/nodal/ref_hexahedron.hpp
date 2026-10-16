@@ -15,13 +15,14 @@ namespace oiseau::dg::nodal {
 class RefHexahedron : public RefElement {
  public:
   explicit RefHexahedron(unsigned order);
-  xt::xarray<double> basis_function(const xt::xarray<double>& rst, int i, int j, int k) const;
-  xt::xarray<double> grad_basis_function(const xt::xarray<double>& rst, int i, int j, int k) const;
+  static xt::xarray<double> basis_function(const xt::xarray<double>& rst, int i, int j, int k);
+  static xt::xarray<double> grad_basis_function(const xt::xarray<double>& rst, int i, int j, int k);
 
  private:
-  xt::xarray<double> vandermonde(const xt::xarray<double>& rst) const;
+  xt::xarray<double> vandermonde(const xt::xarray<double>& rst) const override;
   xt::xarray<double> grad_vandermonde(const xt::xarray<double>& rst) const;
-  xt::xarray<double> grad_operator(const xt::xarray<double>& v, const xt::xarray<double>& gv) const;
+  static xt::xarray<double> grad_operator(const xt::xarray<double>& v,
+                                          const xt::xarray<double>& gv);
 };
 
 namespace detail {

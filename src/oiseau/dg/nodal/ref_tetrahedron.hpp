@@ -54,7 +54,7 @@ class RefTetrahedron : public RefElement {
    * @param k Polynomial degree index (e.g., for the third transformed coordinate).
    * @return  1D array (length N_points) of basis function values at each (r, s, t) point.
    */
-  xt::xarray<double> basis_function(const xt::xarray<double> &rst, int i, int j, int k) const;
+  static xt::xarray<double> basis_function(const xt::xarray<double> &rst, int i, int j, int k);
 
   /**
    * @brief Computes the gradient of a 3D basis function on the reference tetrahedron.
@@ -68,7 +68,7 @@ class RefTetrahedron : public RefElement {
    * @param k Polynomial degree index.
    * @return  2D array (shape: N_points × 3) containing (∂/∂r, ∂/∂s, ∂/∂t) for each point.
    */
-  xt::xarray<double> grad_basis_function(const xt::xarray<double> &rst, int i, int j, int k) const;
+  static xt::xarray<double> grad_basis_function(const xt::xarray<double> &rst, int i, int j, int k);
 
  private:
   /**
@@ -81,7 +81,7 @@ class RefTetrahedron : public RefElement {
    * @param rst 2D array (shape: N_nodes × 3) of (r, s, t) nodal coordinates.
    * @return    2D array (shape: N_nodes × N_basis) representing the Vandermonde matrix.
    */
-  xt::xarray<double> vandermonde(const xt::xarray<double> &rst) const;
+  xt::xarray<double> vandermonde(const xt::xarray<double> &rst) const override;
 
   /**
    * @brief Computes the gradient Vandermonde matrix for the reference tetrahedron.
@@ -110,7 +110,8 @@ class RefTetrahedron : public RefElement {
    * to nodal derivatives. Assuming N_nodes = N_basis, returns differentiation matrices of shape
    * (N_nodes x N_nodes x 3).
    */
-  xt::xarray<double> grad_operator(const xt::xarray<double> &v, const xt::xarray<double> &gv) const;
+  static xt::xarray<double> grad_operator(const xt::xarray<double> &v,
+                                          const xt::xarray<double> &gv);
 };
 
 namespace detail {
