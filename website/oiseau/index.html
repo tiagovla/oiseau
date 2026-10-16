@@ -152,6 +152,20 @@
           </div>
         </div>
       </div>
+      <div
+        id="scroll-progress-track"
+        class="absolute bottom-0 left-0 h-0.5 w-full bg-oiseau-nav-link/20"
+        role="progressbar"
+        aria-label="Page reading progress"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="0"
+      >
+        <div
+          id="scroll-progress"
+          class="h-full w-0 bg-gradient-to-r from-oiseau-teal-accent to-oiseau-orange-accent"
+        ></div>
+      </div>
     </header>
 
     <main>
@@ -326,6 +340,27 @@ cmake --build build</code></pre>
     </footer>
 
     <script>
+      const progressTrack = document.getElementById('scroll-progress-track');
+      const progressBar = document.getElementById('scroll-progress');
+
+      function updateScrollProgress() {
+        const scrollableHeight =
+          document.documentElement.scrollHeight - window.innerHeight;
+        const progress =
+          scrollableHeight > 0
+            ? Math.min(100, (window.scrollY / scrollableHeight) * 100)
+            : 0;
+
+        progressBar.style.width = `${progress}%`;
+        progressTrack.setAttribute('aria-valuenow', `${Math.round(progress)}`);
+      }
+
+      window.addEventListener('scroll', updateScrollProgress, {
+        passive: true,
+      });
+      window.addEventListener('resize', updateScrollProgress);
+      updateScrollProgress();
+
       const menuToggleCheckbox = document.getElementById('menu-toggle');
       const lgBreakpoint = 1024;
 
