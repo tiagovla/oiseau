@@ -1,6 +1,6 @@
-.PHONY: all configure build test precommit website serve tidy clean
+.PHONY: all configure build test precommit cppcheck website serve tidy clean
 
-all: build test precommit
+all: build test precommit cppcheck
 
 configure:
 	@echo "Configuring project with CMake..."
@@ -30,6 +30,21 @@ test: build
 precommit:
 	@echo "Running pre-commit hooks..."
 	@pre-commit run --all-files
+
+cppcheck:
+	@echo "Running cppcheck..."
+	@cppcheck \
+		--enable=all \
+		--std=c++20 \
+		--suppress=missingInclude \
+		--suppress=unmatchedSuppression \
+		--suppress=missingIncludeSystem \
+		--suppress=unusedFunction \
+		--suppress=returnByReference \
+		--error-exitcode=2 \
+		--check-level=exhaustive \
+		src \
+		-I src
 
 website:
 	@echo "Generating website..."
