@@ -18,7 +18,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     doxygen \
     gcovr \
-    gfortran \
     git \
     gnupg \
     liblapack-dev \
