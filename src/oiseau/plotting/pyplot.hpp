@@ -28,7 +28,7 @@ template <typename T>
 struct type_caster<xt::xarray<T>> {
  public:
   PYBIND11_TYPE_CASTER(xt::xarray<T>, const_name("xarray"));
-  static handle cast(xt::xarray<T> &src, return_value_policy, handle) {
+  static handle cast(xt::xarray<T>& src, return_value_policy, handle) {
     auto v = py::array(src.size(), src.data(), py::capsule([]() {}));
     v.resize(src.shape());
     return v.release();
@@ -42,11 +42,11 @@ struct type_caster<E> {
   using array_type = xt::xarray<value_type>;
 
   PYBIND11_TYPE_CASTER(array_type, _("xexpression"));
-  static handle cast(const E &expr, return_value_policy, handle) {
+  static handle cast(const E& expr, return_value_policy, handle) {
     xt::xarray<value_type> tmp = xt::eval(expr);
-    auto *data_holder = new xt::xarray<double>(std::move(tmp));
+    auto* data_holder = new xt::xarray<double>(std::move(tmp));
     py::capsule owner_capsule(data_holder,
-                              [](void *p) { delete static_cast<xt::xarray<value_type> *>(p); });
+                              [](void* p) { delete static_cast<xt::xarray<value_type>*>(p); });
     py::array result(data_holder->shape(), data_holder->data(), owner_capsule);
     return result.release();
   }
@@ -62,25 +62,25 @@ inline auto plt() { return py::module_::import("matplotlib.pyplot"); }
 
 #define DEFINE_PYPLOT_FUNC(name)                           \
   template <typename... Args>                              \
-  auto name(Args &&...args) {                              \
+  auto name(Args&&... args) {                              \
     return plt().attr(#name)(std::forward<Args>(args)...); \
   }
 
 #define DEFINE_PYPLOT_FUNC_WRAPPED(WrapperClass, name)                   \
   template <typename... Args>                                            \
-  WrapperClass name(Args &&...args) {                                    \
+  WrapperClass name(Args&&... args) {                                    \
     return WrapperClass(plt().attr(#name)(std::forward<Args>(args)...)); \
   }
 
 #define DEFINE_PY_CLASS_METHOD_AUTO(name)                  \
   template <typename... Args>                              \
-  auto name(Args &&...args) {                              \
+  auto name(Args&&... args) {                              \
     return m_obj.attr(#name)(std::forward<Args>(args)...); \
   }
 
 #define DEFINE_PY_CLASS_METHOD_WRAPPED(WrapperClass, name)               \
   template <typename... Args>                                            \
-  WrapperClass name(Args &&...args) {                                    \
+  WrapperClass name(Args&&... args) {                                    \
     return WrapperClass(m_obj.attr(#name)(std::forward<Args>(args)...)); \
   }
 
@@ -93,6 +93,7 @@ class PYBIND11_EXPORT AxesSubPlot {
   DEFINE_PY_CLASS_METHOD_AUTO(scatter)
   DEFINE_PY_CLASS_METHOD_AUTO(triplot)
   DEFINE_PY_CLASS_METHOD_AUTO(plot)
+  DEFINE_PY_CLASS_METHOD_AUTO(quiver)
   DEFINE_PY_CLASS_METHOD_AUTO(text)
   DEFINE_PY_CLASS_METHOD_AUTO(set_xlabel)
   DEFINE_PY_CLASS_METHOD_AUTO(set_ylabel)
@@ -136,7 +137,7 @@ DEFINE_PYPLOT_FUNC(savefig)
 DEFINE_PYPLOT_FUNC_WRAPPED(Figure, figure)
 
 template <typename... Args>
-std::pair<Figure, AxesSubPlot> subplots(Args &&...args) {
+std::pair<Figure, AxesSubPlot> subplots(Args&&... args) {
   py::object result = plt().attr("subplots")(std::forward<Args>(args)...);
   auto res = result.cast<py::tuple>();
   return {Figure(res[0]), AxesSubPlot(res[1])};
