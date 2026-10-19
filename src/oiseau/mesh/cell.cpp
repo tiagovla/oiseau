@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Tiago V. L. Amorim (@tiagovla)
+// Copyright (C) 2026 Tiago V. L. Amorim (@tiagovla)
 //
 // This file is part of oiseau (https://github.com/tiagovla/oiseau)
 //
