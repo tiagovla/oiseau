@@ -13,6 +13,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include "oiseau/dg/dg_connectivity.hpp"
 #include "oiseau/io/gmsh.hpp"
 #include "oiseau/mesh/cell.hpp"
 #include "oiseau/plotting/triplot.hpp"
@@ -43,7 +44,8 @@ int topological_dimension(std::span<const oiseau::mesh::CellType> cell_types) {
   return dimension;
 }
 
-void print_group(std::size_t group_index, const oiseau::dg::DGSpace::ElementGroup& group) {
+void print_group(std::size_t group_index, const oiseau::dg::DGSpace::ElementGroup& group,
+                 const oiseau::dg::DGConnectivity& connectivity) {
   const auto& shape = group.nodes.shape();
   if (shape.size() != 3) {
     throw std::runtime_error("DG group coordinates must have shape [cells, nodes, dimensions]");
@@ -67,6 +69,23 @@ void print_group(std::size_t group_index, const oiseau::dg::DGSpace::ElementGrou
         std::cout << group.nodes(cell, node, coordinate);
       }
       std::cout << ")\n";
+    }
+
+    const auto face_connections = connectivity.faces(group.cell_indices[cell]);
+    for (std::size_t face = 0; face < face_connections.size(); ++face) {
+      const auto& connection = face_connections[face];
+      std::cout << "    face " << face << ": ";
+      if (connection.is_boundary()) {
+        std::cout << "boundary\n";
+        continue;
+      }
+      std::cout << "mesh cell " << connection.neighbor_cell << ", face " << connection.neighbor_face
+                << ", vertex permutation [";
+      for (std::size_t vertex = 0; vertex < connection.vertex_permutation.size(); ++vertex) {
+        if (vertex != 0) std::cout << ", ";
+        std::cout << connection.vertex_permutation[vertex];
+      }
+      std::cout << "]\n";
     }
   }
 }
@@ -104,6 +123,7 @@ int main(int argc, char** argv) {
 
   // DGSpace groups physical nodal coordinates by cell kind and polynomial
   // order. Each group stores nodes as [cells, nodes, dimensions].
+  const dg::DGConnectivity connectivity(mesh);
   const dg::DGSpace space(mesh, orders);
   const auto groups = space.element_groups();
 
@@ -115,7 +135,7 @@ int main(int argc, char** argv) {
             << "\nGroups: " << groups.size() << "\n\n";
 
   for (std::size_t group_index = 0; group_index < groups.size(); ++group_index)
-    print_group(group_index, groups[group_index]);
+    print_group(group_index, groups[group_index], connectivity);
 
   // DG nodes are local to each cell, so shared physical points may appear more
   // than once across groups or neighboring cells.
