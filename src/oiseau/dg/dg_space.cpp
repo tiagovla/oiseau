@@ -51,18 +51,6 @@ nodal::RefElementType ref_type_for(mesh::CellKind kind) {
   }
 }
 
-int topological_dimension(std::span<const mesh::CellType> cell_types) {
-  int dimension = 0;
-  for (const auto* cell : cell_types) {
-    if (cell == nullptr) throw std::invalid_argument("Mesh cell type cannot be null");
-    dimension = std::max(dimension, cell->dimension());
-  }
-  if (dimension < 1 || dimension > 3) {
-    throw std::invalid_argument("DGSpace supports meshes with dimensions 1 through 3");
-  }
-  return dimension;
-}
-
 std::vector<ActiveCell> active_cells(std::span<const mesh::CellType> cell_types,
                                      const std::vector<unsigned>& orders, int dimension) {
   const auto count = static_cast<std::size_t>(std::ranges::count_if(
@@ -118,7 +106,10 @@ DGSpace::DGSpace(const mesh::Mesh& mesh, const std::vector<unsigned>& orders)
     throw std::invalid_argument("Mesh coordinate data is inconsistent with its dimension");
   }
 
-  const auto dimension = topological_dimension(cell_types);
+  const auto dimension = topology.dimension();
+  if (dimension < 1 || dimension > 3) {
+    throw std::invalid_argument("DGSpace supports meshes with dimensions 1 through 3");
+  }
   const auto cells = active_cells(cell_types, orders, dimension);
 
   std::map<GroupKey, std::size_t> group_sizes;
