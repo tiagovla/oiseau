@@ -24,7 +24,10 @@ Topology::~Topology() = default;
 Topology::Topology(std::vector<std::vector<std::size_t>>&& conn, std::vector<CellType>&& cell_types)
     : m_conn(std::move(conn)), m_cell_types(std::move(cell_types)) {};
 
-std::span<CellType> Topology::cell_types() { return m_cell_types; };
+std::span<CellType> Topology::cell_types() {
+  m_dimension = -1;
+  return m_cell_types;
+};
 std::span<const CellType> Topology::cell_types() const { return m_cell_types; };
 
 std::span<std::vector<std::size_t>> Topology::conn() { return m_conn; };
@@ -34,16 +37,24 @@ std::span<std::vector<std::size_t>> Topology::e_to_f() { return m_e_to_f; };
 
 std::size_t Topology::n_cells() const { return m_conn.size(); }
 
+int Topology::dimension() const {
+  if (m_dimension >= 0) return m_dimension;
+
+  int dimension = 0;
+  for (const auto* cell : m_cell_types) {
+    if (cell == nullptr) throw std::invalid_argument("Cell type cannot be null");
+    dimension = std::max(dimension, cell->dimension());
+  }
+  m_dimension = dimension;
+  return m_dimension;
+}
+
 void Topology::calculate_connectivity() {
   if (m_conn.size() != m_cell_types.size()) {
     throw std::invalid_argument("Cell connectivity and cell type counts must match");
   }
 
-  int mesh_dimension = 0;
-  for (const auto* cell : m_cell_types) {
-    if (cell == nullptr) throw std::invalid_argument("Cell type cannot be null");
-    mesh_dimension = std::max(mesh_dimension, cell->dimension());
-  }
+  const auto mesh_dimension = dimension();
   if (mesh_dimension > 2) {
     throw std::invalid_argument("Face connectivity currently supports 2D meshes only");
   }
