@@ -19,6 +19,7 @@
 #include <xtensor/views/xslice.hpp>
 #include <xtensor/views/xview.hpp>
 
+#include "oiseau/dg/detail/cell_mapping.hpp"
 #include "oiseau/dg/nodal/ref_element.hpp"
 #include "oiseau/mesh/cell.hpp"
 #include "oiseau/mesh/mesh.hpp"
@@ -75,21 +76,6 @@ std::vector<ActiveCell> active_cells(std::span<const mesh::CellType> cell_types,
   return cells;
 }
 
-std::vector<std::size_t> interpolation_vertices(mesh::CellType type,
-                                                std::vector<std::size_t> vertices) {
-  if (vertices.size() != static_cast<std::size_t>(type->num_sub_entities(0))) {
-    throw std::invalid_argument("Cell connectivity does not match its cell type");
-  }
-  const auto kind = type->kind();
-  if (kind == mesh::CellKind::Quadrilateral || kind == mesh::CellKind::Hexahedron) {
-    // Tensor-product reference nodes vary in the first coordinate first;
-    // mesh connectivity enumerates tensor-product corners cyclically.
-    std::swap(vertices[2], vertices[3]);
-    if (kind == mesh::CellKind::Hexahedron) std::swap(vertices[6], vertices[7]);
-  }
-  return vertices;
-}
-
 }  // namespace
 
 DGSpace::DGSpace(const mesh::Mesh& mesh, const std::vector<unsigned>& orders)
@@ -135,7 +121,7 @@ DGSpace::DGSpace(const mesh::Mesh& mesh, const std::vector<unsigned>& orders)
 
   for (const auto& cell : cells) {
     const auto kind = cell.type->kind();
-    auto vertices = interpolation_vertices(cell.type, connectivity[cell.mesh_index]);
+    auto vertices = detail::reference_ordered_vertices(cell.type, connectivity[cell.mesh_index]);
     if (std::ranges::any_of(vertices,
                             [&node_shape](const auto vertex) { return vertex >= node_shape[0]; })) {
       throw std::out_of_range("Cell references a vertex outside the mesh geometry");
