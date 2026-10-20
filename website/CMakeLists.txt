@@ -19,7 +19,10 @@ add_custom_command(
     COMMENT "Cleaning and creating website directory"
 )
 
-add_dependencies(website docs coverage)
+add_dependencies(website docs)
+if(TARGET coverage)
+    add_dependencies(website coverage)
+endif()
 
 add_custom_command(
     TARGET website
@@ -28,12 +31,14 @@ add_custom_command(
     COMMENT "Copying website source files"
 )
 #
-add_custom_command(
-    TARGET website
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${COVERAGE_OUTPUT_DIR} ${WEBSITE_DIR}/coverage
-    COMMENT "Copying coverage files"
-)
+if(TARGET coverage)
+    add_custom_command(
+        TARGET website
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${COVERAGE_OUTPUT_DIR} ${WEBSITE_DIR}/coverage
+        COMMENT "Copying coverage files"
+    )
+endif()
 
 add_custom_command(
     TARGET website

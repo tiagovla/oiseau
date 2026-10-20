@@ -17,7 +17,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     cppcheck \
     curl \
     doxygen \
-    gcovr \
     git \
     gnupg \
     liblapack-dev \
@@ -29,7 +28,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-dev \
     python3-matplotlib \
     python3-pyqt6 \
+    python3-venv \
     software-properties-common \
     unzip \
     zip \
+    && python3 -m venv /opt/gcovr \
+    && /opt/gcovr/bin/pip install --no-cache-dir gcovr==7.2 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+ENV PATH="/opt/gcovr/bin:${PATH}"

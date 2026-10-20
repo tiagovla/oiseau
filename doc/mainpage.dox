@@ -18,12 +18,12 @@ Key goals of the project include:
  - Modularity and extensibility
 
 \section sec_getting_started Getting Started
-For information on building and running OISEAU, please refer to the main project
-[README file](https://github.com/your_org/oiseau/blob/main/README.md) or the
+For build instructions and project status, see the
+[README](https://github.com/tiagovla/oiseau/blob/master/README.md).
 
-\section sec_dev Developer Information
-Information relevant for developers contributing to the codebase...
- - Coding style guidelines.
- - Building the tests.
+\section sec_dev Contributing
+For contribution guidelines, see
+[CONTRIBUTING.md](https://github.com/tiagovla/oiseau/blob/master/CONTRIBUTING.md).
+The API reference is available throughout this documentation site.
 
 */

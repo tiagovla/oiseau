@@ -13,6 +13,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>oiseau – Modern DGTD Framework</title>
     <link rel="icon" href="logo.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -87,6 +93,13 @@
         stroke-linecap: round;
         stroke-linejoin: round;
       }
+
+      @media (prefers-reduced-motion: reduce) {
+        .sine-wave-svg,
+        .animate-pulse {
+          animation: none !important;
+        }
+      }
     </style>
   </head>
   <body class="bg-oiseau-dark-bg text-oiseau-light-text font-sans antialiased">
@@ -109,26 +122,48 @@
             </a>
           </div>
           <div class="flex items-center">
-            <input type="checkbox" id="menu-toggle" class="hidden peer" />
-            <label
-              for="menu-toggle"
+            <button
+              id="menu-toggle"
+              type="button"
+              aria-label="Open menu"
+              aria-controls="primary-navigation"
+              aria-expanded="false"
               class="lg:hidden bg-oiseau-dark-bg rounded-md p-2 inline-flex items-center justify-center text-oiseau-nav-link hover:text-oiseau-light-text hover:bg-oiseau-deep-blue focus:outline-none focus:ring-2 focus:ring-inset focus:ring-oiseau-teal-accent cursor-pointer"
             >
-              <span class="sr-only">Open menu</span>
-              <div class="space-y-1.5" aria-hidden="true">
-                <span
-                  class="block w-6 h-0.5 bg-current rounded-full transition-all duration-300 ease-in-out origin-center peer-checked:rotate-45 peer-checked:translate-y-2"
-                ></span>
-                <span
-                  class="block w-6 h-0.5 bg-current rounded-full transition-all duration-300 ease-in-out peer-checked:opacity-0"
-                ></span>
-                <span
-                  class="block w-6 h-0.5 bg-current rounded-full transition-all duration-300 ease-in-out origin-center peer-checked:-rotate-45 peer-checked:-translate-y-2"
-                ></span>
-              </div>
-            </label>
+              <svg
+                id="menu-open-icon"
+                class="h-6 w-6"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+              <svg
+                id="menu-close-icon"
+                class="hidden h-6 w-6"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M6 18 18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
             <nav
-              class="hidden <!-- Base: nav is hidden --> peer-checked:flex peer-checked:flex-col peer-checked:items-stretch <!-- Mobile open: becomes flex column dropdown --> peer-checked:absolute peer-checked:top-full peer-checked:left-0 peer-checked:right-0 peer-checked:bg-oiseau-deep-blue peer-checked:shadow-xl peer-checked:py-2 peer-checked:z-40 lg:flex lg:flex-row lg:space-x-4 lg:items-center <!-- Desktop: always flex row, spaced items --> lg:static lg:bg-transparent lg:shadow-none lg:py-0 lg:z-auto <!-- Desktop: normal flow, no special bg/shadow/padding/z-index -->"
+              id="primary-navigation"
+              class="hidden flex-col items-stretch absolute top-full left-0 right-0 bg-oiseau-deep-blue shadow-xl py-2 z-40 lg:flex lg:flex-row lg:space-x-4 lg:items-center lg:static lg:bg-transparent lg:shadow-none lg:py-0 lg:z-auto"
             >
               <a
                 href="docs/"
@@ -140,7 +175,7 @@
                 href="coverage/"
                 class="px-4 py-3 md:px-3 md:py-2 rounded-md text-base font-medium text-oiseau-nav-link hover:text-oiseau-teal-accent transition-colors block md:inline-block text-center md:text-left"
                 target="_blank"
-                >Testing</a
+                >Coverage report</a
               >
               <a
                 href="https://github.com/tiagovla/oiseau"
@@ -310,6 +345,11 @@ cmake -B build -G Ninja .
 # Build the project
 cmake --build build</code></pre>
           <p class="text-sm text-oiseau-nav-link mt-4 text-center">
+            Prerequisites: Git, CMake, Ninja, a C compiler, and a C++23-capable
+            compiler. CMake downloads dependencies during configuration, so an
+            internet connection is required.
+          </p>
+          <p class="text-sm text-oiseau-nav-link mt-4 text-center">
             For detailed installation and usage, refer to the
             <a
               href="https://github.com/tiagovla/oiseau#readme"
@@ -361,18 +401,48 @@ cmake --build build</code></pre>
       window.addEventListener('resize', updateScrollProgress);
       updateScrollProgress();
 
-      const menuToggleCheckbox = document.getElementById('menu-toggle');
+      const menuToggleButton = document.getElementById('menu-toggle');
+      const primaryNavigation = document.getElementById('primary-navigation');
+      const menuOpenIcon = document.getElementById('menu-open-icon');
+      const menuCloseIcon = document.getElementById('menu-close-icon');
       const lgBreakpoint = 1024;
 
-      function uncheckMenuOnResize() {
-        if (menuToggleCheckbox && window.innerWidth >= lgBreakpoint) {
-          if (menuToggleCheckbox.checked) {
-            menuToggleCheckbox.checked = false;
-          }
-        }
+      function setMenuOpen(isOpen) {
+        const shouldOpen = isOpen && window.innerWidth < lgBreakpoint;
+        primaryNavigation.classList.toggle('hidden', !shouldOpen);
+        primaryNavigation.classList.toggle('flex', shouldOpen);
+        menuToggleButton.setAttribute('aria-expanded', `${shouldOpen}`);
+        menuToggleButton.setAttribute(
+          'aria-label',
+          shouldOpen ? 'Close menu' : 'Open menu'
+        );
+        menuOpenIcon.classList.toggle('hidden', shouldOpen);
+        menuCloseIcon.classList.toggle('hidden', !shouldOpen);
       }
 
-      window.addEventListener('resize', uncheckMenuOnResize);
+      menuToggleButton.addEventListener('click', () => {
+        setMenuOpen(menuToggleButton.getAttribute('aria-expanded') !== 'true');
+      });
+
+      primaryNavigation.querySelectorAll('a').forEach((link) => {
+        link.addEventListener('click', () => setMenuOpen(false));
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (
+          event.key === 'Escape' &&
+          menuToggleButton.getAttribute('aria-expanded') === 'true'
+        ) {
+          setMenuOpen(false);
+          menuToggleButton.focus();
+        }
+      });
+
+      window.addEventListener('resize', () => {
+        if (window.innerWidth >= lgBreakpoint) {
+          setMenuOpen(false);
+        }
+      });
     </script>
   </body>
 </html>

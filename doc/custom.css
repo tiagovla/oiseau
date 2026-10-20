@@ -1,0 +1,75 @@
+/**
+ * Copyright (C) 2026 Tiago V. L. Amorim (@tiagovla)
+ *
+ * This file is part of oiseau (https://github.com/tiagovla/oiseau)
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+html,
+html.dark-mode,
+html:not(.light-mode) {
+  color-scheme: dark;
+
+  --primary-color: #64ffda;
+  --primary-dark-color: #26c7a7;
+  --primary-light-color: #a6ffea;
+
+  --page-background-color: #0f2027;
+  --page-foreground-color: #ccd6f6;
+  --page-secondary-foreground-color: #8892b0;
+  --font-family: Inter, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family-monospace:
+    'JetBrains Mono', 'Cascadia Code', ui-monospace, SFMono-Regular, Consolas,
+    monospace;
+  --separator-color: #2a3b47;
+  --side-nav-background: #0a192f;
+  --side-nav-foreground: #ccd6f6;
+  --toc-background: #0a192f;
+  --toc-foreground: #ccd6f6;
+
+  --header-background: #0a192f;
+  --header-foreground: #ccd6f6;
+  --menu-focus-background: #64ffda;
+  --menu-focus-foreground: #0a192f;
+  --menu-selected-background: rgba(100, 255, 218, 0.12);
+  --odd-color: rgba(204, 214, 246, 0.04);
+
+  --searchbar-background: #0f2027;
+  --searchbar-foreground: #ccd6f6;
+  --code-background: #142635;
+  --code-foreground: #ccd6f6;
+  --fragment-background: #142635;
+  --fragment-foreground: #ccd6f6;
+  --fragment-keyword: #64ffda;
+  --fragment-keywordtype: #8ab4f8;
+  --fragment-keywordflow: #ff8c00;
+  --fragment-token: #a6e3a1;
+  --fragment-comment: #8892b0;
+  --fragment-link: #64ffda;
+  --fragment-preprocessor: #ff8c00;
+  --fragment-linenumber-color: #8892b0;
+  --fragment-linenumber-background: #0f2027;
+  --fragment-linenumber-border: #2a3b47;
+
+  --tablehead-background: #0a192f;
+  --tablehead-foreground: #ccd6f6;
+  --blockquote-background: #0a192f;
+  --blockquote-foreground: #8892b0;
+}
+
+a,
+a:visited {
+  color: #64ffda;
+}
+
+a:hover {
+  color: #a6ffea;
+}
+
+code,
+pre.fragment {
+  border-color: #2a3b47;
+}
