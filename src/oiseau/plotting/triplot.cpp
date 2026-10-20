@@ -6,45 +6,38 @@
 
 #include "oiseau/plotting/triplot.hpp"
 
-#include <pybind11/cast.h>
-
-#include <algorithm>
 #include <cstddef>
+#include <limits>
 #include <vector>
-#include <xtensor/containers/xadapt.hpp>
-#include <xtensor/containers/xbuffer_adaptor.hpp>
-#include <xtensor/views/xslice.hpp>
-#include <xtensor/views/xview.hpp>
 
 #include "oiseau/mesh/mesh.hpp"
 
 namespace oiseau::plotting {
 
-void triplot(plt::AxesSubPlot &ax, oiseau::mesh::Mesh &mesh) {
-  auto topology = mesh.topology();
-  auto geometry = mesh.geometry();
-  auto connectivity = topology.conn();
-  auto x = geometry.x();
-
-  std::vector<std::size_t> shape = {x.size() / geometry.dim(), geometry.dim()};
-  auto coords = xt::adapt(x.data(), x.size(), xt::no_ownership(), shape);
+void triplot(plt::AxesSubPlot& ax, oiseau::mesh::Mesh& mesh) {
+  const auto& topology = mesh.topology();
+  const auto& geometry = mesh.geometry();
+  const auto connectivity = topology.conn();
+  const auto coordinates = geometry.x();
+  const auto dimension = geometry.dim();
+  const auto cell_types = topology.cell_types();
+  std::vector<double> x, y;
+  constexpr auto separator = std::numeric_limits<double>::quiet_NaN();
 
   for (std::size_t i = 0; i < connectivity.size(); ++i) {
-    auto cell = topology.cell_types()[i];
-    auto conn = connectivity[i];
-
-    auto face_vertices = cell->get_entity_vertices(1);
-    for (const auto &face_vertice : face_vertices) {
-      std::vector<std::size_t> temp(face_vertice.size());
-      std::ranges::transform(face_vertice, temp.begin(),
-                             [&conn](std::size_t idx) { return conn[idx]; });
-
-      auto co = xt::view(coords, xt::keep(temp));
-      auto xx = xt::col(co, 0);
-      auto yy = xt::col(co, 1);
-      ax.plot(xx, yy, "color"_a = "k");
+    const auto& vertices = connectivity[i];
+    for (const auto& face_vertices : cell_types[i]->get_entity_vertices(1)) {
+      for (const auto local_vertex : face_vertices) {
+        const auto vertex = vertices[local_vertex];
+        x.push_back(coordinates[vertex * dimension]);
+        y.push_back(coordinates[vertex * dimension + 1]);
+      }
+      x.push_back(separator);
+      y.push_back(separator);
     }
   }
+
+  ax.plot(x, y, "color"_a = "k");
 }
 
 }  // namespace oiseau::plotting
