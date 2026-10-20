@@ -14,6 +14,7 @@ endmacro()
 
 oiseau_add_executable(nodaldg)
 oiseau_add_executable(dg_connectivity)
+oiseau_add_executable(dg_geometry)
 oiseau_add_executable(dg_space)
 oiseau_add_executable(mesh)
 oiseau_add_executable(io)
