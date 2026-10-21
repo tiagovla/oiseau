@@ -9,7 +9,9 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -99,6 +101,22 @@ TEST(test_time_integrator, rk4_passes_stage_times_to_rhs) {
   EXPECT_DOUBLE_EQ(state.value, 1.125);
 }
 
+TEST(test_time_integrator, rk4_rejects_nonfinite_time_and_invalid_time_step) {
+  GrowthSystem system;
+  ScalarState state{1.0};
+  oiseau::time::RK4 integrator;
+  const auto infinity = std::numeric_limits<double>::infinity();
+  const auto nan = std::numeric_limits<double>::quiet_NaN();
+
+  EXPECT_THROW(integrator.step(system, state, infinity, 0.1), std::invalid_argument);
+  EXPECT_THROW(integrator.step(system, state, nan, 0.1), std::invalid_argument);
+  EXPECT_THROW(integrator.step(system, state, 0.0, 0.0), std::invalid_argument);
+  EXPECT_THROW(integrator.step(system, state, 0.0, -0.1), std::invalid_argument);
+  EXPECT_THROW(integrator.step(system, state, 0.0, infinity), std::invalid_argument);
+  EXPECT_THROW(integrator.step(system, state, 0.0, nan), std::invalid_argument);
+  EXPECT_DOUBLE_EQ(state.value, 1.0);
+}
+
 TEST(test_time_integrator, lsrk54_matches_nodaldg_stage_times) {
   RecordingSystem system;
   ScalarState state{3.0};
@@ -130,6 +148,22 @@ TEST(test_time_integrator, lsrk54_integrates_time_dependent_rhs) {
   EXPECT_NEAR(state.value, 1.125, 1e-12);
 }
 
+TEST(test_time_integrator, lsrk54_rejects_nonfinite_time_and_invalid_time_step) {
+  GrowthSystem system;
+  ScalarState state{1.0};
+  oiseau::time::LSRK54 integrator;
+  const auto infinity = std::numeric_limits<double>::infinity();
+  const auto nan = std::numeric_limits<double>::quiet_NaN();
+
+  EXPECT_THROW(integrator.step(system, state, infinity, 0.1), std::invalid_argument);
+  EXPECT_THROW(integrator.step(system, state, nan, 0.1), std::invalid_argument);
+  EXPECT_THROW(integrator.step(system, state, 0.0, 0.0), std::invalid_argument);
+  EXPECT_THROW(integrator.step(system, state, 0.0, -0.1), std::invalid_argument);
+  EXPECT_THROW(integrator.step(system, state, 0.0, infinity), std::invalid_argument);
+  EXPECT_THROW(integrator.step(system, state, 0.0, nan), std::invalid_argument);
+  EXPECT_DOUBLE_EQ(state.value, 1.0);
+}
+
 TEST(test_time_integrator, lsrk54_has_fourth_order_convergence) {
   const auto error = [](std::size_t step_count) {
     GrowthSystem system;
@@ -157,6 +191,24 @@ TEST(test_time_integrator, shared_driver_accepts_another_scheme) {
   EXPECT_NEAR(final_time, 1.0, 1e-12);
   EXPECT_NEAR(state.value, std::pow(1.1, 10), 1e-12);
   EXPECT_NE(progress.str().find("100% (10/10)"), std::string::npos);
+}
+
+TEST(test_time_integrator, run_rejects_nonfinite_start_time_and_invalid_time_step) {
+  GrowthSystem system;
+  ScalarState state{1.0};
+  oiseau::time::RK4 integrator;
+  const auto infinity = std::numeric_limits<double>::infinity();
+  const auto nan = std::numeric_limits<double>::quiet_NaN();
+
+  EXPECT_THROW(oiseau::time::run(integrator, system, state, infinity, 0.1, 1),
+               std::invalid_argument);
+  EXPECT_THROW(oiseau::time::run(integrator, system, state, nan, 0.1, 1), std::invalid_argument);
+  EXPECT_THROW(oiseau::time::run(integrator, system, state, 0.0, 0.0, 1), std::invalid_argument);
+  EXPECT_THROW(oiseau::time::run(integrator, system, state, 0.0, -0.1, 1), std::invalid_argument);
+  EXPECT_THROW(oiseau::time::run(integrator, system, state, 0.0, infinity, 1),
+               std::invalid_argument);
+  EXPECT_THROW(oiseau::time::run(integrator, system, state, 0.0, nan, 1), std::invalid_argument);
+  EXPECT_DOUBLE_EQ(state.value, 1.0);
 }
 
 TEST(test_time_integrator, rk4_integrates_dg_state) {
