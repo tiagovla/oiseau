@@ -6,4 +6,5 @@
 
 add_test(oiseau_test_utils_math test_math.cpp)
 add_test(oiseau_test_utils_integration test_integration.cpp)
+add_test(oiseau_test_utils_logging test_logging.cpp)
 add_test(oiseau_test_jagged_array test_jagged_array.cpp)
