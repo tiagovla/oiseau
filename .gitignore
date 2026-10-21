@@ -4,3 +4,5 @@
 python/.pytest_cache
 **/Testing
 /demo/dev*
+/.env
+/.envrc
