@@ -15,6 +15,20 @@ CPPCHECK ?= cppcheck
 CLANG_TIDY ?= clang-tidy
 PYTHON ?= python3
 OPEN_BROWSER ?= xdg-open
+DOCKER ?= docker
+DOCKER_QUIET ?= --quiet
+ACT ?= act
+ACT_QUIET ?= --quiet
+ACT_EVENT ?= pull_request
+ACT_WORKFLOW ?= .github/workflows/cmake.yml
+ACT_PLATFORM ?= catthehacker/ubuntu:act-24.04
+ACT_REPOSITORY_OWNER ?= tiagovla
+ACT_REPOSITORY ?= $(ACT_REPOSITORY_OWNER)/oiseau
+ACT_REV ?= $(shell git rev-parse HEAD)
+ACT_LOCAL_REPOSITORY ?= $(ACT_REPOSITORY)@$(ACT_REV)=$(CURDIR)
+ACT_IMAGE_CONTEXT ?= .github/docker/oiseau-baseline-builder
+ACT_IMAGE ?= ghcr.io/$(ACT_REPOSITORY_OWNER)/oiseau-baseline-builder:latest
+ACT_ARGS ?=
 
 # Website serving
 HTTP_PORT ?= 8080
@@ -58,7 +72,7 @@ CMAKE_ARGS ?= \
 	-DOISEAU_PRECOMPILE_HEADERS=$(OISEAU_PRECOMPILE_HEADERS)
 CMAKE_EXTRA_ARGS ?=
 
-.PHONY: all configure build test precommit cppcheck website serve tidy clean
+.PHONY: all configure build test precommit cppcheck website serve tidy act act-image clean
 
 all: build test precommit cppcheck tidy
 
@@ -92,6 +106,13 @@ serve: website
 
 tidy: configure
 	@find src -name '*.cpp' -print0 | xargs -0 -r -n 1 -P "$(JOBS)" $(CLANG_TIDY) -p "$(BUILD_DIR)" $(CLANG_TIDY_FLAGS) 2>/dev/null
+
+act-image:
+	@$(DOCKER) build $(DOCKER_QUIET) --tag "$(ACT_IMAGE)" "$(ACT_IMAGE_CONTEXT)"
+
+act: act-image
+	@$(DOCKER) pull $(DOCKER_QUIET) "$(ACT_PLATFORM)"
+	@$(ACT) $(ACT_EVENT) -W "$(ACT_WORKFLOW)" -P "ubuntu-26.04=$(ACT_PLATFORM)" --no-cache-server --pull=false $(ACT_QUIET) --var "OISEAU_IMAGE_OWNER=$(ACT_REPOSITORY_OWNER)" --var "OISEAU_REPOSITORY=$(ACT_REPOSITORY)" --local-repository "$(ACT_LOCAL_REPOSITORY)" $(ACT_ARGS)
 
 clean:
 	@echo "Removing generated build files..."

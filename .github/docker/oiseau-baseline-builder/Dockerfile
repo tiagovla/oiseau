@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libomp-dev \
     libopenblas-dev \
     ninja-build \
+    nodejs \
     pkg-config \
     python3 \
     python3-dev \

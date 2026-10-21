@@ -31,6 +31,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
         with:
+          repository: ${{ vars.OISEAU_REPOSITORY || github.repository }}
           fetch-depth: 0
       - name: Check changed paths
         id: detect
@@ -54,11 +55,12 @@ jobs:
     needs: detect_image_changes
     if: needs.detect_image_changes.outputs.image_changed != 'true' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
     container:
-      image: ghcr.io/${{ github.repository_owner }}/oiseau-baseline-builder:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'latest' }}
+      image: ghcr.io/${{ vars.OISEAU_IMAGE_OWNER || github.repository_owner }}/oiseau-baseline-builder:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'latest' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
         with:
+          repository: ${{ vars.OISEAU_REPOSITORY || github.repository }}
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Configure CMake
         run: |
@@ -77,11 +79,12 @@ jobs:
     needs: detect_image_changes
     if: needs.detect_image_changes.outputs.image_changed != 'true' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
     container:
-      image: ghcr.io/${{ github.repository_owner }}/oiseau-baseline-builder:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'latest' }}
+      image: ghcr.io/${{ vars.OISEAU_IMAGE_OWNER || github.repository_owner }}/oiseau-baseline-builder:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'latest' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
         with:
+          repository: ${{ vars.OISEAU_REPOSITORY || github.repository }}
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Configure CMake
         run: |
@@ -104,11 +107,12 @@ jobs:
     needs: detect_image_changes
     if: needs.detect_image_changes.outputs.image_changed != 'true' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
     container:
-      image: ghcr.io/${{ github.repository_owner }}/oiseau-baseline-builder:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'latest' }}
+      image: ghcr.io/${{ vars.OISEAU_IMAGE_OWNER || github.repository_owner }}/oiseau-baseline-builder:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'latest' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
         with:
+          repository: ${{ vars.OISEAU_REPOSITORY || github.repository }}
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Run cppcheck
         run: |
