@@ -14,6 +14,7 @@
 #include <limits>
 #include <numeric>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 #include <xtensor-blas/xlinalg.hpp>
 #include <xtensor/containers/xtensor.hpp>
@@ -259,7 +260,7 @@ DGGeometry::DGGeometry(const mesh::Mesh& mesh) : m_mesh(mesh) {
   for (std::size_t cell_index = 0; cell_index < cell_types.size(); ++cell_index) {
     const auto* cell_type = cell_types[cell_index];
     if (cell_type == nullptr) throw std::invalid_argument("Mesh cell type cannot be null");
-    if (static_cast<std::size_t>(cell_type->dimension()) != dimension) continue;
+    if (std::cmp_not_equal(cell_type->dimension(), dimension)) continue;
 
     const auto& mesh_vertices = connectivity[cell_index];
     auto vertices = detail::reference_ordered_vertices(cell_type, mesh_vertices);
@@ -358,12 +359,14 @@ DGGeometry::DGGeometry(const mesh::Mesh& mesh) : m_mesh(mesh) {
                        measure / reference_measure});
     }
 
-    m_cells[cell_index] = CellGeometry{cell_index,
-                                       dimension,
-                                       padded_matrix(jacobian, dimension),
-                                       padded_matrix(inverse_jacobian, dimension),
-                                       determinant,
-                                       std::move(faces)};
+    m_cells[cell_index] = CellGeometry{
+        .mesh_cell_index = cell_index,
+        .dimension = dimension,
+        .jacobian = padded_matrix(jacobian, dimension),
+        .inverse_jacobian = padded_matrix(inverse_jacobian, dimension),
+        .determinant = determinant,
+        .faces = std::move(faces),
+    };
   }
 }
 

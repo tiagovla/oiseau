@@ -113,10 +113,12 @@ DGSpace::DGSpace(const mesh::Mesh& mesh, const std::vector<unsigned>& orders)
   for (const auto& [key, count] : group_sizes) {
     const auto node_count =
         nodal::get_ref_element(ref_type_for(key.first), key.second)->number_of_nodes();
-    ElementGroup group{key.first,
-                       key.second,
-                       {},
-                       xt::xarray<double>::from_shape({count, node_count, geometry.dim()})};
+    ElementGroup group{
+        .kind = key.first,
+        .order = key.second,
+        .cell_indices = {},
+        .nodes = xt::xarray<double>::from_shape({count, node_count, geometry.dim()}),
+    };
     group.cell_indices.reserve(count);
     group_indices.emplace(key, m_element_groups.size());
     m_element_groups.emplace_back(std::move(group));
