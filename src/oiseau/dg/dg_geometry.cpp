@@ -202,8 +202,11 @@ double face_measure(const std::vector<Point>& vertices, std::size_t dimension) {
 }
 
 Point centroid(const std::vector<Point>& vertices) {
-  auto output = zero_point();
-  for (const auto& vertex : vertices) output += vertex;
+  auto output = std::accumulate(vertices.begin(), vertices.end(), zero_point(),
+                                [](Point sum, const Point& vertex) {
+                                  sum += vertex;
+                                  return sum;
+                                });
   output /= static_cast<double>(vertices.size());
   return output;
 }

@@ -35,6 +35,14 @@ struct ActiveCell {
   unsigned order = 0;
 };
 
+std::vector<unsigned> uniform_orders(const mesh::Mesh& mesh, unsigned order) {
+  const auto cell_types = mesh.topology().cell_types();
+  const auto dimension = mesh.topology().dimension();
+  const auto cell_count = static_cast<std::size_t>(std::ranges::count_if(
+      cell_types, [dimension](const auto* cell) { return cell->dimension() == dimension; }));
+  return std::vector<unsigned>(cell_count, order);
+}
+
 nodal::RefElementType ref_type_for(mesh::CellKind kind) {
   switch (kind) {
   case mesh::CellKind::Interval:
@@ -142,6 +150,9 @@ DGSpace::DGSpace(const mesh::Mesh& mesh, const std::vector<unsigned>& orders)
     group.cell_indices.push_back(cell.mesh_index);
   }
 }
+
+DGSpace::DGSpace(const mesh::Mesh& mesh, unsigned order)
+    : DGSpace(mesh, uniform_orders(mesh, order)) {}
 
 std::span<const DGSpace::ElementGroup> DGSpace::element_groups() const {
   return {m_element_groups};

@@ -15,7 +15,7 @@
 #include <vector>
 #include <xtensor/containers/xarray.hpp>
 
-#include "oiseau/dg/solver/rk4.hpp"
+#include "oiseau/dg/solver/state.hpp"
 #include "oiseau/time/integrator.hpp"
 #include "oiseau/time/lsrk54.hpp"
 #include "oiseau/time/rk4.hpp"
@@ -159,14 +159,17 @@ TEST(test_time_integrator, shared_driver_accepts_another_scheme) {
   EXPECT_NE(progress.str().find("100% (10/10)"), std::string::npos);
 }
 
-TEST(test_time_integrator, original_dg_rk4_api_remains_usable) {
+TEST(test_time_integrator, rk4_integrates_dg_state) {
   oiseau::dg::solver::DGState state;
   auto values = xt::xarray<double>::from_shape({1});
   values(0) = 1.0;
   state.groups.push_back(std::move(values));
+  DgDecaySystem system;
+  oiseau::time::RK4 integrator;
 
-  oiseau::dg::solver::RK4::run(DgDecaySystem{}, state, 0.1, 10);
+  const auto final_time = oiseau::time::run(integrator, system, state, 0.0, 0.1, 10);
 
+  EXPECT_NEAR(final_time, 1.0, 1e-12);
   EXPECT_NEAR(state.groups[0](0), std::exp(-1.0), 3e-6);
 }
 

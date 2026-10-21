@@ -37,6 +37,8 @@ class DGSpace {
   /// cell order. Lower-dimensional entities, such as boundary edges, are not
   /// assigned an order.
   DGSpace(const mesh::Mesh& mesh, const std::vector<unsigned>& orders);
+  /// Builds a DG space using one polynomial order for every top-dimensional cell.
+  DGSpace(const mesh::Mesh& mesh, unsigned order);
   DGSpace(DGSpace&& V) = default;
   ~DGSpace() = default;
   DGSpace& operator=(const DGSpace& V) = delete;
