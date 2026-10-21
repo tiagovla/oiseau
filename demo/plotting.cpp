@@ -65,18 +65,5 @@ int main() {
   ax.scatter(xt::col(centroids, 0), xt::col(centroids, 1), "s"_a = 0.1, "label"_a = "scatter",
              "color"_a = "red");
   ax.triplot(x_coord, y_coord, connectivity, "lw"_a = 0.1);
-
-  // for every centroid row
-  // for (std::size_t i = 0; i < centroids.shape()[0]; ++i) {
-  //   auto row = xt::row(centroids, i);
-  //   ax.text(row(0), row(1), std::to_string(i), "fontsize"_a = 4, "color"_a = "red",
-  //   "rasterized"_a=true);
-  // }
   plt::show();
 }
-
-// {
-// Example of 3d plot
-// plt::Figure fig = plt::figure("constrained_layout"_a = true);
-// auto ax = fig.add_subplot("projection"_a = "3d");
-// }

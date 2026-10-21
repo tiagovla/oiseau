@@ -4,19 +4,16 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-macro(oiseau_add_executable name)
-    add_executable(oiseau_${name} ${name}.cpp)
-    target_link_libraries(oiseau_${name} PRIVATE oiseau oiseau_deps)
-    set_target_properties(
-        oiseau_${name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/demo
-    )
-endmacro()
+file(GLOB OISEAU_DEMO_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 
-oiseau_add_executable(nodaldg)
-oiseau_add_executable(dg_connectivity)
-oiseau_add_executable(dg_geometry)
-oiseau_add_executable(dg_space)
-oiseau_add_executable(mesh)
-oiseau_add_executable(io)
-oiseau_add_executable(plotting)
-oiseau_add_executable(logging)
+foreach(demo_source IN LISTS OISEAU_DEMO_SOURCES)
+    get_filename_component(demo_name "${demo_source}" NAME_WE)
+    if(demo_name MATCHES "^dev")
+        continue()
+    endif()
+    add_executable(oiseau_${demo_name} "${demo_source}")
+    target_link_libraries(oiseau_${demo_name} PRIVATE oiseau oiseau_deps)
+    set_target_properties(
+        oiseau_${demo_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/demo
+    )
+endforeach()

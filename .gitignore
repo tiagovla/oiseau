@@ -3,3 +3,4 @@
 **/__pycache__
 python/.pytest_cache
 **/Testing
+/demo/dev*
