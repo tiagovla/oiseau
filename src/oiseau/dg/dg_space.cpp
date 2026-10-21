@@ -79,7 +79,7 @@ std::vector<ActiveCell> active_cells(std::span<const mesh::CellType> cell_types,
     const auto order = orders[order_index++];
     if (order == 0) throw std::invalid_argument("Polynomial orders must be greater than zero");
     (void)ref_type_for(type->kind());
-    cells.push_back({mesh_index, type, order});
+    cells.push_back({.mesh_index = mesh_index, .type = type, .order = order});
   }
   return cells;
 }

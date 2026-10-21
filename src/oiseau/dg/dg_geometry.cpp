@@ -355,8 +355,10 @@ DGGeometry::DGGeometry(const mesh::Mesh& mesh) : m_mesh(mesh) {
       if (!std::isfinite(reference_measure) || reference_measure <= 0.0) {
         throw std::logic_error("Reference face has zero measure");
       }
-      faces.push_back({point_array(face_normal(physical_face, cell_centroid, dimension)), measure,
-                       measure / reference_measure});
+      faces.push_back(
+          {.outward_normal = point_array(face_normal(physical_face, cell_centroid, dimension)),
+           .measure = measure,
+           .surface_jacobian = measure / reference_measure});
     }
 
     m_cells[cell_index] = CellGeometry{
