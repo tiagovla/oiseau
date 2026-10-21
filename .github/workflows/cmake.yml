@@ -24,12 +24,12 @@ permissions:
 jobs:
   detect_image_changes:
     name: Detect baseline image changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       image_changed: ${{ steps.detect.outputs.image_changed }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Check changed paths
@@ -50,14 +50,14 @@ jobs:
           fi
   build-and-test:
     name: Build and Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: detect_image_changes
     if: needs.detect_image_changes.outputs.image_changed != 'true' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
     container:
       image: ghcr.io/${{ github.repository_owner }}/oiseau-baseline-builder:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'latest' }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Configure CMake
@@ -73,14 +73,14 @@ jobs:
         run: ctest --test-dir build --parallel --output-on-failure
   clang-tidy:
     name: Clang-Tidy Analysis
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: detect_image_changes
     if: needs.detect_image_changes.outputs.image_changed != 'true' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
     container:
       image: ghcr.io/${{ github.repository_owner }}/oiseau-baseline-builder:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'latest' }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Configure CMake
@@ -100,14 +100,14 @@ jobs:
               --header-filter='^src/oiseau' 2> /dev/null
   cppcheck:
     name: Cppcheck Analysis
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: detect_image_changes
     if: needs.detect_image_changes.outputs.image_changed != 'true' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
     container:
       image: ghcr.io/${{ github.repository_owner }}/oiseau-baseline-builder:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'latest' }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Run cppcheck

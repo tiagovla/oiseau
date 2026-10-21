@@ -22,12 +22,12 @@ permissions:
 jobs:
   detect_image_changes:
     name: Detect baseline image changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       image_changed: ${{ steps.detect.outputs.image_changed }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Check changed paths
@@ -48,14 +48,14 @@ jobs:
           fi
   build:
     name: Build and Upload Site
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: detect_image_changes
     if: needs.detect_image_changes.outputs.image_changed != 'true' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
     container:
       image: ghcr.io/tiagovla/oiseau-baseline-builder:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'latest' }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Configure CMake with Ninja
@@ -69,19 +69,19 @@ jobs:
       - name: Build the website
         run: cmake --build build --target website -- -j$(nproc)
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
       - name: Upload website folder
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: build/web
   cleanup:
     name: Cleanup old deployments
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions: write-all
     steps:
       - name: github-pages
-        uses: strumwolf/delete-deployment-environment@v2
+        uses: strumwolf/delete-deployment-environment@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           environment: github-pages
@@ -89,11 +89,11 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     needs: [build, cleanup]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
