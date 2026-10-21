@@ -8,9 +8,7 @@ file(GLOB OISEAU_DEMO_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.c
 
 foreach(demo_source IN LISTS OISEAU_DEMO_SOURCES)
     get_filename_component(demo_name "${demo_source}" NAME_WE)
-    if(demo_name MATCHES "^dev")
-        continue()
-    endif()
+    # if(demo_name MATCHES "^dev") continue() endif()
     add_executable(oiseau_${demo_name} "${demo_source}")
     target_link_libraries(oiseau_${demo_name} PRIVATE oiseau oiseau_deps)
     set_target_properties(
