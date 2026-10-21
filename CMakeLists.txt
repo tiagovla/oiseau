@@ -46,6 +46,7 @@ option(OISEAU_COVERAGE_AUTO_INSTALL_GCOVR
        "Install the required gcovr version into the build directory when needed" ON
 )
 option(OISEAU_BUILD_SHARED "Build shared library" OFF)
+option(OISEAU_PRECOMPILE_HEADERS "Precompile common STL and xtensor headers" OFF)
 
 # ------------------------------------------------------------------------------
 # Dependencies
@@ -67,6 +68,34 @@ else()
     message(STATUS "oiseau: Building STATIC library")
     add_library(oiseau STATIC ${OISEAU_CORE_SOURCES})
     target_compile_options(oiseau PRIVATE -fPIC)
+endif()
+
+if(OISEAU_PRECOMPILE_HEADERS)
+    target_precompile_headers(
+        oiseau
+        PRIVATE
+        <algorithm>
+        <array>
+        <cmath>
+        <cstddef>
+        <cstdint>
+        <limits>
+        <memory>
+        <span>
+        <stdexcept>
+        <string>
+        <string_view>
+        <utility>
+        <vector>
+        <xtensor-blas/xlinalg.hpp>
+        <xtensor/containers/xarray.hpp>
+        <xtensor/containers/xtensor.hpp>
+        <xtensor/core/xtensor_forward.hpp>
+        <xtensor/generators/xbuilder.hpp>
+        <xtensor/misc/xmanipulation.hpp>
+        <xtensor/views/xslice.hpp>
+        <xtensor/views/xview.hpp>
+    )
 endif()
 
 target_link_libraries(oiseau PRIVATE oiseau_deps)

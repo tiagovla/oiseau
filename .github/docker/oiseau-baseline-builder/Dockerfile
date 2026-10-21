@@ -32,7 +32,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     software-properties-common \
     unzip \
     zip \
-    && python3 -m venv /opt/gcovr \
+    && python3 -m venv --system-site-packages /opt/gcovr \
     && /opt/gcovr/bin/pip install --no-cache-dir gcovr==7.2 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
