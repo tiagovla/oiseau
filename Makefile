@@ -5,7 +5,13 @@ SHELL := /bin/sh
 BUILD_DIR ?= build
 BUILD_TYPE ?= Debug
 CMAKE_GENERATOR ?= Ninja
+CMAKE_MESSAGE_LOG_LEVEL ?= NOTICE
+CMAKE_CONFIGURE_QUIET ?= ON
 JOBS ?= $(shell nproc)
+
+ifeq ($(CMAKE_CONFIGURE_QUIET),ON)
+CMAKE_CONFIGURE_REDIRECT := > /dev/null
+endif
 
 # Tool commands
 CMAKE ?= cmake
@@ -62,6 +68,7 @@ CLANG_TIDY_FLAGS ?= --header-filter='^src/oiseau'
 
 CMAKE_ARGS ?= \
 	-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+	-DCMAKE_MESSAGE_LOG_LEVEL=$(CMAKE_MESSAGE_LOG_LEVEL) \
 	-DOISEAU_BUILD_DEMO=$(OISEAU_BUILD_DEMO) \
 	-DOISEAU_BUILD_TEST=$(OISEAU_BUILD_TEST) \
 	-DOISEAU_BUILD_DOCS=$(OISEAU_BUILD_DOCS) \
@@ -77,8 +84,7 @@ CMAKE_EXTRA_ARGS ?=
 all: build test precommit cppcheck tidy
 
 configure:
-	@echo "Configuring project with CMake..."
-	@$(CMAKE) -S . -B "$(BUILD_DIR)" -G "$(CMAKE_GENERATOR)" $(CMAKE_ARGS) $(CMAKE_EXTRA_ARGS)
+	@$(CMAKE) -S . -B "$(BUILD_DIR)" -G "$(CMAKE_GENERATOR)" $(CMAKE_ARGS) $(CMAKE_EXTRA_ARGS) $(CMAKE_CONFIGURE_REDIRECT)
 
 build: configure
 	@echo "Building project..."

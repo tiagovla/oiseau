@@ -59,7 +59,7 @@ if(NOT OISEAU_GCOVR_VERSION_OK)
     endif()
 
     if(NOT OISEAU_GCOVR_VENV_OK)
-        message(STATUS "Installing gcovr 7.2 into ${OISEAU_GCOVR_VENV}")
+        message(NOTICE "oiseau: Installing gcovr 7.2 into ${OISEAU_GCOVR_VENV}")
         execute_process(
             COMMAND "${Python3_EXECUTABLE}" -m venv "${OISEAU_GCOVR_VENV}"
             RESULT_VARIABLE OISEAU_GCOVR_VENV_RESULT
@@ -100,7 +100,7 @@ if(NOT OISEAU_GCOVR_VERSION_OK)
     endif()
 endif()
 
-message(STATUS "gcovr found: ${GCOVR_EXECUTABLE} (${GCOVR_VERSION_LINE})")
+message(VERBOSE "oiseau: gcovr found: ${GCOVR_EXECUTABLE} (${GCOVR_VERSION_LINE})")
 
 # Coverage output directory
 set(COVERAGE_DIR ${CMAKE_BINARY_DIR}/coverage)

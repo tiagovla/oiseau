@@ -31,7 +31,6 @@ if(NOT CMAKE_BUILD_TYPE)
         CACHE STRING "Choose the type of build: Debug, Release, RelWithDebInfo, MinSizeRel." FORCE
     )
 endif()
-message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 # ------------------------------------------------------------------------------
 # Build Options
@@ -62,10 +61,8 @@ add_subdirectory(src)
 
 # conditional to build static or shared
 if(OISEAU_BUILD_SHARED)
-    message(STATUS "oiseau: Building SHARED library")
     add_library(oiseau SHARED ${OISEAU_CORE_SOURCES})
 else()
-    message(STATUS "oiseau: Building STATIC library")
     add_library(oiseau STATIC ${OISEAU_CORE_SOURCES})
     target_compile_options(oiseau PRIVATE -fPIC)
 endif()
@@ -129,29 +126,24 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 # Optional Subdirectories
 # ------------------------------------------------------------------------------
 if(OISEAU_BUILD_COVERAGE)
-    message(STATUS "oiseau: Coverage build enabled")
     include(Coverage)
 endif()
 
 if(OISEAU_BUILD_DEMO)
-    message(STATUS "oiseau: Demo build enabled")
     add_subdirectory(demo)
 endif()
 
 if(OISEAU_BUILD_TEST)
-    message(STATUS "oiseau: Test build enabled")
     include(CTest)
     enable_testing()
     add_subdirectory(test)
 endif()
 
 if(OISEAU_BUILD_BENCHMARK)
-    message(STATUS "oiseau: Benchmark build enabled")
     add_subdirectory(benchmark)
 endif()
 
 if(OISEAU_BUILD_DOCS)
-    message(STATUS "oiseau: Documentation build enabled")
     add_subdirectory(doc)
 endif()
 
@@ -161,3 +153,42 @@ endif()
 if(OISEAU_BUILD_DOCS AND OISEAU_BUILD_TEST)
     add_subdirectory(website)
 endif()
+
+set(OISEAU_ENABLED_FEATURES "")
+if(OISEAU_BUILD_DEMO)
+    list(APPEND OISEAU_ENABLED_FEATURES demos)
+endif()
+if(OISEAU_BUILD_TEST)
+    list(APPEND OISEAU_ENABLED_FEATURES tests)
+endif()
+if(OISEAU_BUILD_BENCHMARK)
+    list(APPEND OISEAU_ENABLED_FEATURES benchmarks)
+endif()
+if(OISEAU_BUILD_DOCS)
+    list(APPEND OISEAU_ENABLED_FEATURES docs)
+endif()
+if(OISEAU_BUILD_COVERAGE)
+    list(APPEND OISEAU_ENABLED_FEATURES coverage)
+endif()
+if(OISEAU_ENABLED_FEATURES)
+    list(JOIN OISEAU_ENABLED_FEATURES ", " OISEAU_FEATURES_TEXT)
+else()
+    set(OISEAU_FEATURES_TEXT "core only")
+endif()
+
+if(OISEAU_BUILD_SHARED)
+    set(OISEAU_LIBRARY_KIND "shared")
+else()
+    set(OISEAU_LIBRARY_KIND "static")
+endif()
+
+string(CONCAT OISEAU_CONFIG_SUMMARY "  version   ${PROJECT_VERSION}\n"
+              "  build     ${CMAKE_BUILD_TYPE} / ${OISEAU_LIBRARY_KIND}\n"
+              "  enabled   ${OISEAU_FEATURES_TEXT}"
+)
+if(OISEAU_BUILD_COVERAGE)
+    string(APPEND OISEAU_CONFIG_SUMMARY "\n  coverage  ${GCOVR_VERSION_LINE}")
+endif()
+
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/OiseauBanner.cmake")
+message(NOTICE "${OISEAU_CONFIG_SUMMARY}")
