@@ -2,14 +2,15 @@
 
 # SPDX-License-Identifier: GPL-3
 
+ROOT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 NPROC=$(nproc)
 TMPDIR=$(mktemp -d)
 
 echo "Running clang-tidy on $NPROC threads..."
 
-find src -name '*.cpp' -print0 | xargs -0 -P"$NPROC" -I{} bash -c '
+find "$ROOT_DIR/src/oiseau" -name '*.cpp' -print0 | xargs -0 -P"$NPROC" -I{} bash -c '
   BASENAME=$(basename "{}" .cpp)
-  CLANG_FORCE_COLOR=1 clang-tidy -p build "{}" --use-color > "'"$TMPDIR"'/${BASENAME}.log" 2>/dev/null
+  CLANG_FORCE_COLOR=1 clang-tidy -p "'"$ROOT_DIR"'/build" "{}" --header-filter="^'"$ROOT_DIR"'/src/oiseau/" --use-color > "'"$TMPDIR"'/${BASENAME}.log" 2>/dev/null
   echo -n "."
 '
 
