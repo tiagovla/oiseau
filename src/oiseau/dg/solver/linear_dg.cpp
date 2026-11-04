@@ -197,7 +197,7 @@ struct LinearDG2D::Impl {
       const auto group = cell_rule.group_index;
       const auto row = cell_rule.group_cell_index;
       const auto& cell_state = state.groups[group];
-      const auto node_count = cell_rule.inverse_mass.shape()[0];
+      const auto node_count = cell_rule.node_count();
       const auto* cell_values = cell_state.data() + row * node_count * fields;
       auto* cell_derivative = output.groups[group].data() + row * node_count * fields;
 

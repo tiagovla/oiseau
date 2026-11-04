@@ -66,15 +66,19 @@ TEST_P(DGIntegrationTest, mass_and_stiffness_satisfy_physical_integral_identitie
   for (std::size_t cell_index = 0; cell_index < 3; ++cell_index) {
     SCOPED_TRACE(cell_index);
     const auto& cell = integration.cell(cell_index);
-    const auto nodes = cell.mass.shape()[0];
+    const auto mass = cell.mass();
+    const auto inverse_mass = cell.inverse_mass();
+    const auto stiffness_x = cell.stiffness_x();
+    const auto stiffness_y = cell.stiffness_y();
+    const auto nodes = cell.node_count();
     const auto area = cell_index == 0 ? 2.875 : 1.4375;
-    EXPECT_NEAR(std::accumulate(cell.mass.begin(), cell.mass.end(), 0.0), area, 1e-11);
+    EXPECT_NEAR(std::accumulate(mass.begin(), mass.end(), 0.0), area, 1e-11);
     for (std::size_t i = 0; i < nodes; ++i) {
       for (std::size_t j = 0; j < nodes; ++j) {
         double identity = 0.0;
         std::array<double, 2> boundary{};
         for (std::size_t k = 0; k < nodes; ++k) {
-          identity += cell.mass(i, k) * cell.inverse_mass(k, j);
+          identity += mass(i, k) * inverse_mass(k, j);
         }
         for (const auto& face : cell.faces) {
           for (std::size_t q = 0; q < face.physical_weights.size(); ++q) {
@@ -84,8 +88,8 @@ TEST_P(DGIntegrationTest, mass_and_stiffness_satisfy_physical_integral_identitie
           }
         }
         EXPECT_NEAR(identity, i == j ? 1.0 : 0.0, 1e-11);
-        EXPECT_NEAR(cell.stiffness_x(i, j) + cell.stiffness_x(j, i), boundary[0], 1e-11);
-        EXPECT_NEAR(cell.stiffness_y(i, j) + cell.stiffness_y(j, i), boundary[1], 1e-11);
+        EXPECT_NEAR(stiffness_x(i, j) + stiffness_x(j, i), boundary[0], 1e-11);
+        EXPECT_NEAR(stiffness_y(i, j) + stiffness_y(j, i), boundary[1], 1e-11);
       }
     }
   }
@@ -157,6 +161,22 @@ TEST_P(DGIntegrationTest, linear_solver_preserves_constants_and_differentiates_q
       }
     }
   }
+}
+
+TEST_P(DGIntegrationTest, reference_operators_are_shared_and_own_their_lifetime) {
+  const auto integration = [this] {
+    auto mesh = mixed_mesh(GetParam());
+    const DGSpace space(mesh, 3);
+    const DGConnectivity connectivity(mesh);
+    const DGGeometry geometry(mesh);
+    return DGIntegration(mesh, space, connectivity, geometry);
+  }();
+  const auto copy = integration;
+  EXPECT_EQ(integration.cell(1).reference, integration.cell(2).reference);
+  EXPECT_NE(integration.cell(0).reference, integration.cell(1).reference);
+  EXPECT_EQ(copy.cell(1).reference, integration.cell(1).reference);
+  const auto mass = copy.cell(1).mass();
+  EXPECT_NEAR(std::accumulate(mass.begin(), mass.end(), 0.0), 1.4375, 1e-11);
 }
 
 INSTANTIATE_TEST_SUITE_P(Orientations, DGIntegrationTest, ::testing::Bool());

@@ -30,10 +30,7 @@ using Point2 = std::array<double, 2>;
 
 struct ReferenceOperators {
   std::shared_ptr<nodal::RefElement> element;
-  Matrix mass;
-  Matrix inverse_mass;
-  Matrix stiffness_r;
-  Matrix stiffness_s;
+  std::shared_ptr<const DGIntegration::ReferenceRule> volume;
   Matrix inverse_vandermonde;
 };
 
@@ -62,11 +59,17 @@ ReferenceOperators make_reference_operators(mesh::CellKind kind, unsigned order)
   Matrix stiffness_r = xt::linalg::dot(xt::transpose(derivative_r), mass);
   Matrix stiffness_s = xt::linalg::dot(xt::transpose(derivative_s), mass);
 
+  Matrix weak_derivative_r = xt::linalg::dot(inverse_mass, stiffness_r);
+  Matrix weak_derivative_s = xt::linalg::dot(inverse_mass, stiffness_s);
+  auto volume = std::make_shared<const DGIntegration::ReferenceRule>(
+      DGIntegration::ReferenceRule{.mass = std::move(mass),
+                                   .inverse_mass = std::move(inverse_mass),
+                                   .stiffness_r = std::move(stiffness_r),
+                                   .stiffness_s = std::move(stiffness_s),
+                                   .weak_derivative_r = std::move(weak_derivative_r),
+                                   .weak_derivative_s = std::move(weak_derivative_s)});
   return {.element = std::move(element),
-          .mass = std::move(mass),
-          .inverse_mass = std::move(inverse_mass),
-          .stiffness_r = std::move(stiffness_r),
-          .stiffness_s = std::move(stiffness_s),
+          .volume = std::move(volume),
           .inverse_vandermonde = std::move(inverse_vandermonde)};
 }
 
@@ -144,29 +147,23 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
     auto& cell_rule = m_cells[cell_index];
     cell_rule.group_index = group_index;
     cell_rule.group_cell_index = row;
-    cell_rule.mass = determinant * reference.mass;
-    cell_rule.inverse_mass = reference.inverse_mass / determinant;
-    cell_rule.stiffness_x =
-        determinant * (cell_geometry.inverse_jacobian[0] * reference.stiffness_r +
-                       cell_geometry.inverse_jacobian[3] * reference.stiffness_s);
-    cell_rule.stiffness_y =
-        determinant * (cell_geometry.inverse_jacobian[1] * reference.stiffness_r +
-                       cell_geometry.inverse_jacobian[4] * reference.stiffness_s);
+    cell_rule.reference = reference.volume;
+    cell_rule.volume_jacobian = determinant;
+    cell_rule.inverse_jacobian = {
+        cell_geometry.inverse_jacobian[0], cell_geometry.inverse_jacobian[1],
+        cell_geometry.inverse_jacobian[3], cell_geometry.inverse_jacobian[4]};
 
-    const auto nodes = cell_rule.inverse_mass.shape()[0];
+    const auto nodes = cell_rule.node_count();
     cell_rule.weak_derivative_x.resize(nodes * nodes);
     cell_rule.weak_derivative_y.resize(nodes * nodes);
     for (std::size_t test = 0; test < nodes; ++test) {
       for (std::size_t trial = 0; trial < nodes; ++trial) {
-        double x = 0.0;
-        double y = 0.0;
-        for (std::size_t intermediate = 0; intermediate < nodes; ++intermediate) {
-          const auto inverse_mass = cell_rule.inverse_mass(test, intermediate);
-          x += inverse_mass * cell_rule.stiffness_x(intermediate, trial);
-          y += inverse_mass * cell_rule.stiffness_y(intermediate, trial);
-        }
-        cell_rule.weak_derivative_x[test * nodes + trial] = x;
-        cell_rule.weak_derivative_y[test * nodes + trial] = y;
+        const auto r = reference.volume->weak_derivative_r(test, trial);
+        const auto s = reference.volume->weak_derivative_s(test, trial);
+        cell_rule.weak_derivative_x[test * nodes + trial] =
+            cell_rule.inverse_jacobian[0] * r + cell_rule.inverse_jacobian[2] * s;
+        cell_rule.weak_derivative_y[test * nodes + trial] =
+            cell_rule.inverse_jacobian[1] * r + cell_rule.inverse_jacobian[3] * s;
       }
     }
 
@@ -216,7 +213,8 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
         for (std::size_t test = 0; test < nodes; ++test) {
           double value = 0.0;
           for (std::size_t trial = 0; trial < nodes; ++trial) {
-            value += cell_rule.inverse_mass(test, trial) * face_rule.minus_trace(q, trial);
+            value += reference.volume->inverse_mass(test, trial) / determinant *
+                     face_rule.minus_trace(q, trial);
           }
           face_rule.lift[q * nodes + test] = face_rule.physical_weights[q] * value;
         }
@@ -244,6 +242,28 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
           interpolation_on_points(reference_operators[neighbor_group], neighbor_points);
     }
   }
+}
+
+DGIntegration::Matrix DGIntegration::CellRule::mass() const {
+  if (!reference) return {};
+  return volume_jacobian * reference->mass;
+}
+
+DGIntegration::Matrix DGIntegration::CellRule::inverse_mass() const {
+  if (!reference) return {};
+  return reference->inverse_mass / volume_jacobian;
+}
+
+DGIntegration::Matrix DGIntegration::CellRule::stiffness_x() const {
+  if (!reference) return {};
+  return volume_jacobian * (inverse_jacobian[0] * reference->stiffness_r +
+                            inverse_jacobian[2] * reference->stiffness_s);
+}
+
+DGIntegration::Matrix DGIntegration::CellRule::stiffness_y() const {
+  if (!reference) return {};
+  return volume_jacobian * (inverse_jacobian[1] * reference->stiffness_r +
+                            inverse_jacobian[3] * reference->stiffness_s);
 }
 
 const DGIntegration::CellRule& DGIntegration::cell(std::size_t mesh_cell_index) const {

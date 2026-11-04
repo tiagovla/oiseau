@@ -8,6 +8,7 @@
 
 #include <array>
 #include <cstddef>
+#include <memory>
 #include <span>
 #include <vector>
 #include <xtensor/containers/xarray.hpp>
@@ -27,6 +28,16 @@ namespace oiseau::dg {
 class DGIntegration {
  public:
   using Matrix = xt::xarray<double>;
+
+  /// Reference-cell volume operators shared by one (cell shape, order) group.
+  struct ReferenceRule {
+    Matrix mass;
+    Matrix inverse_mass;
+    Matrix stiffness_r;
+    Matrix stiffness_s;
+    Matrix weak_derivative_r;
+    Matrix weak_derivative_s;
+  };
 
   struct FaceRule {
     std::array<double, 2> outward_normal{};
@@ -48,12 +59,19 @@ class DGIntegration {
   struct CellRule {
     std::size_t group_index = DGConnectivity::no_neighbor;
     std::size_t group_cell_index = 0;
-    Matrix mass;
-    Matrix inverse_mass;
+    std::shared_ptr<const ReferenceRule> reference;
+    double volume_jacobian = 0.0;
+    /// Row-major 2 x 2 matrix d(r,s) / d(x,y).
+    std::array<double, 4> inverse_jacobian{};
+
+    std::size_t node_count() const { return reference ? reference->mass.shape()[0] : 0; }
+    /// Materialize physical matrices on demand; inactive cells return empty matrices.
+    Matrix mass() const;
+    Matrix inverse_mass() const;
     /// Weak stiffness: S_x(i,j) = integral (d_x phi_i) phi_j = (D_x^T M)(i,j).
     /// Rows are test nodes, columns are trial nodes; similarly for S_y.
-    Matrix stiffness_x;
-    Matrix stiffness_y;
+    Matrix stiffness_x() const;
+    Matrix stiffness_y() const;
     /// M^-1 S_x and M^-1 S_y, stored as [test node, trial node].
     std::vector<double> weak_derivative_x;
     std::vector<double> weak_derivative_y;
