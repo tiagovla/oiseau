@@ -153,6 +153,23 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
         determinant * (cell_geometry.inverse_jacobian[1] * reference.stiffness_r +
                        cell_geometry.inverse_jacobian[4] * reference.stiffness_s);
 
+    const auto nodes = cell_rule.inverse_mass.shape()[0];
+    cell_rule.weak_derivative_x.resize(nodes * nodes);
+    cell_rule.weak_derivative_y.resize(nodes * nodes);
+    for (std::size_t test = 0; test < nodes; ++test) {
+      for (std::size_t trial = 0; trial < nodes; ++trial) {
+        double x = 0.0;
+        double y = 0.0;
+        for (std::size_t intermediate = 0; intermediate < nodes; ++intermediate) {
+          const auto inverse_mass = cell_rule.inverse_mass(test, intermediate);
+          x += inverse_mass * cell_rule.stiffness_x(intermediate, trial);
+          y += inverse_mass * cell_rule.stiffness_y(intermediate, trial);
+        }
+        cell_rule.weak_derivative_x[test * nodes + trial] = x;
+        cell_rule.weak_derivative_y[test * nodes + trial] = y;
+      }
+    }
+
     const auto* cell_type = cell_types[cell_index];
     const auto local_faces = cell_type->get_entity_vertices(1);
     const auto face_connections = connectivity.faces(cell_index);
@@ -193,6 +210,17 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
         face_rule.physical_weights[q] = 0.5 * face_measure * line_weights(q);
       }
 
+      const auto points = face_rule.physical_weights.size();
+      face_rule.lift.resize(points * nodes);
+      for (std::size_t q = 0; q < points; ++q) {
+        for (std::size_t test = 0; test < nodes; ++test) {
+          double value = 0.0;
+          for (std::size_t trial = 0; trial < nodes; ++trial) {
+            value += cell_rule.inverse_mass(test, trial) * face_rule.minus_trace(q, trial);
+          }
+          face_rule.lift[q * nodes + test] = face_rule.physical_weights[q] * value;
+        }
+      }
       if (connection.is_boundary()) continue;
 
       const auto neighbor_index = connection.neighbor_cell;

@@ -29,16 +29,12 @@ using FluxMatrices = std::array<std::vector<std::vector<double>>, 2>;
 }  // namespace
 
 struct LinearDG2D::Impl {
-  struct FaceOperators {
-    std::vector<double> lift;                // [quadrature point, test node]
+  struct FaceFluxOperators {
     std::vector<double> normal_flux_matrix;  // [equation, field]
   };
 
-  struct CellOperators {
-    std::size_t node_count = 0;
-    std::vector<double> derivative_x;  // [test node, trial node]
-    std::vector<double> derivative_y;  // [test node, trial node]
-    std::vector<FaceOperators> faces;
+  struct CellFluxOperators {
+    std::vector<FaceFluxOperators> faces;
   };
 
   std::shared_ptr<DGSpace> owned_space;
@@ -50,7 +46,7 @@ struct LinearDG2D::Impl {
   NumericalFlux numerical_flux;
   BoundaryState boundary_state;
   FluxMatrices flux_matrices;
-  std::vector<CellOperators> rhs_operators;
+  std::vector<CellFluxOperators> normal_flux_operators;
 
   Impl(mesh::Mesh& mesh, const std::vector<unsigned>& orders, EquationSystem input_equations,
        NumericalFlux input_numerical_flux, BoundaryState input_boundary_state)
@@ -63,7 +59,7 @@ struct LinearDG2D::Impl {
         numerical_flux(std::move(input_numerical_flux)),
         boundary_state(std::move(input_boundary_state)) {
     initialize_flux_matrices();
-    initialize_rhs_operators();
+    initialize_normal_flux_operators();
   }
 
   Impl(mesh::Mesh& mesh, const DGSpace& input_space, EquationSystem input_equations,
@@ -76,7 +72,7 @@ struct LinearDG2D::Impl {
         numerical_flux(std::move(input_numerical_flux)),
         boundary_state(std::move(input_boundary_state)) {
     initialize_flux_matrices();
-    initialize_rhs_operators();
+    initialize_normal_flux_operators();
   }
 
   void initialize_flux_matrices() {
@@ -106,45 +102,16 @@ struct LinearDG2D::Impl {
     }
   }
 
-  void initialize_rhs_operators() {
+  void initialize_normal_flux_operators() {
     const auto fields = equations.fields().size();
-    rhs_operators.reserve(integration.cells().size());
+    normal_flux_operators.reserve(integration.cells().size());
     for (const auto& cell_rule : integration.cells()) {
-      auto& cell = rhs_operators.emplace_back();
+      auto& cell = normal_flux_operators.emplace_back();
       if (cell_rule.group_index == DGConnectivity::no_neighbor) continue;
-
-      const auto nodes = cell_rule.inverse_mass.shape()[0];
-      cell.node_count = nodes;
-      cell.derivative_x.resize(nodes * nodes);
-      cell.derivative_y.resize(nodes * nodes);
-      for (std::size_t test = 0; test < nodes; ++test) {
-        for (std::size_t trial = 0; trial < nodes; ++trial) {
-          double x = 0.0;
-          double y = 0.0;
-          for (std::size_t intermediate = 0; intermediate < nodes; ++intermediate) {
-            const auto inverse_mass = cell_rule.inverse_mass(test, intermediate);
-            x += inverse_mass * cell_rule.stiffness_x(intermediate, trial);
-            y += inverse_mass * cell_rule.stiffness_y(intermediate, trial);
-          }
-          cell.derivative_x[test * nodes + trial] = x;
-          cell.derivative_y[test * nodes + trial] = y;
-        }
-      }
 
       cell.faces.reserve(cell_rule.faces.size());
       for (const auto& face_rule : cell_rule.faces) {
         auto& face = cell.faces.emplace_back();
-        const auto points = face_rule.physical_weights.size();
-        face.lift.resize(points * nodes);
-        for (std::size_t q = 0; q < points; ++q) {
-          for (std::size_t test = 0; test < nodes; ++test) {
-            double value = 0.0;
-            for (std::size_t trial = 0; trial < nodes; ++trial) {
-              value += cell_rule.inverse_mass(test, trial) * face_rule.minus_trace(q, trial);
-            }
-            face.lift[q * nodes + test] = face_rule.physical_weights[q] * value;
-          }
-        }
         face.normal_flux_matrix.resize(fields * fields);
         for (std::size_t equation = 0; equation < fields; ++equation) {
           for (std::size_t field = 0; field < fields; ++field) {
@@ -226,11 +193,11 @@ struct LinearDG2D::Impl {
     for (std::size_t cell_index = 0; cell_index < cell_rules.size(); ++cell_index) {
       const auto& cell_rule = cell_rules[cell_index];
       if (cell_rule.group_index == DGConnectivity::no_neighbor) continue;
-      const auto& operators = rhs_operators[cell_index];
+      const auto& operators = normal_flux_operators[cell_index];
       const auto group = cell_rule.group_index;
       const auto row = cell_rule.group_cell_index;
       const auto& cell_state = state.groups[group];
-      const auto node_count = operators.node_count;
+      const auto node_count = cell_rule.inverse_mass.shape()[0];
       const auto* cell_values = cell_state.data() + row * node_count * fields;
       auto* cell_derivative = output.groups[group].data() + row * node_count * fields;
 
@@ -254,8 +221,8 @@ struct LinearDG2D::Impl {
           double value = 0.0;
           for (std::size_t trial = 0; trial < node_count; ++trial) {
             const auto index = test * node_count + trial;
-            value += operators.derivative_x[index] * volume_flux_x[trial * fields + equation] +
-                     operators.derivative_y[index] * volume_flux_y[trial * fields + equation];
+            value += cell_rule.weak_derivative_x[index] * volume_flux_x[trial * fields + equation] +
+                     cell_rule.weak_derivative_y[index] * volume_flux_y[trial * fields + equation];
           }
           cell_derivative[test * fields + equation] = value;
         }
@@ -317,7 +284,7 @@ struct LinearDG2D::Impl {
           if (flux.size() != fields) {
             throw std::invalid_argument("Numerical flux must return one value per equation field");
           }
-          const auto* lift = face_operators.lift.data() + q * node_count;
+          const auto* lift = face.lift.data() + q * node_count;
           for (std::size_t test = 0; test < node_count; ++test) {
             for (std::size_t equation = 0; equation < fields; ++equation) {
               cell_derivative[test * fields + equation] -= lift[test] * flux[equation];

@@ -39,6 +39,8 @@ class DGIntegration {
     /// Positive Gauss weights including physical edge length scaling.
     /// The common rule integrates degree 2 * max(p_minus, p_plus) + 1 exactly.
     std::vector<double> physical_weights;
+    /// M^-1 T_minus^T W, stored as [quadrature point, test node].
+    std::vector<double> lift;
 
     bool is_boundary() const { return neighbor_cell == DGConnectivity::no_neighbor; }
   };
@@ -52,6 +54,9 @@ class DGIntegration {
     /// Rows are test nodes, columns are trial nodes; similarly for S_y.
     Matrix stiffness_x;
     Matrix stiffness_y;
+    /// M^-1 S_x and M^-1 S_y, stored as [test node, trial node].
+    std::vector<double> weak_derivative_x;
+    std::vector<double> weak_derivative_y;
     std::vector<FaceRule> faces;
   };
 
