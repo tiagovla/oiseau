@@ -239,12 +239,12 @@ struct LinearDG2D::Impl {
         const auto neighbor_nodes = neighbor_state.shape()[1];
         const auto* neighbor_values =
             neighbor_state.data() + neighbor_row * neighbor_nodes * fields;
-        const auto face_points = face.physical_weights.size();
+        const auto face_points = face.point_count();
 
         for (std::size_t q = 0; q < face_points; ++q) {
           std::ranges::fill(left, 0.0);
           std::ranges::fill(right, 0.0);
-          const auto* minus_trace = face.minus_trace.data() + q * node_count;
+          const auto* minus_trace = face.minus->trace.data() + q * node_count;
           for (std::size_t node = 0; node < node_count; ++node) {
             const auto basis = minus_trace[node];
             for (std::size_t field = 0; field < fields; ++field) {
@@ -259,7 +259,7 @@ struct LinearDG2D::Impl {
                   "Boundary state must return one value for every equation field");
             }
           } else {
-            const auto* plus_trace = face.plus_trace.data() + q * neighbor_nodes;
+            const auto* plus_trace = face.plus->trace.data() + q * neighbor_nodes;
             for (std::size_t node = 0; node < neighbor_nodes; ++node) {
               const auto basis = plus_trace[node];
               for (std::size_t field = 0; field < fields; ++field) {
@@ -284,10 +284,11 @@ struct LinearDG2D::Impl {
           if (flux.size() != fields) {
             throw std::invalid_argument("Numerical flux must return one value per equation field");
           }
-          const auto* lift = face.lift.data() + q * node_count;
+          const auto* lift = face.minus->lift.data() + q * node_count;
           for (std::size_t test = 0; test < node_count; ++test) {
             for (std::size_t equation = 0; equation < fields; ++equation) {
-              cell_derivative[test * fields + equation] -= lift[test] * flux[equation];
+              cell_derivative[test * fields + equation] -=
+                  face.lift_scale * lift[test] * flux[equation];
             }
           }
         }

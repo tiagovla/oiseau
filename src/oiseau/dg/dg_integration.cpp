@@ -9,8 +9,10 @@
 #include <algorithm>
 #include <array>
 #include <limits>
+#include <map>
 #include <memory>
 #include <stdexcept>
+#include <tuple>
 #include <utility>
 #include <vector>
 #include <xtensor-blas/xlinalg.hpp>
@@ -32,6 +34,8 @@ struct ReferenceOperators {
   std::shared_ptr<nodal::RefElement> element;
   std::shared_ptr<const DGIntegration::ReferenceRule> volume;
   Matrix inverse_vandermonde;
+  std::vector<Point2> vertices;
+  std::vector<std::vector<int>> faces;
 };
 
 nodal::RefElementType reference_type(mesh::CellKind kind) {
@@ -127,13 +131,57 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
   reference_operators.reserve(groups.size());
   for (std::size_t group_index = 0; group_index < groups.size(); ++group_index) {
     const auto& group = groups[group_index];
-    reference_operators.push_back(make_reference_operators(group.kind, group.order));
+    auto& reference =
+        reference_operators.emplace_back(make_reference_operators(group.kind, group.order));
+    const auto first_cell = group.cell_indices.front();
+    reference.vertices =
+        reference_vertex_coordinates(cell_types[first_cell], connectivity_data[first_cell]);
+    reference.faces = cell_types[first_cell]->get_entity_vertices(1);
     for (std::size_t row = 0; row < group.cell_indices.size(); ++row) {
       const auto cell_index = group.cell_indices[row];
       cell_group[cell_index] = group_index;
       cell_group_row[cell_index] = row;
     }
   }
+
+  std::map<unsigned, std::shared_ptr<const QuadratureRule>> quadratures;
+  using FaceKey = std::tuple<std::size_t, std::size_t, unsigned, bool>;
+  std::map<FaceKey, std::shared_ptr<const ReferenceFaceRule>> face_rules;
+  const auto face_reference = [&](std::size_t group_index, std::size_t face_index, unsigned order,
+                                  bool reversed) {
+    const FaceKey key{group_index, face_index, order, reversed};
+    if (const auto found = face_rules.find(key); found != face_rules.end()) return found->second;
+
+    auto& quadrature = quadratures[order];
+    if (!quadrature) {
+      if (order > (static_cast<unsigned>(std::numeric_limits<int>::max()) - 1U) / 2U) {
+        throw std::invalid_argument("Polynomial order is too large for DG face quadrature");
+      }
+      auto [nodes, weights] = utils::integration::quadrature(static_cast<int>(2U * order + 1U));
+      quadrature = std::make_shared<const QuadratureRule>(
+          QuadratureRule{.nodes = std::move(nodes), .weights = std::move(weights)});
+    }
+    const auto& reference = reference_operators[group_index];
+    const auto& vertices = reference.faces.at(face_index);
+    if (vertices.size() != 2) {
+      throw std::logic_error("DGIntegration expects two vertices on every face");
+    }
+    const auto first = static_cast<std::size_t>(vertices[reversed ? 1 : 0]);
+    const auto second = static_cast<std::size_t>(vertices[reversed ? 0 : 1]);
+    const auto points =
+        edge_points(reference.vertices[first], reference.vertices[second], quadrature->nodes);
+    Matrix trace = interpolation_on_points(reference, points);
+    Matrix lift = xt::linalg::dot(trace, xt::transpose(reference.volume->inverse_mass));
+    for (std::size_t q = 0; q < quadrature->weights.size(); ++q) {
+      for (std::size_t node = 0; node < lift.shape()[1]; ++node) {
+        lift(q, node) *= quadrature->weights(q);
+      }
+    }
+    auto rule = std::make_shared<const ReferenceFaceRule>(ReferenceFaceRule{
+        .quadrature = quadrature, .trace = std::move(trace), .lift = std::move(lift)});
+    face_rules.emplace(key, rule);
+    return rule;
+  };
 
   m_cells.resize(cell_count);
   for (std::size_t cell_index = 0; cell_index < cell_count; ++cell_index) {
@@ -167,8 +215,7 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
       }
     }
 
-    const auto* cell_type = cell_types[cell_index];
-    const auto local_faces = cell_type->get_entity_vertices(1);
+    const auto& local_faces = reference.faces;
     const auto face_connections = connectivity.faces(cell_index);
     cell_rule.faces.reserve(local_faces.size());
     for (std::size_t face_index = 0; face_index < local_faces.size(); ++face_index) {
@@ -187,59 +234,17 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
         }
         quadrature_order = std::max(quadrature_order, groups[neighbor_group].order);
       }
-      if (quadrature_order > (static_cast<unsigned>(std::numeric_limits<int>::max()) - 1U) / 2U) {
-        throw std::invalid_argument("Polynomial order is too large for DG face quadrature");
-      }
-      auto [line_nodes, line_weights] =
-          utils::integration::quadrature(static_cast<int>(2U * quadrature_order + 1U));
-
-      const auto& mesh_vertices = connectivity_data[cell_index];
-      const auto reference_vertices = reference_vertex_coordinates(cell_type, mesh_vertices);
-      const auto first_local_vertex = static_cast<std::size_t>(local_faces[face_index][0]);
-      const auto second_local_vertex = static_cast<std::size_t>(local_faces[face_index][1]);
-      const auto local_points = edge_points(reference_vertices[first_local_vertex],
-                                            reference_vertices[second_local_vertex], line_nodes);
-      face_rule.minus_trace = interpolation_on_points(reference, local_points);
-
-      const auto face_measure = cell_geometry.faces[face_index].measure;
-      face_rule.physical_weights.resize(line_weights.size());
-      for (std::size_t q = 0; q < line_weights.size(); ++q) {
-        face_rule.physical_weights[q] = 0.5 * face_measure * line_weights(q);
-      }
-
-      const auto points = face_rule.physical_weights.size();
-      face_rule.lift.resize(points * nodes);
-      for (std::size_t q = 0; q < points; ++q) {
-        for (std::size_t test = 0; test < nodes; ++test) {
-          double value = 0.0;
-          for (std::size_t trial = 0; trial < nodes; ++trial) {
-            value += reference.volume->inverse_mass(test, trial) / determinant *
-                     face_rule.minus_trace(q, trial);
-          }
-          face_rule.lift[q * nodes + test] = face_rule.physical_weights[q] * value;
-        }
-      }
+      face_rule.minus = face_reference(group_index, face_index, quadrature_order, false);
+      face_rule.weight_scale = 0.5 * cell_geometry.faces[face_index].measure;
+      face_rule.lift_scale = face_rule.weight_scale / determinant;
       if (connection.is_boundary()) continue;
 
-      const auto neighbor_index = connection.neighbor_cell;
-      const auto* neighbor_type = cell_types[neighbor_index];
-      const auto& neighbor_mesh_vertices = connectivity_data[neighbor_index];
-      const auto neighbor_reference_vertices =
-          reference_vertex_coordinates(neighbor_type, neighbor_mesh_vertices);
-      const auto neighbor_local_faces = neighbor_type->get_entity_vertices(1);
-      const auto& neighbor_face_vertices = neighbor_local_faces[connection.neighbor_face];
-      if (connection.vertex_permutation.size() != 2 || neighbor_face_vertices.size() != 2) {
-        throw std::logic_error("DGIntegration expects two vertices on every face");
+      const auto& permutation = connection.vertex_permutation;
+      if (permutation.size() != 2 || permutation[0] > 1 || permutation[1] != 1 - permutation[0]) {
+        throw std::logic_error("DGIntegration expects a two-vertex face permutation");
       }
-      const auto neighbor_first =
-          static_cast<std::size_t>(neighbor_face_vertices[connection.vertex_permutation[0]]);
-      const auto neighbor_second =
-          static_cast<std::size_t>(neighbor_face_vertices[connection.vertex_permutation[1]]);
-      const auto neighbor_points =
-          edge_points(neighbor_reference_vertices[neighbor_first],
-                      neighbor_reference_vertices[neighbor_second], line_nodes);
-      face_rule.plus_trace =
-          interpolation_on_points(reference_operators[neighbor_group], neighbor_points);
+      face_rule.plus = face_reference(neighbor_group, connection.neighbor_face, quadrature_order,
+                                      permutation[0] == 1);
     }
   }
 }

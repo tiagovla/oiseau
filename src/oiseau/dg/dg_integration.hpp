@@ -39,19 +39,42 @@ class DGIntegration {
     Matrix weak_derivative_s;
   };
 
+  /// Gauss nodes and positive weights on [-1,1], shared by required degree.
+  /// The common rule integrates degree 2 * max(p_minus, p_plus) + 1 exactly.
+  struct QuadratureRule {
+    Matrix nodes;
+    Matrix weights;
+  };
+
+  /// Shared by cell shape, polynomial order, local face, quadrature, and orientation.
+  struct ReferenceFaceRule {
+    std::shared_ptr<const QuadratureRule> quadrature;
+    /// Shape [quadrature point, cell node].
+    Matrix trace;
+    /// Reference M^-1 T^T W, stored as [quadrature point, test node].
+    /// W uses [-1,1] weights; physical scaling belongs to FaceRule.
+    Matrix lift;
+  };
+
   struct FaceRule {
     std::array<double, 2> outward_normal{};
     std::size_t neighbor_cell = DGConnectivity::no_neighbor;
-    /// Traces have shape [quadrature point, cell node]. On interior faces,
-    /// both traces evaluate at the same physical points in the same order;
-    /// plus_trace uses the neighbor's nodes and is empty on boundaries.
-    Matrix minus_trace;
-    Matrix plus_trace;
-    /// Positive Gauss weights including physical edge length scaling.
-    /// The common rule integrates degree 2 * max(p_minus, p_plus) + 1 exactly.
-    std::vector<double> physical_weights;
-    /// M^-1 T_minus^T W, stored as [quadrature point, test node].
-    std::vector<double> lift;
+    /// On interior faces, both traces evaluate at the same physical points
+    /// in the same order. Plus uses the neighbor's nodes; it is null on boundaries.
+    std::shared_ptr<const ReferenceFaceRule> minus;
+    std::shared_ptr<const ReferenceFaceRule> plus;
+    /// Physical edge length / 2, converting [-1,1] weights to physical weights.
+    double weight_scale = 0.0;
+    /// weight_scale / |det J|, converting the reference lift to M^-1 T_minus^T W.
+    double lift_scale = 0.0;
+
+    std::size_t point_count() const { return minus->quadrature->weights.size(); }
+    double physical_weight(std::size_t q) const {
+      return weight_scale * minus->quadrature->weights(q);
+    }
+    double physical_lift(std::size_t q, std::size_t node) const {
+      return lift_scale * minus->lift(q, node);
+    }
 
     bool is_boundary() const { return neighbor_cell == DGConnectivity::no_neighbor; }
   };

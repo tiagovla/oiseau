@@ -37,7 +37,9 @@ oiseau::mesh::Mesh mixed_mesh(bool reversed) {
   using namespace oiseau::mesh;
   std::vector<std::vector<std::size_t>> cells = {{0, 1, 2, 3}, {1, 4, 2}, {4, 5, 2}, {0, 1}};
   if (reversed) {
-    for (auto& cell : cells) std::ranges::reverse(cell);
+    // Leave the second triangle positive to exercise both face permutations.
+    std::ranges::reverse(cells[0]);
+    std::ranges::reverse(cells[1]);
   }
   const auto quad = get_cell_type(CellKind::Quadrilateral);
   const auto triangle = get_cell_type(CellKind::Triangle);
@@ -81,9 +83,9 @@ TEST_P(DGIntegrationTest, mass_and_stiffness_satisfy_physical_integral_identitie
           identity += mass(i, k) * inverse_mass(k, j);
         }
         for (const auto& face : cell.faces) {
-          for (std::size_t q = 0; q < face.physical_weights.size(); ++q) {
+          for (std::size_t q = 0; q < face.point_count(); ++q) {
             const auto value =
-                face.minus_trace(q, i) * face.physical_weights[q] * face.minus_trace(q, j);
+                face.minus->trace(q, i) * face.physical_weight(q) * face.minus->trace(q, j);
             for (std::size_t d = 0; d < 2; ++d) boundary[d] += face.outward_normal[d] * value;
           }
         }
@@ -111,8 +113,8 @@ TEST_P(DGIntegrationTest, unequal_orders_trace_the_same_polynomial_at_shared_fac
       const auto& neighbor = integration.cell(face.neighbor_cell);
       const auto& minus_nodes = groups[cell.group_index].nodes;
       const auto& plus_nodes = groups[neighbor.group_index].nodes;
-      ASSERT_EQ(face.minus_trace.shape()[0], face.plus_trace.shape()[0]);
-      for (std::size_t q = 0; q < face.physical_weights.size(); ++q) {
+      ASSERT_EQ(face.minus->trace.shape()[0], face.plus->trace.shape()[0]);
+      for (std::size_t q = 0; q < face.point_count(); ++q) {
         // Constants, both coordinates, and a quadratic distinguish alignment errors.
         for (int polynomial = 0; polynomial < 4; ++polynomial) {
           const auto value = [polynomial](double x, double y) {
@@ -123,12 +125,12 @@ TEST_P(DGIntegrationTest, unequal_orders_trace_the_same_polynomial_at_shared_fac
           };
           double minus = 0.0, plus = 0.0;
           for (std::size_t i = 0; i < minus_nodes.shape()[1]; ++i) {
-            minus += face.minus_trace(q, i) * value(minus_nodes(cell.group_cell_index, i, 0),
-                                                    minus_nodes(cell.group_cell_index, i, 1));
+            minus += face.minus->trace(q, i) * value(minus_nodes(cell.group_cell_index, i, 0),
+                                                     minus_nodes(cell.group_cell_index, i, 1));
           }
           for (std::size_t i = 0; i < plus_nodes.shape()[1]; ++i) {
-            plus += face.plus_trace(q, i) * value(plus_nodes(neighbor.group_cell_index, i, 0),
-                                                  plus_nodes(neighbor.group_cell_index, i, 1));
+            plus += face.plus->trace(q, i) * value(plus_nodes(neighbor.group_cell_index, i, 0),
+                                                   plus_nodes(neighbor.group_cell_index, i, 1));
           }
           EXPECT_NEAR(minus, plus, 1e-11);
         }
@@ -175,8 +177,67 @@ TEST_P(DGIntegrationTest, reference_operators_are_shared_and_own_their_lifetime)
   EXPECT_EQ(integration.cell(1).reference, integration.cell(2).reference);
   EXPECT_NE(integration.cell(0).reference, integration.cell(1).reference);
   EXPECT_EQ(copy.cell(1).reference, integration.cell(1).reference);
+  EXPECT_EQ(copy.cell(1).faces[0].minus, integration.cell(1).faces[0].minus);
+  EXPECT_EQ(copy.cell(1).faces[0].point_count(), 4);
   const auto mass = copy.cell(1).mass();
   EXPECT_NEAR(std::accumulate(mass.begin(), mass.end(), 0.0), 1.4375, 1e-11);
+}
+
+TEST_P(DGIntegrationTest, face_rules_share_reference_data_and_apply_cell_scaling) {
+  auto mesh = mixed_mesh(GetParam());
+  const DGSpace space(mesh, 3);
+  const DGConnectivity connectivity(mesh);
+  const DGGeometry geometry(mesh);
+  const DGIntegration integration(mesh, space, connectivity, geometry);
+  const auto quadrature = integration.cell(0).faces[0].minus->quadrature;
+  for (std::size_t face = 0; face < 3; ++face) {
+    EXPECT_EQ(integration.cell(1).faces[face].minus, integration.cell(2).faces[face].minus);
+  }
+  bool forward = false, reversed = false;
+  for (std::size_t cell_index = 0; cell_index < 3; ++cell_index) {
+    const auto& cell = integration.cell(cell_index);
+    const auto inverse_mass = cell.inverse_mass();
+    for (std::size_t f = 0; f < cell.faces.size(); ++f) {
+      const auto& face = cell.faces[f];
+      EXPECT_EQ(face.minus->quadrature, quadrature);
+      EXPECT_EQ(face.point_count(), 4);
+      double measure = 0.0;
+      for (std::size_t q = 0; q < face.point_count(); ++q) {
+        EXPECT_GT(face.physical_weight(q), 0.0);
+        measure += face.physical_weight(q);
+        for (std::size_t i = 0; i < cell.node_count(); ++i) {
+          double lift = 0.0;
+          for (std::size_t j = 0; j < cell.node_count(); ++j) {
+            lift += inverse_mass(i, j) * face.minus->trace(q, j) * face.physical_weight(q);
+          }
+          EXPECT_NEAR(face.physical_lift(q, i), lift, 1e-11);
+        }
+      }
+      EXPECT_NEAR(measure, geometry.cell(cell_index).faces[f].measure, 1e-12);
+      if (face.is_boundary()) {
+        EXPECT_EQ(face.plus, nullptr);
+        continue;
+      }
+      EXPECT_EQ(face.plus->quadrature, quadrature);
+      const auto& connection = connectivity.faces(cell_index)[f];
+      const auto& opposite = integration.cell(face.neighbor_cell).faces[connection.neighbor_face];
+      if (connection.vertex_permutation[0] == 0) {
+        forward = true;
+        EXPECT_EQ(face.plus, opposite.minus);
+      } else {
+        reversed = true;
+        EXPECT_NE(face.plus, opposite.minus);
+        for (std::size_t q = 0; q < face.point_count(); ++q) {
+          for (std::size_t node = 0; node < face.plus->trace.shape()[1]; ++node) {
+            EXPECT_NEAR(face.plus->trace(q, node),
+                        opposite.minus->trace(face.point_count() - 1 - q, node), 1e-12);
+          }
+        }
+      }
+    }
+  }
+  EXPECT_TRUE(forward);
+  EXPECT_EQ(reversed, GetParam());
 }
 
 INSTANTIATE_TEST_SUITE_P(Orientations, DGIntegrationTest, ::testing::Bool());
