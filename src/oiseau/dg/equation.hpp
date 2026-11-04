@@ -40,7 +40,8 @@ class LinearExpression {
  public:
   LinearExpression() = default;
   explicit LinearExpression(DifferentialTerm term)
-      : m_terms{{std::move(term.field), term.derivative, 1.0}} {}
+      : m_terms{
+            {.field = std::move(term.field), .derivative = term.derivative, .coefficient = 1.0}} {}
 
   const std::vector<LinearTerm>& terms() const { return m_terms; }
 
@@ -56,10 +57,18 @@ class LinearExpression {
   friend LinearExpression operator*(double coefficient, LinearExpression expression);
 };
 
-inline DifferentialTerm dt(const Field& field) { return {field, Derivative::Time}; }
-inline DifferentialTerm dx(const Field& field) { return {field, Derivative::X}; }
-inline DifferentialTerm dy(const Field& field) { return {field, Derivative::Y}; }
-inline DifferentialTerm dz(const Field& field) { return {field, Derivative::Z}; }
+inline DifferentialTerm dt(const Field& field) {
+  return {.field = field, .derivative = Derivative::Time};
+}
+inline DifferentialTerm dx(const Field& field) {
+  return {.field = field, .derivative = Derivative::X};
+}
+inline DifferentialTerm dy(const Field& field) {
+  return {.field = field, .derivative = Derivative::Y};
+}
+inline DifferentialTerm dz(const Field& field) {
+  return {.field = field, .derivative = Derivative::Z};
+}
 
 inline LinearExpression operator+(const LinearExpression& lhs, const LinearExpression& rhs) {
   auto terms = lhs.terms();
