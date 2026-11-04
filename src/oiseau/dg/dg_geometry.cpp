@@ -285,7 +285,8 @@ DGGeometry::DGGeometry(const mesh::Mesh& mesh) : m_mesh(mesh) {
       physical_nodes.push_back(physical_vertex(geometry, vertices[vertex_index], dimension));
       Point reference_point = zero_point();
       for (std::size_t coordinate = 0; coordinate < dimension; ++coordinate) {
-        reference_point(coordinate) = reference_nodes(vertex_index, coordinate);
+        reference_point(coordinate) = dimension == 1 ? reference_nodes(vertex_index)
+                                                     : reference_nodes(vertex_index, coordinate);
       }
       reference_points.push_back(reference_point);
       const auto mesh_vertex = std::ranges::find(mesh_vertices, vertices[vertex_index]);

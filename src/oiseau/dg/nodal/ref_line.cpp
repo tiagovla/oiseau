@@ -7,7 +7,6 @@
 #include "oiseau/dg/nodal/ref_line.hpp"
 
 #include <cstddef>
-#include <xtensor-blas/xlinalg.hpp>
 #include <xtensor/core/xshape.hpp>
 #include <xtensor/core/xtensor_forward.hpp>
 #include <xtensor/generators/xbuilder.hpp>
@@ -16,6 +15,7 @@
 #include <xtensor/views/xview.hpp>
 
 #include "oiseau/dg/nodal/ref_element.hpp"
+#include "oiseau/dg/nodal/utils.hpp"
 #include "oiseau/utils/integration.hpp"
 #include "oiseau/utils/math.hpp"
 
@@ -60,12 +60,7 @@ xt::xarray<double> RefLine::grad_vandermonde(const xt::xarray<double>& r) const 
 
 xt::xarray<double> RefLine::grad_operator(const xt::xarray<double>& v,
                                           const xt::xarray<double>& gv) {
-  auto gvr = xt::view(gv, xt::all(), xt::all(), 0);
-
-  const auto vt = xt::transpose(v);
-  const auto dvt_dr = xt::transpose(gvr);
-  const auto dr = xt::transpose(xt::linalg::solve(vt, dvt_dr));
-  return dr;
+  return utils::d_matrix_1d(v, gv);
 }
 
 }  // namespace oiseau::dg::nodal
