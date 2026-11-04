@@ -14,6 +14,50 @@
 #include "oiseau/dg/dg_geometry.hpp"
 #include "oiseau/io/gmsh.hpp"
 
+TEST(test_dg_geometry, intervals_have_signed_jacobians_and_outward_endpoint_normals) {
+  const std::string mesh_text = R"($MeshFormat
+4.1 0 8
+$EndMeshFormat
+$Nodes
+1 3 1 3
+1 0 0 3
+1
+2
+3
+2 0 0
+6 0 0
+10 0 0
+$EndNodes
+$Elements
+1 2 1 2
+1 0 1 2
+1 1 2
+2 3 2
+$EndElements)";
+  const auto mesh = oiseau::io::gmsh_read_from_string(mesh_text);
+  const oiseau::dg::DGGeometry geometry(mesh);
+
+  for (std::size_t cell_index = 0; cell_index < 2; ++cell_index) {
+    SCOPED_TRACE(cell_index);
+    ASSERT_TRUE(geometry.has_cell(cell_index));
+    const auto& cell = geometry.cell(cell_index);
+    const auto orientation = cell_index == 0 ? 1.0 : -1.0;
+    EXPECT_EQ(cell.dimension, 1);
+    EXPECT_NEAR(cell.jacobian[0], 2.0 * orientation, 1e-12);
+    EXPECT_NEAR(cell.inverse_jacobian[0], 0.5 * orientation, 1e-12);
+    EXPECT_NEAR(cell.determinant, 2.0 * orientation, 1e-12);
+    ASSERT_EQ(cell.faces.size(), 2);
+    for (std::size_t face_index = 0; face_index < 2; ++face_index) {
+      const auto& face = cell.faces[face_index];
+      EXPECT_NEAR(face.outward_normal[0], (face_index == 0 ? -1.0 : 1.0) * orientation, 1e-12);
+      EXPECT_DOUBLE_EQ(face.outward_normal[1], 0.0);
+      EXPECT_DOUBLE_EQ(face.outward_normal[2], 0.0);
+      EXPECT_DOUBLE_EQ(face.measure, 1.0);
+      EXPECT_DOUBLE_EQ(face.surface_jacobian, 1.0);
+    }
+  }
+}
+
 TEST(test_dg_geometry, one_tetrahedron_has_outward_face_normals) {
   const std::string mesh_text = R"($MeshFormat
 4.1 0 8
