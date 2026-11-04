@@ -6,6 +6,8 @@
 
 #include <gtest/gtest.h>
 
+#include <cmath>
+#include <cstddef>
 #include <xtensor-blas/xlinalg.hpp>
 #include <xtensor/core/xmath.hpp>
 #include <xtensor/misc/xmanipulation.hpp>
@@ -26,6 +28,27 @@ TEST(test_ref_line, get_number_of_nodes) {
   for (unsigned order = 1; order <= 5; ++order) {
     auto ref = oiseau::dg::nodal::RefLine(order);
     EXPECT_EQ(ref.number_of_nodes(), order + 1);
+  }
+}
+
+TEST(test_ref_line, differentiation_matrix_differentiates_polynomials) {
+  for (unsigned order = 1; order <= 5; ++order) {
+    SCOPED_TRACE(order);
+    const oiseau::dg::nodal::RefLine ref(order);
+    const auto& derivative = ref.d();
+    ASSERT_EQ(derivative.dimension(), 2);
+    ASSERT_EQ(derivative.shape()[0], order + 1);
+    ASSERT_EQ(derivative.shape()[1], order + 1);
+
+    for (unsigned degree = 0; degree <= order; ++degree) {
+      SCOPED_TRACE(degree);
+      const xt::xarray<double> values = xt::pow(ref.r(), degree);
+      const xt::xarray<double> differentiated = xt::linalg::dot(derivative, values);
+      for (std::size_t node = 0; node < ref.r().size(); ++node) {
+        const auto expected = degree == 0 ? 0.0 : degree * std::pow(ref.r()(node), degree - 1);
+        EXPECT_NEAR(differentiated(node), expected, 1e-11);
+      }
+    }
   }
 }
 
