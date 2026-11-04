@@ -1,0 +1,62 @@
+// Copyright (C) 2026 Tiago V. L. Amorim (@tiagovla)
+//
+// This file is part of oiseau (https://github.com/tiagovla/oiseau)
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#pragma once
+
+#include <array>
+#include <cstddef>
+#include <span>
+#include <vector>
+#include <xtensor/containers/xarray.hpp>
+
+#include "oiseau/dg/dg_connectivity.hpp"
+#include "oiseau/dg/dg_geometry.hpp"
+#include "oiseau/dg/dg_space.hpp"
+#include "oiseau/mesh/mesh.hpp"
+
+namespace oiseau::dg {
+
+/// Precomputed volume and face integration operators for affine 2D DG cells.
+///
+/// The initial implementation supports triangles and parallelograms. It owns
+/// no mesh data; its rules follow the supplied DGSpace cell groups and can be
+/// reused by different equation systems on the same space.
+class DGIntegration {
+ public:
+  using Matrix = xt::xarray<double>;
+
+  struct FaceRule {
+    std::array<double, 2> outward_normal{};
+    std::size_t neighbor_cell = DGConnectivity::no_neighbor;
+    Matrix minus_trace;
+    Matrix plus_trace;
+    std::vector<double> physical_weights;
+
+    bool is_boundary() const { return neighbor_cell == DGConnectivity::no_neighbor; }
+  };
+
+  struct CellRule {
+    std::size_t group_index = DGConnectivity::no_neighbor;
+    std::size_t group_cell_index = 0;
+    Matrix mass;
+    Matrix inverse_mass;
+    Matrix stiffness_x;
+    Matrix stiffness_y;
+    std::vector<FaceRule> faces;
+  };
+
+  DGIntegration(const mesh::Mesh& mesh, const DGSpace& space, const DGConnectivity& connectivity,
+                const DGGeometry& geometry);
+
+  /// Rules in mesh cell order. Cells outside the DGSpace have empty matrices.
+  std::span<const CellRule> cells() const { return m_cells; }
+  const CellRule& cell(std::size_t mesh_cell_index) const;
+
+ private:
+  std::vector<CellRule> m_cells;
+};
+
+}  // namespace oiseau::dg
