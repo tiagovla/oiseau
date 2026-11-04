@@ -16,6 +16,19 @@
 #include "oiseau/mesh/mesh.hpp"
 
 TEST(test_io, gmsh_read_from_string_3d_tetra_block) {
+  // Unit cube split into five tetrahedra. Labels are 1-based Gmsh node tags.
+  // Front: y = 0; back: y = 1; bottom: z = 0; top: z = 1.
+  //
+  //       8-------7
+  //      /|      /|
+  //     5-------6 |
+  //     | 4-----|-3
+  //     |/      |/
+  //     1-------2
+  //
+  // Face diagonals (2,4), (2,5), (2,7), (4,5), (4,7), (5,7) bound
+  // the central tetrahedron (2,4,5,7). The four corner tetrahedra are
+  // (1,2,4,5), (2,3,4,7), (2,5,6,7), and (4,5,7,8).
   std::string str =
       R"($MeshFormat
 4.1 0 8
@@ -58,6 +71,22 @@ $EndElements)";
 }
 
 TEST(test_io, gmsh_read_from_string_3d_tetra_hexa_block) {
+  // One hexahedron and two tetrahedra. Labels are 1-based Gmsh node tags.
+  // Exploded views: repeated tags denote the same vertex.
+  /*
+         8-------7             2               12
+        /|      /|            /|\             /|\
+       5-------6 |           / | \           / | \
+       | 4-----|-3          3--|--9          3--|--9
+       |/      |/            \ | /           \ | /
+       1-------2              \|/             \|/
+                               6               6
+  */
+  // Hexahedron: 0 <= x <= 0.5, 0 <= y,z <= 1; front: y = 0, top: z = 1.
+  // Tetrahedra: (2,9,3,6) and (6,3,9,12), sharing face (3,6,9).
+  // The first tetrahedron meets the hexahedron on face (2,3,6).
+  // Nodes 9 = (1,0,0), 12 = (1,1,1); nodes 10 and 11 are unused.
+  // The tetrahedra occupy only part of the cube's right half (0.5 <= x <= 1).
   std::string str =
       R"($MeshFormat
 4.1 0 8
