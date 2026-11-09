@@ -16,6 +16,7 @@
 #include <utility>
 #include <vector>
 #include <xtensor/containers/xarray.hpp>
+#include <xtensor/core/xtensor_forward.hpp>
 
 #include "oiseau/dg/solver/state.hpp"
 #include "oiseau/time/integrator.hpp"
@@ -23,7 +24,7 @@
 #include "oiseau/time/rk4.hpp"
 #include "oiseau/time/run.hpp"
 
-namespace {
+namespace time_integrator_test {
 
 struct ScalarState {
   double value = 0.0;
@@ -41,15 +42,15 @@ void scale_add_in_place(ScalarState& target, double target_scale, const ScalarSt
 }
 
 struct GrowthSystem {
-  ScalarState rhs(const ScalarState& state) const { return {state.value}; }
+  static ScalarState rhs(const ScalarState& state) { return {state.value}; }
 };
 
 struct TimeDependentSystem {
-  ScalarState rhs(double time, const ScalarState&) const { return {time}; }
+  static ScalarState rhs(double time, const ScalarState&) { return {time}; }
 };
 
 struct Euler {
-  void step(const GrowthSystem& system, ScalarState& state, double, double time_step) {
+  static void step(const GrowthSystem& system, ScalarState& state, double, double time_step) {
     state = add_scaled(state, system.rhs(state), time_step);
   }
 };
@@ -66,19 +67,57 @@ struct RecordingSystem {
 };
 
 struct DgDecaySystem {
-  oiseau::dg::solver::DGState rhs(const oiseau::dg::solver::DGState& state) const {
+  static oiseau::dg::solver::DGState rhs(const oiseau::dg::solver::DGState& state) {
     auto derivative = state;
     derivative.groups[0](0) = -state.groups[0](0);
     return derivative;
   }
 };
 
+struct AddScaledOnlyState {
+  friend AddScaledOnlyState add_scaled(const AddScaledOnlyState&, const AddScaledOnlyState&,
+                                       double);
+};
+
+struct InPlaceOnlyState {
+  friend void scale_add_in_place(InPlaceOnlyState&, double, const InPlaceOnlyState&, double);
+};
+
+struct WrongStateOperations {
+  friend double add_scaled(const WrongStateOperations&, const WrongStateOperations&, double);
+  friend double scale_add_in_place(WrongStateOperations&, double, const WrongStateOperations&,
+                                   double);
+};
+
+struct StateSystem {
+  template <typename State>
+  static State rhs(const State& state) {
+    return state;
+  }
+};
+
+static_assert(oiseau::time::AddScaledState<ScalarState>);
+static_assert(oiseau::time::ScaleAddInPlaceState<ScalarState>);
+static_assert(oiseau::time::AddScaledState<oiseau::dg::solver::DGState>);
+static_assert(oiseau::time::ScaleAddInPlaceState<oiseau::dg::solver::DGState>);
+static_assert(!oiseau::time::AddScaledState<double>);
+static_assert(!oiseau::time::ScaleAddInPlaceState<double>);
+static_assert(!oiseau::time::AddScaledState<WrongStateOperations>);
+static_assert(!oiseau::time::ScaleAddInPlaceState<WrongStateOperations>);
+static_assert(oiseau::time::TimeIntegrator<oiseau::time::RK4, StateSystem, AddScaledOnlyState>);
+static_assert(!oiseau::time::TimeIntegrator<oiseau::time::LSRK54, StateSystem, AddScaledOnlyState>);
+static_assert(!oiseau::time::TimeIntegrator<oiseau::time::RK4, StateSystem, InPlaceOnlyState>);
+static_assert(oiseau::time::TimeIntegrator<oiseau::time::LSRK54, StateSystem, InPlaceOnlyState>);
+static_assert(!oiseau::time::TimeIntegrator<oiseau::time::RK4, StateSystem, WrongStateOperations>);
+static_assert(
+    !oiseau::time::TimeIntegrator<oiseau::time::LSRK54, StateSystem, WrongStateOperations>);
+static_assert(!oiseau::time::TimeIntegrator<oiseau::time::RK4, StateSystem, double>);
+static_assert(!oiseau::time::TimeIntegrator<oiseau::time::LSRK54, StateSystem, double>);
+
 static_assert(oiseau::time::TimeIntegrator<oiseau::time::RK4, GrowthSystem, ScalarState>);
 static_assert(oiseau::time::TimeIntegrator<oiseau::time::LSRK54, GrowthSystem, ScalarState>);
 static_assert(oiseau::time::TimeIntegrator<Euler, GrowthSystem, ScalarState>);
 static_assert(!oiseau::time::TimeIntegrator<NoStep, GrowthSystem, ScalarState>);
-
-}  // namespace
 
 TEST(test_time_integrator, rk4_solves_autonomous_equation) {
   GrowthSystem system;
@@ -238,3 +277,5 @@ TEST(test_time_integrator, lsrk54_integrates_dg_state) {
   EXPECT_NEAR(final_time, 1.0, 1e-12);
   EXPECT_NEAR(state.groups[0](0), std::exp(-1.0), 1e-5);
 }
+
+}  // namespace time_integrator_test
