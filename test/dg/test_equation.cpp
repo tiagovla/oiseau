@@ -138,7 +138,7 @@ TEST(test_dg_equation, rejects_nonfinite_coefficients) {
   EXPECT_THROW(infinity * dt(u), std::invalid_argument);
 
   Equation equation;
-  equation.terms.push_back({u, Derivative::Time, infinity});
+  equation.terms.push_back({.field = u, .derivative = Derivative::Time, .coefficient = infinity});
   EXPECT_THROW((EquationSystem(std::vector<Field>{u}, std::vector<Equation>{equation})),
                std::invalid_argument);
 }
