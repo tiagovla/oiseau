@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <limits>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include "oiseau/dg/equation.hpp"
@@ -76,6 +77,27 @@ TEST(test_dg_equation, combines_spatial_terms_and_divides_by_time_coefficient) {
   EXPECT_DOUBLE_EQ(equations.flux_coefficient(u, Derivative::X, v), -2.0);
   EXPECT_DOUBLE_EQ(equations.flux_coefficient(u, Derivative::Y, u), 0.5);
   EXPECT_DOUBLE_EQ(equations.flux_coefficient(v, Derivative::Y, u), 0.25);
+}
+
+TEST(test_dg_equation, rvalue_addition_handles_same_expression_as_both_operands) {
+  Field u{"u"}, v{"v"};
+  auto expression = dt(u) + dx(v);
+
+  const auto doubled = std::move(expression) + expression;
+
+  ASSERT_EQ(doubled.terms().size(), 4);
+  EXPECT_TRUE(doubled.terms()[0].field.same_as(u));
+  EXPECT_EQ(doubled.terms()[0].derivative, Derivative::Time);
+  EXPECT_DOUBLE_EQ(doubled.terms()[0].coefficient, 1.0);
+  EXPECT_TRUE(doubled.terms()[1].field.same_as(v));
+  EXPECT_EQ(doubled.terms()[1].derivative, Derivative::X);
+  EXPECT_DOUBLE_EQ(doubled.terms()[1].coefficient, 1.0);
+  EXPECT_TRUE(doubled.terms()[2].field.same_as(u));
+  EXPECT_EQ(doubled.terms()[2].derivative, Derivative::Time);
+  EXPECT_DOUBLE_EQ(doubled.terms()[2].coefficient, 1.0);
+  EXPECT_TRUE(doubled.terms()[3].field.same_as(v));
+  EXPECT_EQ(doubled.terms()[3].derivative, Derivative::X);
+  EXPECT_DOUBLE_EQ(doubled.terms()[3].coefficient, 1.0);
 }
 
 TEST(test_dg_equation, rejects_empty_or_mismatched_field_and_equation_lists) {
