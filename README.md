@@ -1,9 +1,11 @@
 ![banner](website/assets/banner.svg)
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Coverage](https://img.shields.io/badge/coverage--report-view-green)](https://tiagovla.github.io/oiseau/coverage)
-[![Docs](https://img.shields.io/badge/docs-available-brightgreen)](https://tiagovla.github.io/oiseau/docs)
-[![Website](https://img.shields.io/badge/website-oiseau-blue)](https://tiagovla.github.io/oiseau)
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
+  <a href="https://tiagovla.github.io/oiseau/coverage"><img src="https://img.shields.io/badge/coverage--report-view-green" alt="Coverage"></a>
+  <a href="https://tiagovla.github.io/oiseau/docs"><img src="https://img.shields.io/badge/docs-available-brightgreen" alt="Docs"></a>
+  <a href="https://tiagovla.github.io/oiseau"><img src="https://img.shields.io/badge/website-oiseau-blue" alt="Website"></a>
+</p>
 
 **oiseau** is a specialized **Discontinuous Galerkin Time-Domain (DGTD)**
 framework designed for advanced simulation of electromagnetic and wave
