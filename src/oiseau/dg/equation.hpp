@@ -10,10 +10,8 @@
 #include <cmath>
 #include <cstddef>
 #include <initializer_list>
-#include <ranges>
 #include <span>
 #include <stdexcept>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -149,12 +147,7 @@ struct Equation {
 };
 
 inline Equation operator==(const LinearExpression& lhs, const LinearExpression& rhs) {
-  auto terms = lhs.terms();
-  for (auto term : rhs.terms()) {
-    term.coefficient = -term.coefficient;
-    terms.push_back(std::move(term));
-  }
-  return {std::move(terms)};
+  return Equation{(lhs - rhs).terms()};
 }
 
 inline Equation operator==(DifferentialTerm lhs, DifferentialTerm rhs) {
