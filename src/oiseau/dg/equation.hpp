@@ -86,15 +86,13 @@ inline LinearExpression operator+(LinearExpression&& lhs, const LinearExpression
   return std::move(lhs);
 }
 
-inline LinearExpression operator-(LinearExpression lhs, const LinearExpression& rhs) {
-  auto terms = rhs.terms();
-  for (auto& term : terms) term.coefficient = -term.coefficient;
-  return std::move(lhs) + LinearExpression(std::move(terms));
-}
-
 inline LinearExpression operator-(LinearExpression expression) {
   for (auto& term : expression.m_terms) term.coefficient = -term.coefficient;
   return expression;
+}
+
+inline LinearExpression operator-(LinearExpression lhs, const LinearExpression& rhs) {
+  return std::move(lhs) + (-rhs);
 }
 
 inline LinearExpression operator-(DifferentialTerm term) {
