@@ -126,6 +126,12 @@ TEST(test_dg_equation, requires_exactly_one_nonzero_time_derivative_per_equation
                std::invalid_argument);
 }
 
+TEST(test_dg_equation, rejects_missing_evolution_equation_for_a_field) {
+  Field u{"u"}, v{"v"};
+
+  EXPECT_THROW((void)EquationSystem({u, v}, {dt(u) == dx(v)}), std::invalid_argument);
+}
+
 TEST(test_dg_equation, rejects_multiple_evolution_equations_for_one_field) {
   Field u{"u"}, v{"v"};
 

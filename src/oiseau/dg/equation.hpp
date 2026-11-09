@@ -222,7 +222,7 @@ class EquationSystem {
 
  private:
   void validate() {
-    if (m_fields.empty() || m_fields.size() != m_equations.size()) {
+    if (m_fields.empty() || m_fields.size() < m_equations.size()) {
       throw std::invalid_argument("EquationSystem requires one equation for each declared field");
     }
     const std::span<const Field> declared_fields(m_fields);
