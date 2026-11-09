@@ -7,9 +7,9 @@
 #pragma once
 
 #include <cstddef>
-#include <utility>
 #include <vector>
 #include <xtensor/containers/xarray.hpp>
+#include <xtensor/core/xtensor_forward.hpp>
 
 namespace oiseau::dg::solver {
 
