@@ -16,7 +16,7 @@
 namespace oiseau::mesh {
 
 class Cell;
-using CellType = const Cell *;
+using CellType = const Cell*;
 
 enum class CellKind {
   Undefined = 0,
@@ -49,7 +49,7 @@ class Cell {
   int num_entities(int dim) const;
   std::vector<std::vector<int>> get_entity_vertices(int dim) const;
   std::vector<std::vector<int>> get_sub_entities(int dim0, int dim1) const;
-  const std::vector<std::vector<std::vector<std::vector<int>>>> &topology() const {
+  const std::vector<std::vector<std::vector<std::vector<int>>>>& topology() const {
     return m_topology;
   }
   int num_sub_entities(int dim) const;

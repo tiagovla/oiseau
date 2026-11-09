@@ -41,31 +41,31 @@ oiseau::mesh::CellType gmsh_celltype_to_oiseau_celltype(const std::size_t s) {
 }
 }  // namespace detail
 
-oiseau::mesh::Mesh gmsh_read_from_string(const std::string &content) {
+oiseau::mesh::Mesh gmsh_read_from_string(const std::string& content) {
   std::istringstream stream(content);
   return gmsh_read_from_stream(stream);
 }
 
-oiseau::mesh::Mesh gmsh_read_from_path(const std::filesystem::path &path) {
+oiseau::mesh::Mesh gmsh_read_from_path(const std::filesystem::path& path) {
   std::ifstream f_handler(path);
   return gmsh_read_from_stream(f_handler);
 }
 
-oiseau::mesh::Mesh gmsh_read_from_stream(std::istream &f_handler) {
+oiseau::mesh::Mesh gmsh_read_from_stream(std::istream& f_handler) {
   GMSHFile file = GMSHFile(f_handler);
   std::vector<double> x;
   std::vector<std::vector<std::size_t>> conn;
   std::vector<oiseau::mesh::CellType> cell_types;
 
   x.reserve(file.nodes_section.num_nodes * 3);
-  for (auto &block : file.nodes_section.blocks) {
+  for (auto& block : file.nodes_section.blocks) {
     x.insert(x.end(), block.node_coords.begin(), block.node_coords.end());
   }
 
   cell_types.reserve(file.elements_section.num_elements);
   conn.reserve(file.elements_section.num_elements);
 
-  for (const auto &block : file.elements_section.blocks) {
+  for (const auto& block : file.elements_section.blocks) {
     std::size_t elem_size = block.data.size() / block.num_elements_in_block;
     for (std::size_t i = 0; i < block.num_elements_in_block; ++i) {
       std::vector<std::size_t> tmp;
@@ -84,7 +84,7 @@ oiseau::mesh::Mesh gmsh_read_from_stream(std::istream &f_handler) {
   return mesh;
 };
 
-void gmsh_write(const std::string &filename, const oiseau::mesh::Mesh &mesh) {
+void gmsh_write(const std::string& filename, const oiseau::mesh::Mesh& mesh) {
   throw std::logic_error("gmsh_write not implemented yet.");
 };
 

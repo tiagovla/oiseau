@@ -35,7 +35,7 @@ RefTetrahedron::RefTetrahedron(unsigned order) : RefElement(order) {
   this->m_d = this->grad_operator(this->m_v, this->m_gv);
 }
 
-xt::xarray<double> RefTetrahedron::basis_function(const xt::xarray<double> &abc, int i, int j,
+xt::xarray<double> RefTetrahedron::basis_function(const xt::xarray<double>& abc, int i, int j,
                                                   int k) {
   xt::xarray<double> a = xt::col(abc, 0);
   xt::xarray<double> b = xt::col(abc, 1);
@@ -46,7 +46,7 @@ xt::xarray<double> RefTetrahedron::basis_function(const xt::xarray<double> &abc,
   return 2 * std::numbers::sqrt2 * h1 * h2 * xt::pow(1 - b, i) * h3 * xt::pow(1 - c, i + j);
 }
 
-xt::xarray<double> RefTetrahedron::grad_basis_function(const xt::xarray<double> &abc, int i, int j,
+xt::xarray<double> RefTetrahedron::grad_basis_function(const xt::xarray<double>& abc, int i, int j,
                                                        int k) {
   xt::xarray<double> a = xt::col(abc, 0);
   xt::xarray<double> b = xt::col(abc, 1);
@@ -85,7 +85,7 @@ xt::xarray<double> RefTetrahedron::grad_basis_function(const xt::xarray<double> 
   return xt::stack(xt::xtuple(v3dr, v3ds, v3dt), 1);
 }
 
-xt::xarray<double> RefTetrahedron::vandermonde(const xt::xarray<double> &rst) const {
+xt::xarray<double> RefTetrahedron::vandermonde(const xt::xarray<double>& rst) const {
   auto abc = detail::rst_to_abc(rst);
   const std::size_t n_points = rst.shape()[0];
   const std::size_t n_basis = this->m_np;  // (order+1)(order+2)*(order+3)/6
@@ -103,7 +103,7 @@ xt::xarray<double> RefTetrahedron::vandermonde(const xt::xarray<double> &rst) co
   return output;
 }
 
-xt::xarray<double> RefTetrahedron::grad_vandermonde(const xt::xarray<double> &rst) const {
+xt::xarray<double> RefTetrahedron::grad_vandermonde(const xt::xarray<double>& rst) const {
   auto abc = detail::rst_to_abc(rst);
   const std::size_t n_points = rst.shape()[0];
   const std::size_t n_basis = this->m_np;  // (order+1)(order+2)*(order+3)/6
@@ -122,8 +122,8 @@ xt::xarray<double> RefTetrahedron::grad_vandermonde(const xt::xarray<double> &rs
   return output;
 }
 //
-xt::xarray<double> RefTetrahedron::grad_operator(const xt::xarray<double> &v,
-                                                 const xt::xarray<double> &gv) {
+xt::xarray<double> RefTetrahedron::grad_operator(const xt::xarray<double>& v,
+                                                 const xt::xarray<double>& gv) {
   auto gvr = xt::view(gv, xt::all(), xt::all(), 0);
   auto gvs = xt::view(gv, xt::all(), xt::all(), 1);
   auto gvt = xt::view(gv, xt::all(), xt::all(), 2);
@@ -144,14 +144,14 @@ xt::xarray<double> RefTetrahedron::grad_operator(const xt::xarray<double> &v,
 
 namespace oiseau::dg::nodal::detail {
 
-xt::xarray<double> rst_to_abc(const xt::xarray<double> &rst) {
+xt::xarray<double> rst_to_abc(const xt::xarray<double>& rst) {
   auto abc = xt::zeros_like(rst);
-  auto &&r = xt::col(rst, 0);
-  auto &&s = xt::col(rst, 1);
-  auto &&t = xt::col(rst, 2);
-  auto &&a = xt::col(abc, 0);
-  auto &&b = xt::col(abc, 1);
-  auto &&c = xt::col(abc, 2);
+  auto&& r = xt::col(rst, 0);
+  auto&& s = xt::col(rst, 1);
+  auto&& t = xt::col(rst, 2);
+  auto&& a = xt::col(abc, 0);
+  auto&& b = xt::col(abc, 1);
+  auto&& c = xt::col(abc, 2);
   for (unsigned n = 0; n < rst.shape()[0]; ++n) {
     if ((s[n] + t[n]) != 0) {
       a[n] = 2 * ((1 + r[n]) / (-s[n] - t[n])) - 1;
@@ -168,8 +168,8 @@ xt::xarray<double> rst_to_abc(const xt::xarray<double> &rst) {
   return abc;
 }
 
-xt::xarray<double> eval_warp(int p, const xt::xarray<double> &xnodes,
-                             const xt::xarray<double> &xout) {
+xt::xarray<double> eval_warp(int p, const xt::xarray<double>& xnodes,
+                             const xt::xarray<double>& xout) {
   xt::xarray<double> warp = xt::zeros_like(xout);
   xt::xarray<double> xeq = xt::zeros<double>({p + 1});
   for (int i = 0; i <= p; i++) xeq(i) = -1.0 + 2.0 * (p - i) / p;
@@ -185,8 +185,8 @@ xt::xarray<double> eval_warp(int p, const xt::xarray<double> &xnodes,
   return warp;
 }
 
-xt::xarray<double> eval_shift(int p, double pval, const xt::xarray<double> &l1,
-                              const xt::xarray<double> &l2, const xt::xarray<double> &l3) {
+xt::xarray<double> eval_shift(int p, double pval, const xt::xarray<double>& l1,
+                              const xt::xarray<double>& l2, const xt::xarray<double>& l3) {
   auto gaussX = -oiseau::dg::nodal::utils::jacobi_gl(p, 0.0, 0.0);
   auto blend1 = l2 * l3;
   auto blend2 = l1 * l3;
@@ -203,8 +203,8 @@ xt::xarray<double> eval_shift(int p, double pval, const xt::xarray<double> &l1,
   return xt::stack(xt::xtuple(dx, dy), 1);
 }
 
-xt::xarray<double> warp_shift_face_3d(int p, double pval, const xt::xarray<double> &l2,
-                                      const xt::xarray<double> &l3, const xt::xarray<double> &l4) {
+xt::xarray<double> warp_shift_face_3d(int p, double pval, const xt::xarray<double>& l2,
+                                      const xt::xarray<double>& l3, const xt::xarray<double>& l4) {
   return eval_shift(p, pval, l2, l3, l4);
 }
 
@@ -301,7 +301,7 @@ xt::xarray<double> generate_tetrahedron_nodes(unsigned p) {
   return xyz;
 }
 
-xt::xarray<double> equilateral_xyz_to_rst(const xt::xarray<double> &coords) {
+xt::xarray<double> equilateral_xyz_to_rst(const xt::xarray<double>& coords) {
   const double sqrt3 = std::numbers::sqrt3;
   const double sqrt6 = std::sqrt(6.0);
   xt::xtensor<double, 1> v1 = {-1, -1 / sqrt3, -1 / sqrt6};

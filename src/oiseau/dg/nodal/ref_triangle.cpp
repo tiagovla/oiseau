@@ -35,7 +35,7 @@ RefTriangle::RefTriangle(unsigned order) : RefElement(order) {
   this->m_d = this->grad_operator(this->m_v, this->m_gv);
 }
 
-xt::xarray<double> RefTriangle::basis_function(const xt::xarray<double> &ab, int i, int j) {
+xt::xarray<double> RefTriangle::basis_function(const xt::xarray<double>& ab, int i, int j) {
   xt::xarray<double> a = xt::col(ab, 0);
   xt::xarray<double> b = xt::col(ab, 1);
   auto h1 = oiseau::utils::jacobi_p(i, 0.0, 0.0, a);
@@ -43,7 +43,7 @@ xt::xarray<double> RefTriangle::basis_function(const xt::xarray<double> &ab, int
   return std::numbers::sqrt2 * h1 * h2 * xt::pow(1 - b, i);
 }
 
-xt::xarray<double> RefTriangle::grad_basis_function(const xt::xarray<double> &ab, int i, int j) {
+xt::xarray<double> RefTriangle::grad_basis_function(const xt::xarray<double>& ab, int i, int j) {
   xt::xarray<double> a = xt::col(ab, 0);
   xt::xarray<double> b = xt::col(ab, 1);
 
@@ -70,7 +70,7 @@ xt::xarray<double> RefTriangle::grad_basis_function(const xt::xarray<double> &ab
   return xt::stack(xt::xtuple(dmodedr, dmodeds), 1);
 }
 
-xt::xarray<double> RefTriangle::vandermonde(const xt::xarray<double> &rs) const {
+xt::xarray<double> RefTriangle::vandermonde(const xt::xarray<double>& rs) const {
   const auto ab = detail::rs_to_ab(rs);
 
   const std::size_t n_points = rs.shape()[0];
@@ -87,7 +87,7 @@ xt::xarray<double> RefTriangle::vandermonde(const xt::xarray<double> &rs) const 
   return output;
 }
 
-xt::xarray<double> RefTriangle::grad_vandermonde(const xt::xarray<double> &rs) const {
+xt::xarray<double> RefTriangle::grad_vandermonde(const xt::xarray<double>& rs) const {
   const auto ab = detail::rs_to_ab(rs);
 
   const std::size_t n_points = rs.shape()[0];
@@ -106,8 +106,8 @@ xt::xarray<double> RefTriangle::grad_vandermonde(const xt::xarray<double> &rs) c
   return output;
 }
 
-xt::xarray<double> RefTriangle::grad_operator(const xt::xarray<double> &v,
-                                              const xt::xarray<double> &gv) {
+xt::xarray<double> RefTriangle::grad_operator(const xt::xarray<double>& v,
+                                              const xt::xarray<double>& gv) {
   auto gvr = xt::view(gv, xt::all(), xt::all(), 0);
   auto gvs = xt::view(gv, xt::all(), xt::all(), 1);
 
@@ -125,7 +125,7 @@ xt::xarray<double> RefTriangle::grad_operator(const xt::xarray<double> &v,
 
 namespace oiseau::dg::nodal::detail {
 
-xt::xarray<double> rs_to_ab(const xt::xarray<double> &rs) {
+xt::xarray<double> rs_to_ab(const xt::xarray<double>& rs) {
   auto r = xt::col(rs, 0);
   auto s = xt::col(rs, 1);
   auto ab = xt::zeros_like(rs);
@@ -173,8 +173,8 @@ xt::xarray<double> generate_triangle_nodes(unsigned order) {
   auto warp3 = blend3 * warpf3 * xt::square(1 + alpha * l3);
 
   xt::xarray<double> out = xt::zeros<double>(xt::dynamic_shape<std::size_t>{n_p, 2});
-  auto &&x = xt::col(out, 0);
-  auto &&y = xt::col(out, 1);
+  auto&& x = xt::col(out, 0);
+  auto&& y = xt::col(out, 1);
 
   x = -l2 + l3;
   y = (-l2 - l3 + 2.0 * l1) / std::numbers::sqrt3;
@@ -186,7 +186,7 @@ xt::xarray<double> generate_triangle_nodes(unsigned order) {
   return out;
 }
 
-xt::xarray<double> equilateral_xy_to_rs(const xt::xarray<double> &xy) {
+xt::xarray<double> equilateral_xy_to_rs(const xt::xarray<double>& xy) {
   constexpr double sqrt3 = std::numbers::sqrt3;
   auto x = xt::col(xy, 0);
   auto y = xt::col(xy, 1);
@@ -200,7 +200,7 @@ xt::xarray<double> equilateral_xy_to_rs(const xt::xarray<double> &xy) {
   return l_coords;
 }
 
-xt::xarray<double> warp_factor(unsigned order, const xt::xarray<double> &rs) {
+xt::xarray<double> warp_factor(unsigned order, const xt::xarray<double>& rs) {
   auto lgl_r = oiseau::dg::nodal::utils::jacobi_gl(order, 0.0, 0.0);
 
   xt::xarray<double> r_eq = xt::linspace<double>(-1.0, 1.0, order + 1);

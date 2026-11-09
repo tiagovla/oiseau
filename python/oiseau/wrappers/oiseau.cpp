@@ -10,8 +10,8 @@
 namespace py = pybind11;
 
 namespace oiseau::wrappers {
-void mesh(py::module &m);
-void io(py::module &m);
+void mesh(py::module& m);
+void io(py::module& m);
 }  // namespace oiseau::wrappers
 
 PYBIND11_MODULE(cpp, m) {

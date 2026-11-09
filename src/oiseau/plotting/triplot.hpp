@@ -10,5 +10,5 @@
 #include "oiseau/plotting/pyplot.hpp"
 
 namespace oiseau::plotting {
-void triplot(plt::AxesSubPlot &ax, oiseau::mesh::Mesh &mesh);
+void triplot(plt::AxesSubPlot& ax, oiseau::mesh::Mesh& mesh);
 }

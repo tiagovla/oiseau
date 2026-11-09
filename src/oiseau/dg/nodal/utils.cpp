@@ -58,7 +58,7 @@ xt::xarray<double> jacobi_gl(unsigned n, double alpha, double beta) {
   return xt::concatenate(xt::xtuple(-xt::ones<double>({1}), x, xt::ones<double>({1})));
 }
 
-xt::xarray<double> vandermonde_1d(unsigned n, const xt::xarray<double> &r) {
+xt::xarray<double> vandermonde_1d(unsigned n, const xt::xarray<double>& r) {
   std::array<size_t, 2> shape = {r.size(), n + 1};
   xt::xtensor<double, 2> output(shape);
   for (size_t i = 0; i < n + 1; ++i) {
@@ -67,7 +67,7 @@ xt::xarray<double> vandermonde_1d(unsigned n, const xt::xarray<double> &r) {
   return output;
 }
 
-xt::xarray<double> grad_vandermonde_1d(unsigned n, const xt::xarray<double> &r) {
+xt::xarray<double> grad_vandermonde_1d(unsigned n, const xt::xarray<double>& r) {
   std::array<size_t, 2> shape = {r.size(), n + 1};
   auto output = xt::xtensor<double, 2>::from_shape(shape);
   for (size_t i = 0; i < n + 1; ++i) {
@@ -76,11 +76,11 @@ xt::xarray<double> grad_vandermonde_1d(unsigned n, const xt::xarray<double> &r) 
   return output;
 }
 
-xt::xarray<double> d_matrix_1d(const xt::xarray<double> &v, const xt::xarray<double> &gv) {
+xt::xarray<double> d_matrix_1d(const xt::xarray<double>& v, const xt::xarray<double>& gv) {
   return xt::transpose(xt::linalg::solve(xt::transpose(v), xt::transpose(gv)));
 }
 
-xt::xarray<double> d_matrix_1d(unsigned n, const xt::xarray<double> &r) {
+xt::xarray<double> d_matrix_1d(unsigned n, const xt::xarray<double>& r) {
   auto v = vandermonde_1d(n, r);
   auto gv = grad_vandermonde_1d(n, r);
   return d_matrix_1d(v, gv);
@@ -107,7 +107,7 @@ xt::xarray<double> generate_triangle_equidistant_nodes(unsigned n) {
   return out;
 }
 
-xt::xarray<double> warp_factor(unsigned n, const xt::xarray<double> &rout) {
+xt::xarray<double> warp_factor(unsigned n, const xt::xarray<double>& rout) {
   auto lgl_r = oiseau::dg::nodal::utils::jacobi_gl(n, 0.0, 0.0);
   auto r_eq = xt::linspace<double>(-1.0, 1.0, n + 1);
   auto v_eq = oiseau::dg::nodal::utils::vandermonde_1d(n, r_eq);
@@ -123,7 +123,7 @@ xt::xarray<double> warp_factor(unsigned n, const xt::xarray<double> &rout) {
   return warp;
 }
 
-xt::xarray<double> conversion_equilateral_xy_to_rs(const xt::xarray<double> &coords) {
+xt::xarray<double> conversion_equilateral_xy_to_rs(const xt::xarray<double>& coords) {
   auto l_coords = xt::zeros_like(coords);
   auto x = xt::col(coords, 0);
   auto y = xt::col(coords, 1);
@@ -135,7 +135,7 @@ xt::xarray<double> conversion_equilateral_xy_to_rs(const xt::xarray<double> &coo
   return l_coords;
 }
 
-xt::xarray<double> simplexp_2d(const xt::xarray<double> &ab, int i, int j) {
+xt::xarray<double> simplexp_2d(const xt::xarray<double>& ab, int i, int j) {
   xt::xarray<double> a = xt::col(ab, 0);
   xt::xarray<double> b = xt::col(ab, 1);
   auto h1 = oiseau::utils::jacobi_p(i, 0.0, 0.0, a);
@@ -143,7 +143,7 @@ xt::xarray<double> simplexp_2d(const xt::xarray<double> &ab, int i, int j) {
   return std::numbers::sqrt2 * h1 * h2 * xt::pow(1 - b, i);
 }
 
-xt::xarray<double> tensorp_2d(const xt::xarray<double> &rs, int i, int j) {
+xt::xarray<double> tensorp_2d(const xt::xarray<double>& rs, int i, int j) {
   xt::xarray<double> r = xt::col(rs, 0);
   xt::xarray<double> s = xt::col(rs, 1);
   auto h1 = oiseau::utils::jacobi_p(i, 0.0, 0.0, r);
@@ -151,7 +151,7 @@ xt::xarray<double> tensorp_2d(const xt::xarray<double> &rs, int i, int j) {
   return h1 * h2;
 }
 
-xt::xarray<double> tensorp_3d(const xt::xarray<double> &rst, int i, int j, int k) {
+xt::xarray<double> tensorp_3d(const xt::xarray<double>& rst, int i, int j, int k) {
   xt::xarray<double> r = xt::col(rst, 0);
   xt::xarray<double> s = xt::col(rst, 1);
   xt::xarray<double> t = xt::col(rst, 2);
@@ -163,7 +163,7 @@ xt::xarray<double> tensorp_3d(const xt::xarray<double> &rst, int i, int j, int k
   return h1 * h2 * h3;
 }
 
-xt::xarray<double> grad_tensorp_2d(const xt::xarray<double> &rs, int i, int j) {
+xt::xarray<double> grad_tensorp_2d(const xt::xarray<double>& rs, int i, int j) {
   xt::xarray<double> r = xt::col(rs, 0);
   xt::xarray<double> s = xt::col(rs, 1);
 
@@ -178,7 +178,7 @@ xt::xarray<double> grad_tensorp_2d(const xt::xarray<double> &rs, int i, int j) {
   return xt::stack(xt::xtuple(dphidr, dphids), 1);  // shape: [N, 2]
 }
 
-xt::xarray<double> grad_tensorp_3d(const xt::xarray<double> &rst, int i, int j, int k) {
+xt::xarray<double> grad_tensorp_3d(const xt::xarray<double>& rst, int i, int j, int k) {
   xt::xarray<double> r = xt::col(rst, 0);
   xt::xarray<double> s = xt::col(rst, 1);
   xt::xarray<double> t = xt::col(rst, 2);
@@ -198,7 +198,7 @@ xt::xarray<double> grad_tensorp_3d(const xt::xarray<double> &rst, int i, int j, 
   return xt::stack(xt::xtuple(dphidr, dphids, dphidt), 1);  // shape: [N, 3]
 }
 
-xt::xarray<double> grad_simplexp_2d(const xt::xarray<double> &ab, int i, int j) {
+xt::xarray<double> grad_simplexp_2d(const xt::xarray<double>& ab, int i, int j) {
   xt::xarray<double> a = xt::col(ab, 0);
   xt::xarray<double> b = xt::col(ab, 1);
   xt::xarray<double> fa = oiseau::utils::jacobi_p(i, 0.0, 0.0, a);
@@ -219,7 +219,7 @@ xt::xarray<double> grad_simplexp_2d(const xt::xarray<double> &ab, int i, int j) 
   return xt::stack(xt::xtuple(dmodedr, dmodeds), 1);
 }
 
-xt::xarray<double> vandermonde_2d(unsigned n, const xt::xarray<double> &rs) {
+xt::xarray<double> vandermonde_2d(unsigned n, const xt::xarray<double>& rs) {
   auto ab = conversion_rs_to_ab(rs);
   std::array<size_t, 2> shape = {rs.shape()[0], ((n + 1) * (n + 2)) / 2};
   xt::xtensor<double, 2> output(shape);
@@ -232,7 +232,7 @@ xt::xarray<double> vandermonde_2d(unsigned n, const xt::xarray<double> &rs) {
   return output;
 }
 
-xt::xarray<double> vandermonde_2d_tensor(unsigned n, const xt::xarray<double> &rs) {
+xt::xarray<double> vandermonde_2d_tensor(unsigned n, const xt::xarray<double>& rs) {
   std::array<size_t, 2> shape = {rs.shape()[0], (n + 1) * (n + 1)};
   xt::xtensor<double, 2> output(shape);
   int index = 0;
@@ -244,7 +244,7 @@ xt::xarray<double> vandermonde_2d_tensor(unsigned n, const xt::xarray<double> &r
   return output;
 }
 
-xt::xarray<double> grad_vandermonde_2d(unsigned n, const xt::xarray<double> &rs) {
+xt::xarray<double> grad_vandermonde_2d(unsigned n, const xt::xarray<double>& rs) {
   auto ab = conversion_rs_to_ab(rs);
   std::array<size_t, 3> shape = {rs.shape()[0], ((n + 1) * (n + 2)) / 2, 2};
   xt::xtensor<double, 3> output(shape);
@@ -259,7 +259,7 @@ xt::xarray<double> grad_vandermonde_2d(unsigned n, const xt::xarray<double> &rs)
   return output;
 }
 
-xt::xarray<double> grad_vandermonde_2d_tensor(unsigned n, const xt::xarray<double> &rs) {
+xt::xarray<double> grad_vandermonde_2d_tensor(unsigned n, const xt::xarray<double>& rs) {
   std::array<size_t, 3> shape = {rs.shape()[0], (n + 1) * (n + 1), 2};
   xt::xtensor<double, 3> output(shape);
   int index = 0;
@@ -273,7 +273,7 @@ xt::xarray<double> grad_vandermonde_2d_tensor(unsigned n, const xt::xarray<doubl
   return output;
 }
 
-xt::xarray<double> d_matrix_2d(const xt::xarray<double> &v, const xt::xarray<double> &gv) {
+xt::xarray<double> d_matrix_2d(const xt::xarray<double>& v, const xt::xarray<double>& gv) {
   auto gvr = xt::view(gv, xt::all(), xt::all(), 0);
   auto gvs = xt::view(gv, xt::all(), xt::all(), 1);
   auto dr = xt::transpose(xt::linalg::solve(xt::transpose(v), xt::transpose(gvr)));
@@ -281,7 +281,7 @@ xt::xarray<double> d_matrix_2d(const xt::xarray<double> &v, const xt::xarray<dou
   return xt::stack(xt::xtuple(dr, ds), 2);
 }
 
-xt::xarray<double> conversion_rs_to_ab(const xt::xarray<double> &rs) {
+xt::xarray<double> conversion_rs_to_ab(const xt::xarray<double>& rs) {
   auto ab = xt::zeros_like(rs);
   auto r = xt::col(rs, 0);
   auto s = xt::col(rs, 1);
@@ -321,8 +321,8 @@ xt::xarray<double> generate_triangle_nodes(unsigned n) {
   auto warp1 = blend1 * warpf1 * xt::square(1 + (alpha * l1));
   auto warp2 = blend2 * warpf2 * xt::square(1 + (alpha * l2));
   auto warp3 = blend3 * warpf3 * xt::square(1 + (alpha * l3));
-  auto &&x = xt::col(out, 0);
-  auto &&y = xt::col(out, 1);
+  auto&& x = xt::col(out, 0);
+  auto&& y = xt::col(out, 1);
   auto pi = xt::numeric_constants<double>::PI;
   xt::col(out, 0) = -l2 + l3;
   xt::col(out, 1) = (-l2 - l3 + 2.0 * l1) / std::numbers::sqrt3;
@@ -389,8 +389,8 @@ xt::xarray<double> generate_tetrahedron_equidistant_nodes(unsigned n) {
   return output;
 }
 
-xt::xarray<double> eval_warp(int p, const xt::xarray<double> &xnodes,
-                             const xt::xarray<double> &xout) {
+xt::xarray<double> eval_warp(int p, const xt::xarray<double>& xnodes,
+                             const xt::xarray<double>& xout) {
   xt::xarray<double> warp = xt::zeros_like(xout);
   xt::xarray<double> xeq = xt::zeros<double>({p + 1});
   for (int i = 0; i <= p; i++) xeq(i) = -1.0 + 2.0 * (p - i) / p;
@@ -406,8 +406,8 @@ xt::xarray<double> eval_warp(int p, const xt::xarray<double> &xnodes,
   return warp;
 }
 
-xt::xarray<double> eval_shift(int p, double pval, const xt::xarray<double> &l1,
-                              const xt::xarray<double> &l2, const xt::xarray<double> &l3) {
+xt::xarray<double> eval_shift(int p, double pval, const xt::xarray<double>& l1,
+                              const xt::xarray<double>& l2, const xt::xarray<double>& l3) {
   auto gaussX = -jacobi_gl(p, 0.0, 0.0);
   auto blend1 = l2 * l3;
   auto blend2 = l1 * l3;
@@ -424,8 +424,8 @@ xt::xarray<double> eval_shift(int p, double pval, const xt::xarray<double> &l1,
   return xt::stack(xt::xtuple(dx, dy), 1);
 }
 
-xt::xarray<double> warp_shift_face_3d(int p, double pval, const xt::xarray<double> &l2,
-                                      const xt::xarray<double> &l3, const xt::xarray<double> &l4) {
+xt::xarray<double> warp_shift_face_3d(int p, double pval, const xt::xarray<double>& l2,
+                                      const xt::xarray<double>& l3, const xt::xarray<double>& l4) {
   return eval_shift(p, pval, l2, l3, l4);
 }
 
@@ -505,7 +505,7 @@ xt::xarray<double> generate_tetrahedron_nodes(unsigned p) {
   return xyz;
 }
 
-xt::xarray<double> conversion_equilateral_xyz_to_rst(const xt::xarray<double> &coords) {
+xt::xarray<double> conversion_equilateral_xyz_to_rst(const xt::xarray<double>& coords) {
   const double sqrt3 = std::numbers::sqrt3;
   const double sqrt6 = std::sqrt(6.0);
   xt::xtensor<double, 1> v1 = {-1, -1 / sqrt3, -1 / sqrt6};
@@ -518,7 +518,7 @@ xt::xarray<double> conversion_equilateral_xyz_to_rst(const xt::xarray<double> &c
   return xt::transpose(rst);
 }
 
-xt::xarray<double> simplexp_3d(const xt::xarray<double> &abc, int i, int j, int k) {
+xt::xarray<double> simplexp_3d(const xt::xarray<double>& abc, int i, int j, int k) {
   xt::xarray<double> a = xt::col(abc, 0);
   xt::xarray<double> b = xt::col(abc, 1);
   xt::xarray<double> c = xt::col(abc, 2);
@@ -528,14 +528,14 @@ xt::xarray<double> simplexp_3d(const xt::xarray<double> &abc, int i, int j, int 
   return 2 * std::numbers::sqrt2 * h1 * h2 * xt::pow(1 - b, i) * h3 * xt::pow(1 - c, i + j);
 }
 
-xt::xarray<double> conversion_rst_to_abc(const xt::xarray<double> &rst) {
+xt::xarray<double> conversion_rst_to_abc(const xt::xarray<double>& rst) {
   auto abc = xt::zeros_like(rst);
-  auto &&r = xt::col(rst, 0);
-  auto &&s = xt::col(rst, 1);
-  auto &&t = xt::col(rst, 2);
-  auto &&a = xt::col(abc, 0);
-  auto &&b = xt::col(abc, 1);
-  auto &&c = xt::col(abc, 2);
+  auto&& r = xt::col(rst, 0);
+  auto&& s = xt::col(rst, 1);
+  auto&& t = xt::col(rst, 2);
+  auto&& a = xt::col(abc, 0);
+  auto&& b = xt::col(abc, 1);
+  auto&& c = xt::col(abc, 2);
   for (unsigned n = 0; n < rst.shape()[0]; ++n) {
     if ((s[n] + t[n]) != 0) {
       a[n] = 2 * ((1 + r[n]) / (-s[n] - t[n])) - 1;
@@ -552,7 +552,7 @@ xt::xarray<double> conversion_rst_to_abc(const xt::xarray<double> &rst) {
   return abc;
 }
 
-xt::xarray<double> vandermonde_3d(unsigned n, const xt::xarray<double> &rst) {
+xt::xarray<double> vandermonde_3d(unsigned n, const xt::xarray<double>& rst) {
   auto abc = conversion_rst_to_abc(rst);
   std::array<size_t, 2> shape = {rst.shape()[0], ((n + 1) * (n + 2) * (n + 3)) / 6};
   xt::xtensor<double, 2> output(shape);
@@ -567,7 +567,7 @@ xt::xarray<double> vandermonde_3d(unsigned n, const xt::xarray<double> &rst) {
   return output;
 }
 
-xt::xarray<double> vandermonde_3d_tensor(unsigned n, const xt::xarray<double> &rst) {
+xt::xarray<double> vandermonde_3d_tensor(unsigned n, const xt::xarray<double>& rst) {
   std::array<size_t, 2> shape = {rst.shape()[0], (n + 1) * (n + 1) * (n + 1)};
   xt::xtensor<double, 2> output(shape);
   int index = 0;
@@ -581,7 +581,7 @@ xt::xarray<double> vandermonde_3d_tensor(unsigned n, const xt::xarray<double> &r
   return output;
 }
 
-xt::xarray<double> grad_simplexp_3d(const xt::xarray<double> &abc, int i, int j, int k) {
+xt::xarray<double> grad_simplexp_3d(const xt::xarray<double>& abc, int i, int j, int k) {
   xt::xarray<double> a = xt::col(abc, 0);
   xt::xarray<double> b = xt::col(abc, 1);
   xt::xarray<double> c = xt::col(abc, 2);
@@ -619,7 +619,7 @@ xt::xarray<double> grad_simplexp_3d(const xt::xarray<double> &abc, int i, int j,
   return xt::stack(xt::xtuple(v3dr, v3ds, v3dt), 1);
 }
 
-xt::xarray<double> grad_vandermonde_3d(unsigned n, const xt::xarray<double> &rst) {
+xt::xarray<double> grad_vandermonde_3d(unsigned n, const xt::xarray<double>& rst) {
   auto abc = conversion_rst_to_abc(rst);
   std::array<size_t, 3> shape = {rst.shape()[0], ((n + 1) * (n + 2) * (n + 3)) / 6, 3};
   xt::xtensor<double, 3> output(shape);
@@ -637,7 +637,7 @@ xt::xarray<double> grad_vandermonde_3d(unsigned n, const xt::xarray<double> &rst
   return output;
 }
 
-xt::xarray<double> grad_vandermonde_3d_tensor(unsigned n, const xt::xarray<double> &rst) {
+xt::xarray<double> grad_vandermonde_3d_tensor(unsigned n, const xt::xarray<double>& rst) {
   std::array<size_t, 3> shape = {rst.shape()[0], (n + 1) * (n + 1) * (n + 1), 3};
   xt::xtensor<double, 3> output(shape);
   int index = 0;
@@ -654,7 +654,7 @@ xt::xarray<double> grad_vandermonde_3d_tensor(unsigned n, const xt::xarray<doubl
   return output;
 }
 
-xt::xarray<double> d_matrix_3d(const xt::xarray<double> &v, const xt::xarray<double> &gv) {
+xt::xarray<double> d_matrix_3d(const xt::xarray<double>& v, const xt::xarray<double>& gv) {
   auto gvr = xt::view(gv, xt::all(), xt::all(), 0);
   auto gvs = xt::view(gv, xt::all(), xt::all(), 1);
   auto gvt = xt::view(gv, xt::all(), xt::all(), 2);

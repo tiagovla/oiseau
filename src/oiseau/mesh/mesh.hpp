@@ -15,20 +15,20 @@ namespace oiseau::mesh {
 class Mesh {
  public:
   Mesh() : _topology(), _geometry() {}
-  Mesh(Topology &topology, Geometry &geometry) : _topology(topology), _geometry(geometry) {}
-  Mesh(Topology &&topology, Geometry &&geometry)
+  Mesh(Topology& topology, Geometry& geometry) : _topology(topology), _geometry(geometry) {}
+  Mesh(Topology&& topology, Geometry&& geometry)
       : _topology(std::move(topology)), _geometry(std::move(geometry)) {}
 
-  Mesh(Mesh &&) = default;
-  Mesh(const Mesh &) = default;
-  Mesh &operator=(Mesh &&) = default;
-  Mesh &operator=(const Mesh &) = default;
+  Mesh(Mesh&&) = default;
+  Mesh(const Mesh&) = default;
+  Mesh& operator=(Mesh&&) = default;
+  Mesh& operator=(const Mesh&) = default;
   ~Mesh() = default;
 
-  Topology &topology();
-  const Topology &topology() const;
-  Geometry &geometry();
-  const Geometry &geometry() const;
+  Topology& topology();
+  const Topology& topology() const;
+  Geometry& geometry();
+  const Geometry& geometry() const;
 
  private:
   Topology _topology;

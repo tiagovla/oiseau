@@ -9,5 +9,5 @@
 namespace py = pybind11;
 
 namespace oiseau::wrappers {
-void io(py::module &m) {}
+void io(py::module& m) {}
 }  // namespace oiseau::wrappers

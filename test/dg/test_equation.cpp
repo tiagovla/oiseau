@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "oiseau/dg/equation.hpp"
+#include "oiseau/dg/field.hpp"
 
 namespace {
 

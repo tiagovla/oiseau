@@ -23,10 +23,10 @@ TEST(test_mdspan, xtensor_move_to_mdspan) {
   using std_xtensor = xt::xtensor_container<std::vector<double>, 2>;
   using exts_type = std::extents<std::size_t, 5, 2>;
   std_xtensor tensor = std_xtensor::from_shape({5, 2});
-  double *ptr_tensor = tensor.data();
+  double* ptr_tensor = tensor.data();
   exts_type exts;
   stdex::mdarray<double, exts_type> mdarray(exts, std::move(tensor.storage()));
-  double *ptr_mdarray = mdarray.data();
+  double* ptr_mdarray = mdarray.data();
   EXPECT_EQ(ptr_tensor, ptr_mdarray);
 }
 }  // namespace

@@ -54,7 +54,7 @@ class RefTetrahedron : public RefElement {
    * @param k Polynomial degree index (e.g., for the third transformed coordinate).
    * @return  1D array (length N_points) of basis function values at each (r, s, t) point.
    */
-  static xt::xarray<double> basis_function(const xt::xarray<double> &rst, int i, int j, int k);
+  static xt::xarray<double> basis_function(const xt::xarray<double>& rst, int i, int j, int k);
 
   /**
    * @brief Computes the gradient of a 3D basis function on the reference tetrahedron.
@@ -68,7 +68,7 @@ class RefTetrahedron : public RefElement {
    * @param k Polynomial degree index.
    * @return  2D array (shape: N_points × 3) containing (∂/∂r, ∂/∂s, ∂/∂t) for each point.
    */
-  static xt::xarray<double> grad_basis_function(const xt::xarray<double> &rst, int i, int j, int k);
+  static xt::xarray<double> grad_basis_function(const xt::xarray<double>& rst, int i, int j, int k);
 
  private:
   /**
@@ -81,7 +81,7 @@ class RefTetrahedron : public RefElement {
    * @param rst 2D array (shape: N_nodes × 3) of (r, s, t) nodal coordinates.
    * @return    2D array (shape: N_nodes × N_basis) representing the Vandermonde matrix.
    */
-  xt::xarray<double> vandermonde(const xt::xarray<double> &rst) const override;
+  xt::xarray<double> vandermonde(const xt::xarray<double>& rst) const override;
 
   /**
    * @brief Computes the gradient Vandermonde matrix for the reference tetrahedron.
@@ -94,7 +94,7 @@ class RefTetrahedron : public RefElement {
    * @param rst 2D array (shape: N_nodes × 3) of (r, s, t) nodal coordinates.
    * @return    3D array (N_nodes × N_basis × 3) of basis function gradients at nodal points.
    */
-  xt::xarray<double> grad_vandermonde(const xt::xarray<double> &rst) const;
+  xt::xarray<double> grad_vandermonde(const xt::xarray<double>& rst) const;
 
   /**
    * @brief Computes the differentiation operator matrices Dr, Ds, Dt.
@@ -110,8 +110,8 @@ class RefTetrahedron : public RefElement {
    * to nodal derivatives. Assuming N_nodes = N_basis, returns differentiation matrices of shape
    * (N_nodes x N_nodes x 3).
    */
-  static xt::xarray<double> grad_operator(const xt::xarray<double> &v,
-                                          const xt::xarray<double> &gv);
+  static xt::xarray<double> grad_operator(const xt::xarray<double>& v,
+                                          const xt::xarray<double>& gv);
 };
 
 namespace detail {
@@ -127,7 +127,7 @@ namespace detail {
  * @param coords 2D array (shape: N_points × 3) of XYZ coordinates.
  * @return       2D array (shape: N_points × 3) of (r,s,t) coordinates.
  */
-xt::xarray<double> equilateral_xyz_to_rst(const xt::xarray<double> &coords);
+xt::xarray<double> equilateral_xyz_to_rst(const xt::xarray<double>& coords);
 
 /**
  * @brief Transforms coordinates from the reference (r,s,t) space to a auxiliary (a,b,c) space.
@@ -143,7 +143,7 @@ xt::xarray<double> equilateral_xyz_to_rst(const xt::xarray<double> &coords);
  * @param rst 2D array (shape: N_points × 3) of (r,s,t) coordinates.
  * @return    2D array (shape: N_points × 3) of (a,b,c) coordinates.
  */
-xt::xarray<double> rst_to_abc(const xt::xarray<double> &rst);
+xt::xarray<double> rst_to_abc(const xt::xarray<double>& rst);
 
 /**
  * @brief Generates nodal points on the reference tetrahedron for a given polynomial order.
@@ -183,8 +183,8 @@ xt::xarray<double> generate_tetrahedron_equidistant_nodes(unsigned n);
  * @param l4 Barycentric coordinate \f$\zeta_4\f$.
  * @return   Shift values (xt::xarray<double>) for the nodes.
  */
-xt::xarray<double> warp_shift_face_3d(int p, double pval, const xt::xarray<double> &l2,
-                                      const xt::xarray<double> &l3, const xt::xarray<double> &l4);
+xt::xarray<double> warp_shift_face_3d(int p, double pval, const xt::xarray<double>& l2,
+                                      const xt::xarray<double>& l3, const xt::xarray<double>& l4);
 /**
  * @brief Helper function for the Warp & Blend algorithm: evaluates a shifting polynomial.
  *
@@ -199,8 +199,8 @@ xt::xarray<double> warp_shift_face_3d(int p, double pval, const xt::xarray<doubl
  * @param l3 Barycentric coordinate \f$\zeta_3\f$.
  * @return   Evaluated shift values (xt::xarray<double>).
  */
-xt::xarray<double> eval_shift(int p, double pval, const xt::xarray<double> &l1,
-                              const xt::xarray<double> &l2, const xt::xarray<double> &l3);
+xt::xarray<double> eval_shift(int p, double pval, const xt::xarray<double>& l1,
+                              const xt::xarray<double>& l2, const xt::xarray<double>& l3);
 /**
  * @brief Helper function for the Warp & Blend algorithm: evaluates the warp factor or displacement.
  *
@@ -215,8 +215,8 @@ xt::xarray<double> eval_shift(int p, double pval, const xt::xarray<double> &l1,
  * factor.
  * @return       Warp factors or displacements (xt::xarray<double>).
  */
-xt::xarray<double> eval_warp(int p, const xt::xarray<double> &xnodes,
-                             const xt::xarray<double> &xout);
+xt::xarray<double> eval_warp(int p, const xt::xarray<double>& xnodes,
+                             const xt::xarray<double>& xout);
 
 }  // namespace detail
 

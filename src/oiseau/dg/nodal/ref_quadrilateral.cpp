@@ -30,7 +30,7 @@ RefQuadrilateral::RefQuadrilateral(unsigned order) : RefElement(order) {
   this->m_d = grad_operator(this->m_v, this->m_gv);
 }
 
-xt::xarray<double> RefQuadrilateral::basis_function(const xt::xarray<double> &rs, int i, int j) {
+xt::xarray<double> RefQuadrilateral::basis_function(const xt::xarray<double>& rs, int i, int j) {
   xt::xarray<double> r = xt::col(rs, 0);
   xt::xarray<double> s = xt::col(rs, 1);
   auto h1 = oiseau::utils::jacobi_p(i, 0.0, 0.0, r);
@@ -38,7 +38,7 @@ xt::xarray<double> RefQuadrilateral::basis_function(const xt::xarray<double> &rs
   return h1 * h2;
 }
 //
-xt::xarray<double> RefQuadrilateral::grad_basis_function(const xt::xarray<double> &rs, int i,
+xt::xarray<double> RefQuadrilateral::grad_basis_function(const xt::xarray<double>& rs, int i,
                                                          int j) {
   xt::xarray<double> r = xt::col(rs, 0);
   xt::xarray<double> s = xt::col(rs, 1);
@@ -54,7 +54,7 @@ xt::xarray<double> RefQuadrilateral::grad_basis_function(const xt::xarray<double
   return xt::stack(xt::xtuple(dphidr, dphids), 1);  // shape: [N, 2]
 }
 
-xt::xarray<double> RefQuadrilateral::vandermonde(const xt::xarray<double> &rs) const {
+xt::xarray<double> RefQuadrilateral::vandermonde(const xt::xarray<double>& rs) const {
   const std::size_t n_points = rs.shape()[0];
   const std::size_t n_basis = this->m_np;  // (order+1)*(order+1)
 
@@ -68,7 +68,7 @@ xt::xarray<double> RefQuadrilateral::vandermonde(const xt::xarray<double> &rs) c
   return output;
 }
 
-xt::xarray<double> RefQuadrilateral::grad_vandermonde(const xt::xarray<double> &rs) const {
+xt::xarray<double> RefQuadrilateral::grad_vandermonde(const xt::xarray<double>& rs) const {
   const std::size_t n_points = rs.shape()[0];
   const std::size_t n_basis = this->m_np;  // (order+1)*(order+1)
 
@@ -84,8 +84,8 @@ xt::xarray<double> RefQuadrilateral::grad_vandermonde(const xt::xarray<double> &
   return output;
 }
 
-xt::xarray<double> RefQuadrilateral::grad_operator(const xt::xarray<double> &v,
-                                                   const xt::xarray<double> &gv) {
+xt::xarray<double> RefQuadrilateral::grad_operator(const xt::xarray<double>& v,
+                                                   const xt::xarray<double>& gv) {
   auto gvr = xt::view(gv, xt::all(), xt::all(), 0);
   auto gvs = xt::view(gv, xt::all(), xt::all(), 1);
 
