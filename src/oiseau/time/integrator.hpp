@@ -10,11 +10,17 @@
 
 namespace oiseau::time {
 
-/// Interface for a time integrator acting on a system and its state.
-///
-/// The integrator updates state by one step starting at time. Concrete
-/// integrators may keep scratch storage between calls. This compile-time
-/// interface leaves the system and state types open to different solvers.
+template <typename State>
+concept AddScaledState = requires(const State& base, const State& increment, double scale) {
+  { add_scaled(base, increment, scale) } -> std::same_as<State>;
+};
+
+template <typename State>
+concept ScaleAddInPlaceState =
+    requires(State& target, const State& source, double target_scale, double source_scale) {
+      { scale_add_in_place(target, target_scale, source, source_scale) } -> std::same_as<void>;
+    };
+
 template <typename Integrator, typename System, typename State>
 concept TimeIntegrator =
     requires(Integrator& integrator, System& system, State& state, double time, double time_step) {

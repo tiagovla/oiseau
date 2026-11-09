@@ -12,19 +12,15 @@
 #include <stdexcept>
 
 #include "oiseau/time/detail/rhs.hpp"
+#include "oiseau/time/integrator.hpp"
 
 namespace oiseau::time {
 
-/// Five-stage, fourth-order low-storage Runge-Kutta scheme used by nodaldg.
-///
-/// The state supplies scale_add_in_place(target, target_scale, source,
-/// source_scale) in its namespace. The system supplies rhs(time, state) or
-/// rhs(state). The in-place operation must support target and source aliasing.
-/// Each step evaluates the RHS five times.
+/// Five-stage, fourth-order low-storage Runge-Kutta scheme
 class LSRK54 {
  public:
-  template <typename System, typename State>
-  void step(System& system, State& state, double time, double time_step) {
+  template <typename System, ScaleAddInPlaceState State>
+  static void step(System& system, State& state, double time, double time_step) {
     if (!std::isfinite(time)) {
       throw std::invalid_argument("Time must be finite");
     }

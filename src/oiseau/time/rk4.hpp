@@ -11,6 +11,7 @@
 #include <utility>
 
 #include "oiseau/time/detail/rhs.hpp"
+#include "oiseau/time/integrator.hpp"
 
 namespace oiseau::time {
 
@@ -40,13 +41,10 @@ void rk4_step(State& state, double time, double time_step, Rhs&& rhs, AddScaled&
 }
 
 /// Classical fourth-order Runge-Kutta integrator.
-///
-/// The system supplies rhs(time, state) or rhs(state). The state type supplies
-/// add_scaled(base, increment, scale) in its namespace.
 class RK4 {
  public:
-  template <typename System, typename State>
-  void step(System& system, State& state, double time, double time_step) {
+  template <typename System, AddScaledState State>
+  static void step(System& system, State& state, double time, double time_step) {
     rk4_step(
         state, time, time_step,
         [&system](double stage_time, const State& value) {
