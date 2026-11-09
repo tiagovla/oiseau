@@ -38,4 +38,5 @@ TEST(test_dg_field, same_named_fields_have_distinct_identity) {
 
 TEST(test_dg_field, rejects_an_empty_name) {
   EXPECT_THROW((Field{std::string{}}), std::invalid_argument);
+  EXPECT_THROW((Field{""}), std::invalid_argument);
 }
