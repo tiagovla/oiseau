@@ -12,6 +12,7 @@
 #include <span>
 #include <vector>
 #include <xtensor/containers/xarray.hpp>
+#include <xtensor/core/xtensor_forward.hpp>
 
 #include "oiseau/dg/dg_connectivity.hpp"
 #include "oiseau/dg/dg_geometry.hpp"
