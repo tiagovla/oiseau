@@ -17,29 +17,20 @@
 #include <utility>
 #include <vector>
 #include <xtensor-blas/xlinalg.hpp>
-#include <xtensor/containers/xtensor.hpp>
 #include <xtensor/generators/xbuilder.hpp>
 
 #include "oiseau/dg/detail/cell_mapping.hpp"
+#include "oiseau/dg/detail/geometry.hpp"
 #include "oiseau/dg/nodal/ref_element.hpp"
 #include "oiseau/mesh/cell.hpp"
 #include "oiseau/mesh/geometry.hpp"
+#include "oiseau/mesh/mesh.hpp"
 #include "oiseau/mesh/topology.hpp"
 
 namespace oiseau::dg {
-namespace {
+namespace detail {
 
-using Matrix = xt::xtensor<double, 2>;
-using Point = xt::xtensor<double, 1>;
-
-template <typename VectorExpression>
-double vector_norm(const VectorExpression& vector) {
-  return xt::linalg::norm(vector, 2);
-}
-
-Matrix zero_matrix(std::size_t dimension) { return xt::zeros<double>({dimension, dimension}); }
-
-Point zero_point() { return xt::zeros<double>({3}); }
+double vector_norm(const Point& vector) { return xt::linalg::norm(vector, 2); }
 
 std::array<double, 9> padded_matrix(const Matrix& matrix, std::size_t dimension) {
   std::array<double, 9> output{};
@@ -51,7 +42,11 @@ std::array<double, 9> padded_matrix(const Matrix& matrix, std::size_t dimension)
   return output;
 }
 
-std::array<double, 3> point_array(const Point& point) { return {point(0), point(1), point(2)}; }
+std::array<double, 3> point_array(const Point& point) {
+  std::array<double, 3> output{};
+  std::ranges::copy(point, output.begin());
+  return output;
+}
 
 nodal::RefElementType ref_type_for(mesh::CellKind kind) {
   switch (kind) {
@@ -98,7 +93,7 @@ double affine_tolerance(const std::vector<Point>& points, std::size_t dimension)
   const auto max_distance_from = [&points](const Point& point) {
     return std::accumulate(points.begin(), points.end(), 0.0,
                            [&point](double distance, const Point& other) {
-                             return std::max(distance, vector_norm(point - other));
+                             return std::max(distance, vector_norm(Point(point - other)));
                            });
   };
   const auto cell_diameter = std::accumulate(
@@ -114,7 +109,7 @@ Point physical_vertex(const mesh::Geometry& geometry, std::size_t vertex, std::s
     throw std::out_of_range("Cell references a vertex outside the mesh geometry");
   }
 
-  Point point = zero_point();
+  Point point = xt::zeros<double>({dimension});
   for (std::size_t coordinate = 0; coordinate < dimension; ++coordinate) {
     point(coordinate) = coordinates[vertex * geometry.dim() + coordinate];
     if (!std::isfinite(point(coordinate))) {
@@ -130,10 +125,6 @@ Point physical_vertex(const mesh::Geometry& geometry, std::size_t vertex, std::s
   }
   return point;
 }
-
-double matrix_determinant(const Matrix& matrix) { return xt::linalg::det(matrix); }
-
-Matrix inverse(const Matrix& matrix) { return xt::linalg::inv(matrix); }
 
 std::array<std::size_t, 4> independent_vertices(const std::vector<Point>& reference_points,
                                                 std::size_t dimension) {
@@ -152,14 +143,14 @@ std::array<std::size_t, 4> independent_vertices(const std::vector<Point>& refere
           continue;
         }
         const std::array<std::size_t, 3> indices = {first, second, third};
-        auto edges = zero_matrix(dimension);
+        Matrix edges = xt::zeros<double>({dimension, dimension});
         for (std::size_t column = 0; column < dimension; ++column) {
           const auto edge = reference_points[indices[column]] - reference_points[0];
           for (std::size_t row = 0; row < dimension; ++row) {
             edges(row, column) = edge(row);
           }
         }
-        const auto determinant = std::abs(matrix_determinant(edges));
+        const auto determinant = std::abs(xt::linalg::det(edges));
         if (determinant > largest_determinant) {
           largest_determinant = determinant;
           result = {0, first, second, third};
@@ -173,48 +164,31 @@ std::array<std::size_t, 4> independent_vertices(const std::vector<Point>& refere
   return result;
 }
 
-Point multiply(const Matrix& matrix, const Point& point, std::size_t dimension) {
-  Point active_point = xt::zeros<double>({dimension});
-  for (std::size_t coordinate = 0; coordinate < dimension; ++coordinate) {
-    active_point(coordinate) = point(coordinate);
-  }
-  const auto product = xt::linalg::dot(matrix, active_point);
-  Point output = zero_point();
-  for (std::size_t coordinate = 0; coordinate < dimension; ++coordinate) {
-    output(coordinate) = product(coordinate);
-  }
-  return output;
-}
-
-Matrix multiply(const Matrix& left, const Matrix& right) { return xt::linalg::dot(left, right); }
-
 double face_measure(const std::vector<Point>& vertices, std::size_t dimension) {
   if (dimension == 1) return 1.0;
-  if (dimension == 2) return vector_norm(vertices[1] - vertices[0]);
+  if (dimension == 2) return vector_norm(Point(vertices[1] - vertices[0]));
   if (vertices.size() == 3) {
-    return vector_norm(xt::linalg::cross(vertices[1] - vertices[0], vertices[2] - vertices[0])) /
+    return vector_norm(
+               Point(xt::linalg::cross(vertices[1] - vertices[0], vertices[2] - vertices[0]))) /
            2.0;
   }
   const auto first =
-      vector_norm(xt::linalg::cross(vertices[1] - vertices[0], vertices[2] - vertices[0]));
+      vector_norm(Point(xt::linalg::cross(vertices[1] - vertices[0], vertices[2] - vertices[0])));
   const auto second =
-      vector_norm(xt::linalg::cross(vertices[2] - vertices[0], vertices[3] - vertices[0]));
+      vector_norm(Point(xt::linalg::cross(vertices[2] - vertices[0], vertices[3] - vertices[0])));
   return (first + second) / 2.0;
 }
 
 Point centroid(const std::vector<Point>& vertices) {
-  auto output = std::accumulate(vertices.begin(), vertices.end(), zero_point(),
-                                [](Point sum, const Point& vertex) {
-                                  sum += vertex;
-                                  return sum;
-                                });
+  Point output = xt::zeros<double>({vertices.front().size()});
+  for (const auto& vertex : vertices) output += vertex;
   output /= static_cast<double>(vertices.size());
   return output;
 }
 
 Point face_normal(const std::vector<Point>& vertices, const Point& cell_centroid,
                   std::size_t dimension) {
-  Point normal = zero_point();
+  Point normal = xt::zeros<double>({dimension});
   const auto face_centroid = centroid(vertices);
   if (dimension == 1) {
     normal = face_centroid - cell_centroid;
@@ -236,6 +210,24 @@ Point face_normal(const std::vector<Point>& vertices, const Point& cell_centroid
   }
   return normal;
 }
+
+}  // namespace detail
+
+namespace {
+
+using detail::affine_tolerance;
+using detail::centroid;
+using detail::face_measure;
+using detail::face_normal;
+using detail::independent_vertices;
+using detail::is_degenerate;
+using detail::Matrix;
+using detail::padded_matrix;
+using detail::physical_vertex;
+using detail::Point;
+using detail::point_array;
+using detail::ref_type_for;
+using detail::vector_norm;
 
 }  // namespace
 
@@ -283,7 +275,7 @@ DGGeometry::DGGeometry(const mesh::Mesh& mesh) : m_mesh(mesh) {
                            });
     for (std::size_t vertex_index = 0; vertex_index < vertices.size(); ++vertex_index) {
       physical_nodes.push_back(physical_vertex(geometry, vertices[vertex_index], dimension));
-      Point reference_point = zero_point();
+      Point reference_point = xt::zeros<double>({dimension});
       for (std::size_t coordinate = 0; coordinate < dimension; ++coordinate) {
         reference_point(coordinate) = dimension == 1 ? reference_nodes(vertex_index)
                                                      : reference_nodes(vertex_index, coordinate);
@@ -294,8 +286,8 @@ DGGeometry::DGGeometry(const mesh::Mesh& mesh) : m_mesh(mesh) {
           reference_point;
     }
 
-    auto reference_edges = zero_matrix(dimension);
-    auto physical_edges = zero_matrix(dimension);
+    Matrix reference_edges = xt::zeros<double>({dimension, dimension});
+    Matrix physical_edges = xt::zeros<double>({dimension, dimension});
     const auto basis_vertices = independent_vertices(reference_points, dimension);
     for (std::size_t column = 0; column < dimension; ++column) {
       const auto reference_edge =
@@ -308,23 +300,23 @@ DGGeometry::DGGeometry(const mesh::Mesh& mesh) : m_mesh(mesh) {
       }
     }
 
-    const auto reference_determinant = matrix_determinant(reference_edges);
+    const auto reference_determinant = xt::linalg::det(reference_edges);
     if (is_degenerate(reference_edges, reference_determinant, dimension)) {
       throw std::logic_error("Reference element has degenerate vertices");
     }
-    const auto inverse_reference = inverse(reference_edges);
-    const auto jacobian = multiply(physical_edges, inverse_reference);
-    const auto determinant = matrix_determinant(jacobian);
+    const auto inverse_reference = xt::linalg::inv(reference_edges);
+    const auto jacobian = xt::linalg::dot(physical_edges, inverse_reference);
+    const auto determinant = xt::linalg::det(jacobian);
     if (is_degenerate(jacobian, determinant, dimension)) {
       throw std::invalid_argument("Cell vertices define a degenerate element");
     }
-    const auto inverse_jacobian = inverse(jacobian);
+    const auto inverse_jacobian = xt::linalg::inv(jacobian);
 
     const auto tolerance = affine_tolerance(physical_nodes, dimension);
     for (std::size_t vertex_index = 0; vertex_index < physical_nodes.size(); ++vertex_index) {
       const auto reference_offset =
           reference_points[vertex_index] - reference_points[basis_vertices[0]];
-      const auto expected = multiply(jacobian, reference_offset, dimension);
+      const auto expected = xt::linalg::dot(jacobian, reference_offset);
       const auto actual = physical_nodes[vertex_index] - physical_nodes[basis_vertices[0]];
       if (vector_norm(expected - actual) > tolerance) {
         throw std::invalid_argument("DGGeometry requires affine cell mappings");
