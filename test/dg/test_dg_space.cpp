@@ -23,6 +23,14 @@ using oiseau::mesh::get_cell_type;
 using oiseau::mesh::Mesh;
 using oiseau::mesh::Topology;
 
+class UnsupportedCell : public oiseau::mesh::Cell {
+ public:
+  UnsupportedCell() {
+    m_kind = CellKind::Undefined;
+    m_dim = 1;
+  }
+};
+
 Mesh line_mesh() {
   // 0----1----2 (two interval cells; coordinates 2, 6, 12).
   return {Topology({{0, 1}, {1, 2}},
@@ -138,7 +146,7 @@ TEST(test_dg_space, maps_hex_and_tet_vertices_in_three_dimensions) {
   expect_vertices(CellKind::Tetrahedron, expected_tet);
 }
 
-TEST(test_dg_space, rejects_wrong_order_counts_zero_order_and_bad_vertex) {
+TEST(test_dg_space, rejects_invalid_orders_cell_types_and_vertices) {
   const auto mesh = mixed_mesh();
   const std::vector<unsigned> missing = {2, 3};
   const std::vector<unsigned> includes_boundary = {2, 3, 2, 1};
@@ -146,6 +154,10 @@ TEST(test_dg_space, rejects_wrong_order_counts_zero_order_and_bad_vertex) {
   EXPECT_THROW(DGSpace(mesh, missing), std::invalid_argument);
   EXPECT_THROW(DGSpace(mesh, includes_boundary), std::invalid_argument);
   EXPECT_THROW(DGSpace(mesh, zero_on_later_cell), std::invalid_argument);
+
+  const UnsupportedCell unsupported_cell;
+  const Mesh unsupported_mesh{Topology({{0, 1}}, {&unsupported_cell}), Geometry({0.0, 1.0}, 1)};
+  EXPECT_THROW(DGSpace(unsupported_mesh, 1), std::invalid_argument);
 
   // Connectivity references vertex 1, but geometry contains only vertex 0.
   const Mesh invalid_vertex{Topology({{0, 1}}, {get_cell_type(CellKind::Interval)}),
