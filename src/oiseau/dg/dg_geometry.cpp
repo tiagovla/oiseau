@@ -181,7 +181,10 @@ double face_measure(const std::vector<Point>& vertices, std::size_t dimension) {
 
 Point centroid(const std::vector<Point>& vertices) {
   Point output = xt::zeros<double>({vertices.front().size()});
-  for (const auto& vertex : vertices) output += vertex;
+  output = std::ranges::fold_left(vertices, std::move(output), [](Point sum, const Point& vertex) {
+    sum += vertex;
+    return sum;
+  });
   output /= static_cast<double>(vertices.size());
   return output;
 }
