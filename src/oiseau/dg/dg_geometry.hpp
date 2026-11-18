@@ -15,42 +15,79 @@
 
 namespace oiseau::dg {
 
-/// Constant geometric factors for affine cells of every supported reference type.
-///
-/// The Jacobian maps reference coordinates to physical coordinates. Matrices
-/// use a 3-column padded row-major layout: entry (row, column) is at
-/// `row * 3 + column`. Coordinates must lie in the subspace spanned by the
-/// first `dimension()` geometry components.
+/**
+ * @brief Stores geometric factors for top-dimensional cells in a mesh.
+ * @details The mesh is referenced, not copied, and must outlive this object.
+ * Geometry entries are indexed by source mesh cell. Lower-dimensional cells
+ * have no entry.
+ */
 class DGGeometry {
  public:
+  /** @brief Geometric data for one cell face. */
   struct FaceGeometry {
+    /** @brief Outward unit normal, padded to three coordinates. */
     std::array<double, 3> outward_normal{};
+    /**
+     * @brief Physical face measure.
+     * @details This is face length in 2D and face area in 3D. In 1D, it is 1.
+     */
     double measure = 0.0;
-    /// Physical face measure divided by the corresponding reference measure.
+    /**
+     * @brief Ratio of physical to reference face measure.
+     * @details Multiply reference face weights by this value to scale them.
+     */
     double surface_jacobian = 0.0;
   };
 
+  /** @brief Geometric data for one top-dimensional mesh cell. */
   struct CellGeometry {
+    /** @brief Index of this cell in the source mesh. */
     std::size_t mesh_cell_index = 0;
+    /** @brief Topological dimension of this cell. */
     std::size_t dimension = 0;
-    /// Row-major `dimension x dimension` matrix d(x) / d(r).
+    /**
+     * @brief Jacobian mapping reference coordinates to physical coordinates.
+     * @details Padded row-major 3 by 3 storage. Entry (row, column) is at
+     * row * 3 + column.
+     */
     std::array<double, 9> jacobian{};
-    /// Row-major inverse of `jacobian`.
+    /**
+     * @brief Inverse Jacobian in padded row-major 3 by 3 storage.
+     * @details Entry (row, column) is at row * 3 + column.
+     */
     std::array<double, 9> inverse_jacobian{};
-    /// Signed determinant; use its absolute value for volume integration.
+    /**
+     * @brief Signed Jacobian determinant.
+     * @details Use its absolute value to scale volume integrals.
+     */
     double determinant = 0.0;
+    /** @brief Face geometry in the cell type's local face order. */
     std::vector<FaceGeometry> faces;
   };
 
-  /// Builds geometry for all top-dimensional affine mesh cells.
-  ///
-  /// Lines, triangles, quadrilaterals, tetrahedra, and hexahedra are
-  /// supported. Tensor-product cells must be affine: quadrilaterals must be
-  /// parallelograms and hexahedra must be parallelepipeds.
+  /**
+   * @brief Computes geometric factors for the mesh's top-dimensional cells.
+   * @param mesh Source mesh. It must outlive this object.
+   * @throws std::invalid_argument If dimensions, coordinates, or cell geometry
+   * are invalid, or if a cell mapping is non-affine.
+   * @throws std::out_of_range If a cell references a missing mesh vertex.
+   */
   explicit DGGeometry(const mesh::Mesh& mesh);
 
+  /** @brief Returns the source mesh. */
   const mesh::Mesh& mesh() const { return m_mesh; }
+  /**
+   * @brief Checks whether geometric data exists for a mesh cell.
+   * @param mesh_cell_index Source mesh cell index.
+   * @return True if the cell is top-dimensional and has geometry data.
+   */
   bool has_cell(std::size_t mesh_cell_index) const;
+  /**
+   * @brief Returns geometric data for a mesh cell.
+   * @param mesh_cell_index Source mesh cell index.
+   * @return The cell's geometric data.
+   * @throws std::out_of_range If the index is invalid or the cell has no data.
+   */
   const CellGeometry& cell(std::size_t mesh_cell_index) const;
 
  private:
