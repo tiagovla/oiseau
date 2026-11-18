@@ -160,6 +160,13 @@ std::span<const DGSpace::ElementGroup> DGSpace::element_groups() const {
   return {m_element_groups};
 }
 
+const DGSpace::ElementGroup* DGSpace::element_group(mesh::CellKind kind, unsigned order) const {
+  const auto group = std::ranges::find_if(m_element_groups, [kind, order](const auto& candidate) {
+    return candidate.kind == kind && candidate.order == order;
+  });
+  return group == m_element_groups.end() ? nullptr : &*group;
+}
+
 std::span<const unsigned> DGSpace::orders() const { return {m_orders}; }
 
 }  // namespace oiseau::dg

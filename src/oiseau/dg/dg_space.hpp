@@ -47,6 +47,8 @@ class DGSpace {
   const mesh::Mesh& mesh() const { return m_mesh; }
   /// Groups indexed by cell shape and polynomial order.
   std::span<const ElementGroup> element_groups() const;
+  /// Returns the group for a cell shape and polynomial order, or nullptr if absent.
+  const ElementGroup* element_group(mesh::CellKind kind, unsigned order) const;
   /// Polynomial orders for top-dimensional cells, in mesh cell order.
   std::span<const unsigned> orders() const;
 
