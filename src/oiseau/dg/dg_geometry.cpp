@@ -18,6 +18,8 @@
 #include <vector>
 #include <xtensor-blas/xlinalg.hpp>
 #include <xtensor/generators/xbuilder.hpp>
+#include <xtensor/views/xslice.hpp>
+#include <xtensor/views/xview.hpp>
 
 #include "oiseau/dg/detail/cell_mapping.hpp"
 #include "oiseau/dg/detail/geometry.hpp"
@@ -26,17 +28,15 @@
 #include "oiseau/mesh/geometry.hpp"
 #include "oiseau/mesh/mesh.hpp"
 #include "oiseau/mesh/topology.hpp"
+#include "xtensor/containers/xadapt.hpp"
 
 namespace oiseau::dg {
 namespace detail {
 
 std::array<double, 9> padded_matrix(const Matrix& matrix, std::size_t dimension) {
   std::array<double, 9> output{};
-  for (std::size_t row = 0; row < dimension; ++row) {
-    for (std::size_t column = 0; column < dimension; ++column) {
-      output[row * 3 + column] = matrix(row, column);
-    }
-  }
+  auto padded = xt::adapt(output, std::array<std::size_t, 2>{3, 3});
+  xt::view(padded, xt::range(0, dimension), xt::range(0, dimension)) = matrix;
   return output;
 }
 
