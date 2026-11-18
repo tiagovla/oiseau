@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <vector>
 #include <xtensor/containers/xtensor.hpp>
+#include <xtensor/core/xtensor_forward.hpp>
 
 #include "oiseau/dg/nodal/ref_element.hpp"
 #include "oiseau/mesh/cell.hpp"
@@ -20,7 +21,6 @@ namespace oiseau::dg::detail {
 using Matrix = xt::xtensor<double, 2>;
 using Point = xt::xtensor<double, 1>;
 
-double vector_norm(const Point& vector);
 std::array<double, 9> padded_matrix(const Matrix& matrix, std::size_t dimension);
 std::array<double, 3> point_array(const Point& point);
 nodal::RefElementType ref_type_for(mesh::CellKind kind);

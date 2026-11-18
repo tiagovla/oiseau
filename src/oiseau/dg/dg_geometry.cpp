@@ -30,8 +30,6 @@
 namespace oiseau::dg {
 namespace detail {
 
-double vector_norm(const Point& vector) { return xt::linalg::norm(vector, 2); }
-
 std::array<double, 9> padded_matrix(const Matrix& matrix, std::size_t dimension) {
   std::array<double, 9> output{};
   for (std::size_t row = 0; row < dimension; ++row) {
@@ -93,7 +91,7 @@ double affine_tolerance(const std::vector<Point>& points, std::size_t dimension)
   const auto max_distance_from = [&points](const Point& point) {
     return std::accumulate(points.begin(), points.end(), 0.0,
                            [&point](double distance, const Point& other) {
-                             return std::max(distance, vector_norm(Point(point - other)));
+                             return std::max(distance, xt::linalg::norm(point - other, 2));
                            });
   };
   const auto cell_diameter = std::accumulate(
@@ -166,16 +164,16 @@ std::array<std::size_t, 4> independent_vertices(const std::vector<Point>& refere
 
 double face_measure(const std::vector<Point>& vertices, std::size_t dimension) {
   if (dimension == 1) return 1.0;
-  if (dimension == 2) return vector_norm(Point(vertices[1] - vertices[0]));
+  if (dimension == 2) return xt::linalg::norm(vertices[1] - vertices[0], 2);
   if (vertices.size() == 3) {
-    return vector_norm(
-               Point(xt::linalg::cross(vertices[1] - vertices[0], vertices[2] - vertices[0]))) /
+    return xt::linalg::norm(xt::linalg::cross(vertices[1] - vertices[0], vertices[2] - vertices[0]),
+                            2) /
            2.0;
   }
   const auto first =
-      vector_norm(Point(xt::linalg::cross(vertices[1] - vertices[0], vertices[2] - vertices[0])));
+      xt::linalg::norm(xt::linalg::cross(vertices[1] - vertices[0], vertices[2] - vertices[0]), 2);
   const auto second =
-      vector_norm(Point(xt::linalg::cross(vertices[2] - vertices[0], vertices[3] - vertices[0])));
+      xt::linalg::norm(xt::linalg::cross(vertices[2] - vertices[0], vertices[3] - vertices[0]), 2);
   return (first + second) / 2.0;
 }
 
@@ -203,7 +201,7 @@ Point face_normal(const std::vector<Point>& vertices, const Point& cell_centroid
     normal = xt::linalg::cross(vertices[1] - vertices[0], vertices[2] - vertices[0]);
   }
 
-  const auto length = vector_norm(normal);
+  const auto length = xt::linalg::norm(normal, 2);
   if (!std::isfinite(length) || length == 0.0) {
     throw std::invalid_argument("A cell face must have nonzero measure");
   }
@@ -230,7 +228,6 @@ using detail::physical_vertex;
 using detail::Point;
 using detail::point_array;
 using detail::ref_type_for;
-using detail::vector_norm;
 
 }  // namespace
 
@@ -321,7 +318,7 @@ DGGeometry::DGGeometry(const mesh::Mesh& mesh) : m_mesh(mesh) {
           reference_points[vertex_index] - reference_points[basis_vertices[0]];
       const auto expected = xt::linalg::dot(jacobian, reference_offset);
       const auto actual = physical_nodes[vertex_index] - physical_nodes[basis_vertices[0]];
-      if (vector_norm(expected - actual) > tolerance) {
+      if (xt::linalg::norm(expected - actual, 2) > tolerance) {
         throw std::invalid_argument("DGGeometry requires affine cell mappings");
       }
     }

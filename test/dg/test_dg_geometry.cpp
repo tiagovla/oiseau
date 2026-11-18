@@ -33,10 +33,6 @@ oiseau::dg::detail::Point make_point(std::initializer_list<double> values) {
 
 }  // namespace
 
-TEST(test_dg_geometry, vector_norm) {
-  EXPECT_DOUBLE_EQ(oiseau::dg::detail::vector_norm(make_point({3.0, 4.0})), 5.0);
-}
-
 TEST(test_dg_geometry, padded_matrix) {
   const oiseau::dg::detail::Matrix matrix = {{2.0, 1.0}, {1.0, 3.0}};
   const std::array<double, 9> expected = {2.0, 1.0, 0.0, 1.0, 3.0, 0.0, 0.0, 0.0, 0.0};
