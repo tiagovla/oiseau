@@ -25,6 +25,7 @@
 #include "oiseau/dg/detail/cell_mapping.hpp"
 #include "oiseau/dg/detail/geometry.hpp"
 #include "oiseau/dg/nodal/ref_element.hpp"
+#include "oiseau/dg/ref_element_type.hpp"
 #include "oiseau/mesh/cell.hpp"
 #include "oiseau/mesh/geometry.hpp"
 #include "oiseau/mesh/mesh.hpp"
@@ -45,23 +46,6 @@ std::array<double, 3> point_array(const Point& point) {
   std::array<double, 3> output{};
   std::ranges::copy(std::views::take(point, 3), output.begin());
   return output;
-}
-
-nodal::RefElementType ref_type_for(mesh::CellKind kind) {
-  switch (kind) {
-  case mesh::CellKind::Interval:
-    return nodal::RefElementType::Line;
-  case mesh::CellKind::Triangle:
-    return nodal::RefElementType::Triangle;
-  case mesh::CellKind::Quadrilateral:
-    return nodal::RefElementType::Quadrilateral;
-  case mesh::CellKind::Tetrahedron:
-    return nodal::RefElementType::Tetrahedron;
-  case mesh::CellKind::Hexahedron:
-    return nodal::RefElementType::Hexahedron;
-  default:
-    throw std::invalid_argument("DGGeometry does not support this mesh cell type");
-  }
 }
 
 double matrix_scale(const Matrix& matrix, std::size_t dimension) {
@@ -228,7 +212,6 @@ using detail::padded_matrix;
 using detail::physical_vertex;
 using detail::Point;
 using detail::point_array;
-using detail::ref_type_for;
 
 }  // namespace
 

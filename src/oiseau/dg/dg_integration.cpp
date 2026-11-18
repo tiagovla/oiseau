@@ -22,6 +22,7 @@
 
 #include "oiseau/dg/detail/cell_mapping.hpp"
 #include "oiseau/dg/nodal/ref_element.hpp"
+#include "oiseau/dg/ref_element_type.hpp"
 #include "oiseau/utils/integration.hpp"
 
 namespace oiseau::dg {
@@ -38,19 +39,15 @@ struct ReferenceOperators {
   std::vector<std::vector<int>> faces;
 };
 
-nodal::RefElementType reference_type(mesh::CellKind kind) {
-  switch (kind) {
-  case mesh::CellKind::Triangle:
-    return nodal::RefElementType::Triangle;
-  case mesh::CellKind::Quadrilateral:
-    return nodal::RefElementType::Quadrilateral;
-  default:
+void ensure_supported_cell_kind(mesh::CellKind kind) {
+  if (kind != mesh::CellKind::Triangle && kind != mesh::CellKind::Quadrilateral) {
     throw std::invalid_argument("DGIntegration supports triangles and quadrilaterals only");
   }
 }
 
 ReferenceOperators make_reference_operators(mesh::CellKind kind, unsigned order) {
-  auto element = nodal::get_ref_element(reference_type(kind), order);
+  ensure_supported_cell_kind(kind);
+  auto element = nodal::get_ref_element(ref_type_for(kind), order);
   const auto vandermonde = element->v();
   const auto inverse_vandermonde = xt::linalg::inv(vandermonde);
 
@@ -80,7 +77,8 @@ ReferenceOperators make_reference_operators(mesh::CellKind kind, unsigned order)
 std::vector<Point2> reference_vertex_coordinates(mesh::CellType type,
                                                  const std::vector<std::size_t>& mesh_vertices) {
   const auto vertices = detail::reference_ordered_vertices(type, mesh_vertices);
-  const auto reference = nodal::get_ref_element(reference_type(type->kind()), 1);
+  ensure_supported_cell_kind(type->kind());
+  const auto reference = nodal::get_ref_element(ref_type_for(type->kind()), 1);
   std::vector<Point2> output(mesh_vertices.size());
   for (std::size_t reference_vertex = 0; reference_vertex < vertices.size(); ++reference_vertex) {
     const auto position = std::ranges::find(mesh_vertices, vertices[reference_vertex]);

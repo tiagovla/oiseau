@@ -23,6 +23,7 @@
 
 #include "oiseau/dg/detail/cell_mapping.hpp"
 #include "oiseau/dg/nodal/ref_element.hpp"
+#include "oiseau/dg/ref_element_type.hpp"
 #include "oiseau/mesh/cell.hpp"
 #include "oiseau/mesh/mesh.hpp"
 
@@ -43,23 +44,6 @@ std::vector<unsigned> uniform_orders(const mesh::Mesh& mesh, unsigned order) {
   const auto cell_count = static_cast<std::size_t>(std::ranges::count_if(
       cell_types, [dimension](const auto* cell) { return cell->dimension() == dimension; }));
   return std::vector<unsigned>(cell_count, order);
-}
-
-nodal::RefElementType ref_type_for(mesh::CellKind kind) {
-  switch (kind) {
-  case mesh::CellKind::Interval:
-    return nodal::RefElementType::Line;
-  case mesh::CellKind::Triangle:
-    return nodal::RefElementType::Triangle;
-  case mesh::CellKind::Quadrilateral:
-    return nodal::RefElementType::Quadrilateral;
-  case mesh::CellKind::Tetrahedron:
-    return nodal::RefElementType::Tetrahedron;
-  case mesh::CellKind::Hexahedron:
-    return nodal::RefElementType::Hexahedron;
-  default:
-    throw std::invalid_argument("DGSpace does not support this mesh cell type");
-  }
 }
 
 std::vector<ActiveCell> active_cells(std::span<const mesh::CellType> cell_types,

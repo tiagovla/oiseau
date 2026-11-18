@@ -12,8 +12,6 @@
 #include <xtensor/containers/xtensor.hpp>
 #include <xtensor/core/xtensor_forward.hpp>
 
-#include "oiseau/dg/nodal/ref_element.hpp"
-#include "oiseau/mesh/cell.hpp"
 #include "oiseau/mesh/geometry.hpp"
 
 namespace oiseau::dg::detail {
@@ -23,7 +21,6 @@ using Point = xt::xtensor<double, 1>;
 
 std::array<double, 9> padded_matrix(const Matrix& matrix, std::size_t dimension);
 std::array<double, 3> point_array(const Point& point);
-nodal::RefElementType ref_type_for(mesh::CellKind kind);
 double matrix_scale(const Matrix& matrix, std::size_t dimension);
 bool is_degenerate(const Matrix& matrix, double determinant, std::size_t dimension);
 double affine_tolerance(const std::vector<Point>& points, std::size_t dimension);
