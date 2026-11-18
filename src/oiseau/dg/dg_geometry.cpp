@@ -13,6 +13,7 @@
 #include <iterator>
 #include <limits>
 #include <numeric>
+#include <ranges>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -42,7 +43,7 @@ std::array<double, 9> padded_matrix(const Matrix& matrix, std::size_t dimension)
 
 std::array<double, 3> point_array(const Point& point) {
   std::array<double, 3> output{};
-  std::ranges::copy(point, output.begin());
+  std::ranges::copy(std::views::take(point, 3), output.begin());
   return output;
 }
 
