@@ -12,10 +12,12 @@
 #include <map>
 #include <span>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 #include <xtensor-blas/xlinalg.hpp>
 #include <xtensor/containers/xadapt.hpp>
 #include <xtensor/containers/xbuffer_adaptor.hpp>
+#include <xtensor/core/xtensor_forward.hpp>
 #include <xtensor/views/xslice.hpp>
 #include <xtensor/views/xview.hpp>
 
