@@ -17,6 +17,15 @@
 namespace oiseau::dg {
 namespace {
 
+/**
+ * @brief Collects mesh vertex indices for a face in the cell type's local face order.
+ * @param cell Cell type that defines the local face vertices.
+ * @param cell_vertices Mesh vertex indices for the cell in local vertex order.
+ * @param face_index Face index within the cell.
+ * @return Mesh vertex indices in face vertex order.
+ * @throws std::out_of_range If the face index is invalid.
+ * @throws std::invalid_argument If the face references a missing local cell vertex.
+ */
 std::vector<std::size_t> face_vertices(const mesh::Cell& cell,
                                        const std::vector<std::size_t>& cell_vertices,
                                        std::size_t face_index) {
@@ -34,6 +43,14 @@ std::vector<std::size_t> face_vertices(const mesh::Cell& cell,
   return vertices;
 }
 
+/**
+ * @brief Matches positions on a face to positions on its neighbor by mesh vertex index.
+ * @param local_vertices Mesh vertex indices in this face's order.
+ * @param neighbor_vertices Mesh vertex indices in the neighbor face's order.
+ * @return The neighbor's position for each vertex in @p local_vertices.
+ * @throws std::invalid_argument If the face sizes differ or a local vertex is missing from the
+ * neighbor.
+ */
 std::vector<std::size_t> vertex_permutation(const std::vector<std::size_t>& local_vertices,
                                             const std::vector<std::size_t>& neighbor_vertices) {
   if (local_vertices.size() != neighbor_vertices.size()) {
@@ -81,6 +98,7 @@ DGConnectivity::DGConnectivity(mesh::Mesh& mesh) : m_mesh(mesh) {
 
     for (std::size_t face_index = 0; face_index < local_faces.size(); ++face_index) {
       const auto neighbor_cell = cell_neighbors[cell_index][face_index];
+      // Mesh topology points boundary faces back to their own cell.
       if (neighbor_cell == cell_index) continue;
       if (neighbor_cell >= cell_types.size()) {
         throw std::out_of_range("Mesh face references an invalid neighboring cell");

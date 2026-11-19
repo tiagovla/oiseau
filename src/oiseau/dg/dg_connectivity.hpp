@@ -15,34 +15,56 @@
 
 namespace oiseau::dg {
 
-/// Face adjacency for the top-dimensional cells of a two-dimensional mesh.
-///
-/// The mesh topology supplies the neighboring cell and face. DGConnectivity
-/// additionally records how the vertices on an interior face correspond, so
-/// a numerical flux can align data from both sides of the interface.
+/**
+ * @brief Stores face adjacency for the top-dimensional cells of a 2D mesh.
+ * @details Mesh topology supplies the neighbor indices. Interior faces also
+ * store a vertex permutation so a numerical flux can align data from both
+ * sides of the interface. Connections follow the cell type's local face order
+ * and are indexed by the original mesh cell index.
+ */
 class DGConnectivity {
  public:
+  /** @brief Sentinel for missing neighbor cell and face indices. */
   static constexpr std::size_t no_neighbor = std::numeric_limits<std::size_t>::max();
 
+  /** @brief Connection from one local face to its neighbor across the edge. */
   struct FaceConnection {
+    /** @brief Mesh index of the neighboring cell, or @c no_neighbor on a boundary. */
     std::size_t neighbor_cell = no_neighbor;
+    /** @brief Local face index on the neighboring cell, or @c no_neighbor on a boundary. */
     std::size_t neighbor_face = no_neighbor;
-    /// `vertex_permutation[i]` is the position of this face's vertex `i` in
-    /// the neighboring face's vertex ordering.
+    /**
+     * @brief Maps local face vertex positions to positions on the neighboring face.
+     * @details @c vertex_permutation[i] gives the position of this face's vertex
+     * @c i in the neighbor's face ordering. A boundary face has an empty permutation.
+     */
     std::vector<std::size_t> vertex_permutation;
 
+    /** @return True if this face has no neighboring cell. */
     bool is_boundary() const { return neighbor_cell == no_neighbor; }
   };
 
-  /// Calculates mesh adjacency and derives the DG face orientation data.
-  ///
-  /// The supplied mesh is updated through `Topology::calculate_connectivity()`.
-  /// This first implementation supports top-dimensional 2D cells.
+  /**
+   * @brief Calculates mesh adjacency and builds DG face connections.
+   * @details Updates the source topology through
+   * @c Topology::calculate_connectivity(). Rebuild after changing the mesh topology.
+   * @param mesh Source mesh. It must outlive this object.
+   * @throws std::invalid_argument If the mesh is non-2D or its connectivity is invalid.
+   * @throws std::out_of_range If adjacency references an invalid neighbor cell or face.
+   * @throws std::runtime_error If the topology's adjacency counts differ from the cell's face
+   * count.
+   */
   explicit DGConnectivity(mesh::Mesh& mesh);
 
+  /** @return A const reference to the source mesh. */
   const mesh::Mesh& mesh() const { return m_mesh; }
-  /// Connections for local faces of a mesh cell. Lower-dimensional mesh
-  /// entities have no entries.
+
+  /**
+   * @brief Returns the face connections for a mesh cell in local face order.
+   * @param mesh_cell_index Index in the source mesh.
+   * @return A view of the stored connections. Lower-dimensional cells return an empty span.
+   * @throws std::out_of_range If the mesh cell index is invalid.
+   */
   std::span<const FaceConnection> faces(std::size_t mesh_cell_index) const;
 
  private:
