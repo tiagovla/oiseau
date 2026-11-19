@@ -24,6 +24,7 @@
 #include <xtensor/views/xview.hpp>
 
 #include "oiseau/dg/detail/cell_mapping.hpp"
+#include "oiseau/dg/detail/integration.hpp"
 #include "oiseau/dg/dg_connectivity.hpp"
 #include "oiseau/dg/dg_geometry.hpp"
 #include "oiseau/dg/dg_space.hpp"
@@ -41,6 +42,8 @@ using Point = std::array<double, 3>;
 using FacePermutation = std::array<std::size_t, 4>;
 
 constexpr FacePermutation identity_permutation{0, 1, 2, 3};
+constexpr std::array canonical_face_kinds{mesh::CellKind::Point, mesh::CellKind::Interval,
+                                          mesh::CellKind::Triangle, mesh::CellKind::Quadrilateral};
 constexpr std::array canonical_face_measures{1.0, 2.0, 2.0, 4.0};
 
 struct ReferenceOperators {
@@ -107,22 +110,27 @@ std::vector<Point> reference_vertex_coordinates(mesh::CellType type,
   return output;
 }
 
-DGIntegration::QuadratureRule make_face_quadrature(std::size_t corners, unsigned order) {
-  if (corners == 1) {
+DGIntegration::QuadratureRule make_face_quadrature(mesh::CellKind face_kind, unsigned order) {
+  using mesh::CellKind;
+  if (face_kind == CellKind::Point) {
     return {.nodes = Matrix::from_shape({1, 0}), .weights = Matrix{1.0}};
   }
   if (order > (static_cast<unsigned>(std::numeric_limits<int>::max()) - 2U) / 2U) {
     throw std::invalid_argument("Polynomial order is too large for DG face quadrature");
   }
   const auto degree = static_cast<int>(2U * order + 1U);
-  if (corners == 3) {
+  if (face_kind == CellKind::Triangle) {
     auto [nodes, weights] = utils::integration::cubature(degree);
     return {.nodes = std::move(nodes), .weights = std::move(weights)};
   }
 
   auto [nodes, weights] = utils::integration::quadrature(degree);
-  if (corners == 2) return {.nodes = std::move(nodes), .weights = std::move(weights)};
-  if (corners != 4) throw std::logic_error("DGIntegration does not support this face shape");
+  if (face_kind == CellKind::Interval) {
+    return {.nodes = std::move(nodes), .weights = std::move(weights)};
+  }
+  if (face_kind != CellKind::Quadrilateral) {
+    throw std::logic_error("DGIntegration does not support this face shape");
+  }
 
   const auto count = nodes.size();
   Matrix square_nodes = Matrix::from_shape({count * count, std::size_t{2}});
@@ -240,21 +248,22 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
     }
   }
 
-  std::map<std::pair<std::size_t, unsigned>, std::shared_ptr<const QuadratureRule>> quadratures;
+  std::map<std::pair<mesh::CellKind, unsigned>, std::shared_ptr<const QuadratureRule>> quadratures;
   using FaceKey = std::tuple<std::size_t, std::size_t, unsigned, FacePermutation>;
   std::map<FaceKey, std::shared_ptr<const ReferenceFaceRule>> face_rules;
   const auto face_reference = [&](std::size_t group_index, std::size_t face_index, unsigned order,
                                   const FacePermutation& permutation) {
     const auto& reference = reference_operators[group_index];
     const auto& vertices = reference.faces.at(face_index);
-    const auto face_order = vertices.size() == 1 ? 0U : order;
+    const auto face_kind = canonical_face_kinds.at(vertices.size() - 1);
+    const auto face_order = face_kind == mesh::CellKind::Point ? 0U : order;
     const FaceKey key{group_index, face_index, face_order, permutation};
     if (const auto found = face_rules.find(key); found != face_rules.end()) return found->second;
 
-    auto& quadrature = quadratures[{vertices.size(), face_order}];
+    auto& quadrature = quadratures[{face_kind, face_order}];
     if (!quadrature) {
       quadrature =
-          std::make_shared<const QuadratureRule>(make_face_quadrature(vertices.size(), face_order));
+          std::make_shared<const QuadratureRule>(make_face_quadrature(face_kind, face_order));
     }
     const auto points = face_points(reference, vertices, permutation, *quadrature);
     Matrix trace = interpolation_on_points(reference, points);
