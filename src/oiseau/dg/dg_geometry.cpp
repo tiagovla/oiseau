@@ -12,8 +12,10 @@
 #include <cstddef>
 #include <iterator>
 #include <limits>
+#include <numeric>
 #include <ranges>
 #include <stdexcept>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 #include <xtensor-blas/xlinalg.hpp>
@@ -190,6 +192,97 @@ Point face_normal(const std::vector<Point>& vertices, const Point& cell_centroid
 
 using namespace detail;
 
+namespace {
+
+struct ReferenceFaceGeometry {
+  std::vector<std::size_t> vertices;
+  double measure;
+};
+
+struct ReferenceCellGeometry {
+  // Points, basis indices, and face indices all use mesh-local vertex order.
+  std::vector<Point> points;
+  std::array<std::size_t, 4> basis_vertices;
+  Matrix inverse_edges;
+  std::vector<ReferenceFaceGeometry> faces;
+};
+
+Matrix edge_matrix(const std::vector<Point>& points, const std::array<std::size_t, 4>& basis,
+                   std::size_t dimension) {
+  Matrix edges = xt::zeros<double>({dimension, dimension});
+  for (std::size_t column = 0; column < dimension; ++column) {
+    xt::view(edges, xt::all(), column) = points[basis[column + 1]] - points[basis[0]];
+  }
+  return edges;
+}
+
+ReferenceCellGeometry make_reference_geometry(mesh::CellType cell_type, std::size_t vertex_count,
+                                              std::size_t dimension) {
+  std::vector<std::size_t> local_indices(vertex_count);
+  std::ranges::iota(local_indices, std::size_t{0});
+  const auto reference_to_mesh = reference_ordered_vertices(cell_type, local_indices);
+  const auto reference_element = nodal::get_ref_element(ref_type_for(cell_type->kind()), 1);
+  if (reference_element->number_of_nodes() != vertex_count) {
+    throw std::logic_error("Reference element and mesh cell vertex counts must match");
+  }
+
+  const auto& reference_nodes = reference_element->r();
+  std::vector<Point> reference_points;
+  reference_points.reserve(vertex_count);
+  for (std::size_t vertex = 0; vertex < vertex_count; ++vertex) {
+    Point point = xt::zeros<double>({dimension});
+    for (std::size_t coordinate = 0; coordinate < dimension; ++coordinate) {
+      point(coordinate) =
+          dimension == 1 ? reference_nodes(vertex) : reference_nodes(vertex, coordinate);
+    }
+    reference_points.push_back(std::move(point));
+  }
+
+  auto basis = independent_vertices(reference_points, dimension);
+  const auto edges = edge_matrix(reference_points, basis, dimension);
+  if (is_degenerate(edges, xt::linalg::det(edges))) {
+    throw std::logic_error("Reference element has degenerate vertices");
+  }
+  for (std::size_t vertex = 0; vertex <= dimension; ++vertex) {
+    basis[vertex] = reference_to_mesh[basis[vertex]];
+  }
+
+  ReferenceCellGeometry reference{
+      .points = std::vector<Point>(vertex_count),
+      .basis_vertices = basis,
+      .inverse_edges = xt::linalg::inv(edges),
+      .faces = {},
+  };
+  for (std::size_t vertex = 0; vertex < vertex_count; ++vertex) {
+    reference.points[reference_to_mesh[vertex]] = std::move(reference_points[vertex]);
+  }
+
+  const auto local_faces = cell_type->get_entity_vertices(static_cast<int>(dimension - 1));
+  reference.faces.reserve(local_faces.size());
+  for (const auto& local_face : local_faces) {
+    std::vector<std::size_t> face_vertices;
+    std::vector<Point> face_points;
+    face_vertices.reserve(local_face.size());
+    face_points.reserve(local_face.size());
+    for (const auto vertex : local_face) {
+      if (vertex < 0 || std::cmp_greater_equal(vertex, vertex_count)) {
+        throw std::logic_error("Cell face references an invalid local vertex");
+      }
+      const auto index = static_cast<std::size_t>(vertex);
+      face_vertices.push_back(index);
+      face_points.push_back(reference.points[index]);
+    }
+    const auto measure = face_measure(face_points, dimension - 1);
+    if (!std::isfinite(measure) || measure <= 0.0) {
+      throw std::logic_error("Reference face has zero measure");
+    }
+    reference.faces.push_back({.vertices = std::move(face_vertices), .measure = measure});
+  }
+  return reference;
+}
+
+}  // namespace
+
 DGGeometry::DGGeometry(const mesh::Mesh& mesh) : m_mesh(mesh) {
   const auto& topology = mesh.topology();
   const auto& geometry = mesh.geometry();
@@ -208,63 +301,30 @@ DGGeometry::DGGeometry(const mesh::Mesh& mesh) : m_mesh(mesh) {
   }
 
   m_cells.resize(topology.n_cells());
+  std::unordered_map<mesh::CellType, ReferenceCellGeometry> reference_geometry;
   for (std::size_t cell_index = 0; cell_index < cell_types.size(); ++cell_index) {
     const auto* cell_type = cell_types[cell_index];
     if (cell_type == nullptr) throw std::invalid_argument("Mesh cell type cannot be null");
     if (std::cmp_not_equal(cell_type->dimension(), dimension)) continue;
 
     const auto& mesh_vertices = connectivity[cell_index];
-    auto vertices = detail::reference_ordered_vertices(cell_type, mesh_vertices);
-
-    const auto reference_element = nodal::get_ref_element(ref_type_for(cell_type->kind()), 1);
-    if (reference_element->number_of_nodes() != vertices.size()) {
-      throw std::logic_error("Reference element and mesh cell vertex counts must match");
+    auto [entry, inserted] = reference_geometry.try_emplace(cell_type);
+    if (inserted) {
+      entry->second = make_reference_geometry(cell_type, mesh_vertices.size(), dimension);
     }
-    const auto& reference_nodes = reference_element->r();
+    const auto& reference = entry->second;
+    if (mesh_vertices.size() != reference.points.size()) {
+      throw std::invalid_argument("Cell connectivity does not match its cell type");
+    }
+
     std::vector<Point> physical_nodes;
-    std::vector<Point> reference_points;
-    std::vector<Point> mesh_physical_nodes;
-    std::vector<Point> mesh_reference_points(vertices.size());
-    physical_nodes.reserve(vertices.size());
-    reference_points.reserve(vertices.size());
-    mesh_physical_nodes.reserve(vertices.size());
-    std::ranges::transform(mesh_vertices, std::back_inserter(mesh_physical_nodes),
+    physical_nodes.reserve(mesh_vertices.size());
+    std::ranges::transform(mesh_vertices, std::back_inserter(physical_nodes),
                            [&geometry, dimension](std::size_t vertex) {
                              return physical_vertex(geometry, vertex, dimension);
                            });
-    for (std::size_t vertex_index = 0; vertex_index < vertices.size(); ++vertex_index) {
-      physical_nodes.push_back(physical_vertex(geometry, vertices[vertex_index], dimension));
-      Point reference_point = xt::zeros<double>({dimension});
-      for (std::size_t coordinate = 0; coordinate < dimension; ++coordinate) {
-        reference_point(coordinate) = dimension == 1 ? reference_nodes(vertex_index)
-                                                     : reference_nodes(vertex_index, coordinate);
-      }
-      reference_points.push_back(reference_point);
-      const auto mesh_vertex = std::ranges::find(mesh_vertices, vertices[vertex_index]);
-      mesh_reference_points[static_cast<std::size_t>(mesh_vertex - mesh_vertices.begin())] =
-          reference_point;
-    }
-
-    Matrix reference_edges = xt::zeros<double>({dimension, dimension});
-    Matrix physical_edges = xt::zeros<double>({dimension, dimension});
-    const auto basis_vertices = independent_vertices(reference_points, dimension);
-    for (std::size_t column = 0; column < dimension; ++column) {
-      const auto reference_edge =
-          reference_points[basis_vertices[column + 1]] - reference_points[basis_vertices[0]];
-      const auto physical_edge =
-          physical_nodes[basis_vertices[column + 1]] - physical_nodes[basis_vertices[0]];
-      for (std::size_t row = 0; row < dimension; ++row) {
-        reference_edges(row, column) = reference_edge(row);
-        physical_edges(row, column) = physical_edge(row);
-      }
-    }
-
-    const auto reference_determinant = xt::linalg::det(reference_edges);
-    if (is_degenerate(reference_edges, reference_determinant)) {
-      throw std::logic_error("Reference element has degenerate vertices");
-    }
-    const auto inverse_reference = xt::linalg::inv(reference_edges);
-    const auto jacobian = xt::linalg::dot(physical_edges, inverse_reference);
+    const auto physical_edges = edge_matrix(physical_nodes, reference.basis_vertices, dimension);
+    const auto jacobian = xt::linalg::dot(physical_edges, reference.inverse_edges);
     const auto determinant = xt::linalg::det(jacobian);
     if (is_degenerate(jacobian, determinant)) {
       throw std::invalid_argument("Cell vertices define a degenerate element");
@@ -272,45 +332,33 @@ DGGeometry::DGGeometry(const mesh::Mesh& mesh) : m_mesh(mesh) {
     const auto inverse_jacobian = xt::linalg::inv(jacobian);
 
     const auto tolerance = affine_tolerance(physical_nodes, dimension);
+    const auto anchor = reference.basis_vertices[0];
     for (std::size_t vertex_index = 0; vertex_index < physical_nodes.size(); ++vertex_index) {
-      const auto reference_offset =
-          reference_points[vertex_index] - reference_points[basis_vertices[0]];
+      const auto reference_offset = reference.points[vertex_index] - reference.points[anchor];
       const auto expected = xt::linalg::dot(jacobian, reference_offset);
-      const auto actual = physical_nodes[vertex_index] - physical_nodes[basis_vertices[0]];
+      const auto actual = physical_nodes[vertex_index] - physical_nodes[anchor];
       if (xt::linalg::norm(expected - actual, 2) > tolerance) {
         throw std::invalid_argument("DGGeometry requires affine cell mappings");
       }
     }
 
-    const auto local_faces = cell_type->get_entity_vertices(static_cast<int>(dimension - 1));
     std::vector<FaceGeometry> faces;
-    faces.reserve(local_faces.size());
-    const auto cell_centroid = centroid(mesh_physical_nodes);
-    for (const auto& local_face : local_faces) {
+    faces.reserve(reference.faces.size());
+    const auto cell_centroid = centroid(physical_nodes);
+    for (const auto& reference_face : reference.faces) {
       std::vector<Point> physical_face;
-      std::vector<Point> reference_face;
-      physical_face.reserve(local_face.size());
-      reference_face.reserve(local_face.size());
-      for (const auto local_vertex : local_face) {
-        if (local_vertex < 0 ||
-            static_cast<std::size_t>(local_vertex) >= mesh_physical_nodes.size()) {
-          throw std::logic_error("Cell face references an invalid local vertex");
-        }
-        physical_face.push_back(mesh_physical_nodes[static_cast<std::size_t>(local_vertex)]);
-        reference_face.push_back(mesh_reference_points[static_cast<std::size_t>(local_vertex)]);
+      physical_face.reserve(reference_face.vertices.size());
+      for (const auto vertex : reference_face.vertices) {
+        physical_face.push_back(physical_nodes[vertex]);
       }
       const auto measure = face_measure(physical_face, dimension - 1);
-      const auto reference_measure = face_measure(reference_face, dimension - 1);
       if (!std::isfinite(measure) || measure <= 0.0) {
         throw std::invalid_argument("A cell face must have finite, nonzero measure");
-      }
-      if (!std::isfinite(reference_measure) || reference_measure <= 0.0) {
-        throw std::logic_error("Reference face has zero measure");
       }
       faces.push_back(
           {.outward_normal = point_array(face_normal(physical_face, cell_centroid, dimension)),
            .measure = measure,
-           .surface_jacobian = measure / reference_measure});
+           .surface_jacobian = measure / reference_face.measure});
     }
 
     m_cells[cell_index] = CellGeometry{

@@ -261,6 +261,58 @@ $EndElements)";
   }
 }
 
+TEST(test_dg_geometry, quadrilaterals_of_the_same_type_keep_their_own_geometry) {
+  const auto mesh = oiseau::io::gmsh_read_from_string(R"($MeshFormat
+4.1 0 8
+$EndMeshFormat
+$Nodes
+1 8 1 8
+2 0 0 8
+1
+2
+3
+4
+5
+6
+7
+8
+0 0 0
+4 0 0
+4 2 0
+0 2 0
+10 0 0
+12 1 0
+13 5 0
+11 4 0
+$EndNodes
+$Elements
+1 2 1 2
+2 0 3 2
+1 1 2 3 4
+2 5 6 7 8
+$EndElements)");
+  const oiseau::dg::DGGeometry geometry(mesh);
+  const auto& rectangle = geometry.cell(0);
+  const auto& skew = geometry.cell(1);
+
+  // The quadrilateral reference nodes vary in the second coordinate first.
+  EXPECT_NEAR(rectangle.jacobian[1], 2.0, 1e-12);
+  EXPECT_NEAR(rectangle.jacobian[3], 1.0, 1e-12);
+  EXPECT_NEAR(skew.jacobian[0], 0.5, 1e-12);
+  EXPECT_NEAR(skew.jacobian[1], 1.0, 1e-12);
+  EXPECT_NEAR(skew.jacobian[3], 2.0, 1e-12);
+  EXPECT_NEAR(skew.jacobian[4], 0.5, 1e-12);
+
+  ASSERT_EQ(rectangle.faces.size(), 4);
+  ASSERT_EQ(skew.faces.size(), 4);
+  for (std::size_t face = 0; face < 4; ++face) {
+    const bool along_first_mesh_edge = face % 2 == 0;
+    EXPECT_NEAR(rectangle.faces[face].surface_jacobian, along_first_mesh_edge ? 2.0 : 1.0, 1e-12);
+    EXPECT_NEAR(skew.faces[face].surface_jacobian,
+                0.5 * std::sqrt(along_first_mesh_edge ? 5.0 : 17.0), 1e-12);
+  }
+}
+
 TEST(test_dg_geometry, one_tetrahedron_has_outward_face_normals) {
   const std::string mesh_text = R"($MeshFormat
 4.1 0 8
