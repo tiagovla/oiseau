@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include "oiseau/mesh/cell.hpp"
@@ -73,17 +74,16 @@ std::vector<std::size_t> vertex_permutation(const std::vector<std::size_t>& loca
 
 DGConnectivity::DGConnectivity(mesh::Mesh& mesh) : m_mesh(mesh) {
   auto& topology = mesh.topology();
+  const auto dimension = topology.dimension();
+  if (dimension < 1 || dimension > 3) {
+    throw std::invalid_argument("DGConnectivity supports meshes with dimensions 1 through 3");
+  }
   topology.calculate_connectivity();
 
-  const auto cell_types = topology.cell_types();
+  const auto cell_types = std::as_const(topology).cell_types();
   const auto connectivity = topology.conn();
   const auto cell_neighbors = topology.e_to_e();
   const auto neighbor_faces = topology.e_to_f();
-  const auto dimension = topology.dimension();
-  if (dimension != 2) {
-    throw std::invalid_argument("DGConnectivity currently supports 2D meshes only");
-  }
-
   m_faces.resize(topology.n_cells());
   for (std::size_t cell_index = 0; cell_index < cell_types.size(); ++cell_index) {
     const auto* cell = cell_types[cell_index];

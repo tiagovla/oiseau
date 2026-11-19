@@ -16,7 +16,7 @@
 namespace oiseau::dg {
 
 /**
- * @brief Stores face adjacency for the top-dimensional cells of a 2D mesh.
+ * @brief Stores face adjacency for the top-dimensional cells of a 1D, 2D, or 3D mesh.
  * @details Mesh topology supplies the neighbor indices. Interior faces also
  * store a vertex permutation so a numerical flux can align data from both
  * sides of the interface. Connections follow the cell type's local face order
@@ -27,7 +27,7 @@ class DGConnectivity {
   /** @brief Sentinel for missing neighbor cell and face indices. */
   static constexpr std::size_t no_neighbor = std::numeric_limits<std::size_t>::max();
 
-  /** @brief Connection from one local face to its neighbor across the edge. */
+  /** @brief Connection from one local face to its neighbor. */
   struct FaceConnection {
     /** @brief Mesh index of the neighboring cell, or @c no_neighbor on a boundary. */
     std::size_t neighbor_cell = no_neighbor;
@@ -49,7 +49,8 @@ class DGConnectivity {
    * @details Updates the source topology through
    * @c Topology::calculate_connectivity(). Rebuild after changing the mesh topology.
    * @param mesh Source mesh. It must outlive this object.
-   * @throws std::invalid_argument If the mesh is non-2D or its connectivity is invalid.
+   * @throws std::invalid_argument If the mesh dimension is outside 1 through 3 or its connectivity
+   * is invalid.
    * @throws std::out_of_range If adjacency references an invalid neighbor cell or face.
    * @throws std::runtime_error If the topology's adjacency counts differ from the cell's face
    * count.
