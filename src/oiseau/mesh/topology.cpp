@@ -55,8 +55,8 @@ void Topology::calculate_connectivity() {
   }
 
   const auto mesh_dimension = dimension();
-  if (mesh_dimension > 2) {
-    throw std::invalid_argument("Face connectivity currently supports 2D meshes only");
+  if (mesh_dimension > 3) {
+    throw std::invalid_argument("Face connectivity supports meshes of dimension at most three");
   }
 
   // Each canonical face key records the first cell/local-face that uses it.
@@ -69,9 +69,9 @@ void Topology::calculate_connectivity() {
     const auto* cell = m_cell_types[cell_index];
     // Gmsh meshes commonly include lower-dimensional boundary entities. They
     // are not volume cells and therefore do not participate in this adjacency.
-    if (cell->dimension() != mesh_dimension) continue;
+    if (mesh_dimension == 0 || cell->dimension() != mesh_dimension) continue;
 
-    const auto face_vertices = cell->get_entity_vertices(1);
+    const auto face_vertices = cell->get_entity_vertices(mesh_dimension - 1);
     const auto& cell_vertices = m_conn[cell_index];
     element_to_element[cell_index].resize(face_vertices.size(), cell_index);
     element_to_face[cell_index].resize(face_vertices.size());
