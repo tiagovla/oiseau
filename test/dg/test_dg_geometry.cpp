@@ -110,18 +110,30 @@ TEST(test_dg_geometry, independent_vertices) {
                std::logic_error);
 }
 
+TEST(test_dg_geometry, triangle_area) {
+  using oiseau::dg::detail::triangle_area;
+  const auto a = make_point({1.0, 2.0, 3.0});
+  const auto b = make_point({4.0, 2.0, 3.0});
+  const auto c = make_point({1.0, 6.0, 6.0});
+
+  EXPECT_DOUBLE_EQ(triangle_area(a, b, c), 7.5);
+  EXPECT_DOUBLE_EQ(triangle_area(a, c, b), 7.5);
+  EXPECT_DOUBLE_EQ(triangle_area(a, b, make_point({7.0, 2.0, 3.0})), 0.0);
+}
+
 TEST(test_dg_geometry, face_measure) {
   using oiseau::dg::detail::face_measure;
-  EXPECT_DOUBLE_EQ(face_measure({make_point({2.0})}, 1), 1.0);
-  EXPECT_DOUBLE_EQ(face_measure({make_point({0.0, 0.0}), make_point({3.0, 4.0})}, 2), 5.0);
+  EXPECT_DOUBLE_EQ(face_measure({make_point({2.0})}, 0), 1.0);
+  EXPECT_DOUBLE_EQ(face_measure({make_point({0.0, 0.0}), make_point({3.0, 4.0})}, 1), 5.0);
   EXPECT_DOUBLE_EQ(face_measure({make_point({0.0, 0.0, 0.0}), make_point({2.0, 0.0, 0.0}),
                                  make_point({0.0, 3.0, 0.0})},
-                                3),
+                                2),
                    3.0);
   EXPECT_DOUBLE_EQ(face_measure({make_point({0.0, 0.0, 0.0}), make_point({1.0, 0.0, 0.0}),
                                  make_point({1.0, 1.0, 0.0}), make_point({0.0, 1.0, 0.0})},
-                                3),
+                                2),
                    1.0);
+  EXPECT_THROW(face_measure({}, 3), std::logic_error);
 }
 
 TEST(test_dg_geometry, centroid) {

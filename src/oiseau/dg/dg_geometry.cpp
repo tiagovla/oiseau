@@ -35,6 +35,10 @@
 namespace oiseau::dg {
 namespace detail {
 
+double triangle_area(const Point& a, const Point& b, const Point& c) {
+  return xt::linalg::norm(xt::linalg::cross(b - a, c - a), 2) / 2.0;
+}
+
 std::array<double, 9> padded_matrix(const Matrix& matrix, std::size_t dimension) {
   std::array<double, 9> output{};
   auto padded = xt::adapt(output, std::array<std::size_t, 2>{3, 3});
@@ -129,19 +133,22 @@ std::array<std::size_t, 4> independent_vertices(const std::vector<Point>& refere
   return result;
 }
 
-double face_measure(const std::vector<Point>& vertices, std::size_t dimension) {
-  if (dimension == 1) return 1.0;
-  if (dimension == 2) return xt::linalg::norm(vertices[1] - vertices[0], 2);
-  if (vertices.size() == 3) {
-    return xt::linalg::norm(xt::linalg::cross(vertices[1] - vertices[0], vertices[2] - vertices[0]),
-                            2) /
-           2.0;
+double face_measure(const std::vector<Point>& vertices, std::size_t face_dimension) {
+  switch (face_dimension) {
+  case 0:
+    // A point face has measure 1 by convention.
+    return 1.0;
+  case 1:
+    return xt::linalg::norm(vertices[1] - vertices[0], 2);
+  case 2:
+    if (vertices.size() == 3) {
+      return triangle_area(vertices[0], vertices[1], vertices[2]);
+    }
+    return triangle_area(vertices[0], vertices[1], vertices[2]) +
+           triangle_area(vertices[0], vertices[2], vertices[3]);
+  default:
+    throw std::logic_error("Unsupported face dimension");
   }
-  const auto first =
-      xt::linalg::norm(xt::linalg::cross(vertices[1] - vertices[0], vertices[2] - vertices[0]), 2);
-  const auto second =
-      xt::linalg::norm(xt::linalg::cross(vertices[2] - vertices[0], vertices[3] - vertices[0]), 2);
-  return (first + second) / 2.0;
 }
 
 Point centroid(const std::vector<Point>& vertices) {
@@ -194,6 +201,7 @@ using detail::padded_matrix;
 using detail::physical_vertex;
 using detail::Point;
 using detail::point_array;
+using detail::triangle_area;
 
 }  // namespace
 
@@ -306,8 +314,8 @@ DGGeometry::DGGeometry(const mesh::Mesh& mesh) : m_mesh(mesh) {
         physical_face.push_back(mesh_physical_nodes[static_cast<std::size_t>(local_vertex)]);
         reference_face.push_back(mesh_reference_points[static_cast<std::size_t>(local_vertex)]);
       }
-      const auto measure = face_measure(physical_face, dimension);
-      const auto reference_measure = face_measure(reference_face, dimension);
+      const auto measure = face_measure(physical_face, dimension - 1);
+      const auto reference_measure = face_measure(reference_face, dimension - 1);
       if (!std::isfinite(measure) || measure <= 0.0) {
         throw std::invalid_argument("A cell face must have finite, nonzero measure");
       }

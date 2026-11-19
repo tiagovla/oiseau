@@ -26,7 +26,8 @@ double affine_tolerance(const std::vector<Point>& points, std::size_t dimension)
 Point physical_vertex(const mesh::Geometry& geometry, std::size_t vertex, std::size_t dimension);
 std::array<std::size_t, 4> independent_vertices(const std::vector<Point>& reference_points,
                                                 std::size_t dimension);
-double face_measure(const std::vector<Point>& vertices, std::size_t dimension);
+double triangle_area(const Point& a, const Point& b, const Point& c);
+double face_measure(const std::vector<Point>& vertices, std::size_t face_dimension);
 Point centroid(const std::vector<Point>& vertices);
 Point face_normal(const std::vector<Point>& vertices, const Point& cell_centroid,
                   std::size_t dimension);
