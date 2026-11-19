@@ -49,11 +49,11 @@ std::array<double, 3> point_array(const Point& point) {
   return output;
 }
 
-bool is_degenerate(const Matrix& matrix, double determinant, std::size_t dimension) {
+bool is_degenerate(const Matrix& matrix, double determinant) {
   const auto scale = xt::amax(xt::abs(matrix))();
   if (!std::isfinite(determinant) || !std::isfinite(scale) || scale == 0.0) return true;
   const auto relative_threshold =
-      100.0 * std::numeric_limits<double>::epsilon() * std::pow(scale, dimension);
+      100.0 * std::numeric_limits<double>::epsilon() * std::pow(scale, matrix.shape()[0]);
   return std::abs(determinant) <= relative_threshold;
 }
 
@@ -276,13 +276,13 @@ DGGeometry::DGGeometry(const mesh::Mesh& mesh) : m_mesh(mesh) {
     }
 
     const auto reference_determinant = xt::linalg::det(reference_edges);
-    if (is_degenerate(reference_edges, reference_determinant, dimension)) {
+    if (is_degenerate(reference_edges, reference_determinant)) {
       throw std::logic_error("Reference element has degenerate vertices");
     }
     const auto inverse_reference = xt::linalg::inv(reference_edges);
     const auto jacobian = xt::linalg::dot(physical_edges, inverse_reference);
     const auto determinant = xt::linalg::det(jacobian);
-    if (is_degenerate(jacobian, determinant, dimension)) {
+    if (is_degenerate(jacobian, determinant)) {
       throw std::invalid_argument("Cell vertices define a degenerate element");
     }
     const auto inverse_jacobian = xt::linalg::inv(jacobian);

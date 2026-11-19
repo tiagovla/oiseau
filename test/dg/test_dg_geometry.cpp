@@ -61,9 +61,9 @@ TEST(test_dg_geometry, is_degenerate) {
   using oiseau::dg::detail::is_degenerate;
   const oiseau::dg::detail::Matrix matrix = {{2.0, 1.0}, {1.0, 3.0}};
   const oiseau::dg::detail::Matrix singular = {{0.0, 0.0}, {0.0, 1.0}};
-  EXPECT_FALSE(is_degenerate(matrix, 5.0, 2));
-  EXPECT_TRUE(is_degenerate(singular, 0.0, 2));
-  EXPECT_TRUE(is_degenerate(matrix, std::numeric_limits<double>::infinity(), 2));
+  EXPECT_FALSE(is_degenerate(matrix, 5.0));
+  EXPECT_TRUE(is_degenerate(singular, 0.0));
+  EXPECT_TRUE(is_degenerate(matrix, std::numeric_limits<double>::infinity()));
 }
 
 TEST(test_dg_geometry, affine_tolerance) {

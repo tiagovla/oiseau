@@ -21,7 +21,7 @@ using Point = xt::xtensor<double, 1>;
 
 std::array<double, 9> padded_matrix(const Matrix& matrix, std::size_t dimension);
 std::array<double, 3> point_array(const Point& point);
-bool is_degenerate(const Matrix& matrix, double determinant, std::size_t dimension);
+bool is_degenerate(const Matrix& matrix, double determinant);
 double affine_tolerance(const std::vector<Point>& points, std::size_t dimension);
 Point physical_vertex(const mesh::Geometry& geometry, std::size_t vertex, std::size_t dimension);
 std::array<std::size_t, 4> independent_vertices(const std::vector<Point>& reference_points,
