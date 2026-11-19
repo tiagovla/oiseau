@@ -66,13 +66,15 @@ double affine_tolerance(const std::vector<Point>& points, std::size_t dimension)
   double coordinate_scale = 0.0;
   double cell_diameter = 0.0;
 
-  for (std::size_t i = 0; i < points.size(); ++i) {
+  for (auto point = points.cbegin(); point != points.cend(); ++point) {
     for (std::size_t coordinate = 0; coordinate < dimension; ++coordinate) {
-      coordinate_scale = std::max(coordinate_scale, std::abs(points[i](coordinate)));
+      coordinate_scale = std::max(coordinate_scale, std::abs((*point)(coordinate)));
     }
-    for (std::size_t j = i + 1; j < points.size(); ++j) {
-      cell_diameter = std::max(cell_diameter, xt::linalg::norm(points[i] - points[j], 2));
-    }
+    cell_diameter =
+        std::accumulate(std::next(point), points.cend(), cell_diameter,
+                        [point](double diameter, const Point& other) {
+                          return std::max(diameter, xt::linalg::norm(*point - other, 2));
+                        });
   }
 
   constexpr double factor = 100.0 * std::numeric_limits<double>::epsilon();
