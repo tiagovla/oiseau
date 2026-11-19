@@ -77,6 +77,22 @@ TEST(DGFaceQuadratureTest, rejects_invalid_shape_and_order) {
                std::invalid_argument);
 }
 
+TEST(DGFaceQuadratureTest, corner_weights_map_a_point_on_an_oriented_edge) {
+  const std::array cell_vertices = {std::array{-1.0, -1.0, 0.0}, std::array{1.0, -1.0, 0.0},
+                                    std::array{-1.0, 1.0, 0.0}};
+  const std::array face_vertices{1, 2};
+  const DGIntegration::QuadratureRule quadrature{.nodes = {0.5}, .weights = {1.0}};
+
+  EXPECT_EQ(detail::corner_weights(face_vertices.size(), quadrature.nodes, 0),
+            (std::array{0.25, 0.75, 0.0, 0.0}));
+  const auto points =
+      detail::face_points(cell_vertices, face_vertices, 2, {0, 1, 2, 3}, quadrature);
+  const auto reversed =
+      detail::face_points(cell_vertices, face_vertices, 2, {1, 0, 2, 3}, quadrature);
+  EXPECT_EQ(points, (DGIntegration::Matrix{{-0.5, 0.5}}));
+  EXPECT_EQ(reversed, (DGIntegration::Matrix{{0.5, -0.5}}));
+}
+
 // One quadrilateral and two triangles, followed by a boundary edge.
 // Apply a shear and translation so the physical Jacobian is not diagonal.
 //

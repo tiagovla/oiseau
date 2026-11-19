@@ -12,6 +12,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <span>
 #include <stdexcept>
 #include <tuple>
 #include <utility>
@@ -39,7 +40,6 @@ namespace detail {
 
 using Matrix = DGIntegration::Matrix;
 using Point = std::array<double, 3>;
-using FacePermutation = std::array<std::size_t, 4>;
 
 constexpr FacePermutation identity_permutation{0, 1, 2, 3};
 constexpr std::array canonical_face_kinds{mesh::CellKind::Point, mesh::CellKind::Interval,
@@ -157,16 +157,15 @@ std::array<double, 4> corner_weights(std::size_t corners, const Matrix& nodes, s
   return {(1.0 - u) * (1.0 - v), u * (1.0 - v), u * v, (1.0 - u) * v};
 }
 
-Matrix face_points(const ReferenceOperators& reference, const std::vector<int>& vertices,
-                   const FacePermutation& permutation,
+Matrix face_points(std::span<const Point> cell_vertices, std::span<const int> face_vertices,
+                   std::size_t dimension, const FacePermutation& permutation,
                    const DGIntegration::QuadratureRule& quadrature) {
-  if (vertices.size() == 1) return Matrix{reference.vertices[vertices.front()][0]};
-  const auto dimension = reference.element->d().shape()[2];
+  if (face_vertices.size() == 1) return Matrix{cell_vertices[face_vertices.front()][0]};
   Matrix points = xt::zeros<double>({quadrature.weights.size(), dimension});
   for (std::size_t q = 0; q < quadrature.weights.size(); ++q) {
-    const auto weights = corner_weights(vertices.size(), quadrature.nodes, q);
-    for (std::size_t corner = 0; corner < vertices.size(); ++corner) {
-      const auto& vertex = reference.vertices[vertices[permutation[corner]]];
+    const auto weights = corner_weights(face_vertices.size(), quadrature.nodes, q);
+    for (std::size_t corner = 0; corner < face_vertices.size(); ++corner) {
+      const auto& vertex = cell_vertices[face_vertices[permutation[corner]]];
       for (std::size_t d = 0; d < dimension; ++d) {
         points(q, d) += weights[corner] * vertex[d];
       }
@@ -227,7 +226,8 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
   const auto cell_types = mesh.topology().cell_types();
   const auto connectivity_data = mesh.topology().conn();
   const auto cell_count = mesh.topology().n_cells();
-  const auto face_dimension = mesh.topology().dimension() - 1;
+  const auto dimension = mesh.topology().dimension();
+  const auto face_dimension = dimension - 1;
 
   std::vector<ReferenceOperators> reference_operators;
   std::vector<std::size_t> cell_group(cell_count, DGConnectivity::no_neighbor);
@@ -265,7 +265,8 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
       quadrature =
           std::make_shared<const QuadratureRule>(make_face_quadrature(face_kind, face_order));
     }
-    const auto points = face_points(reference, vertices, permutation, *quadrature);
+    const auto points = face_points(reference.vertices, vertices,
+                                    static_cast<std::size_t>(dimension), permutation, *quadrature);
     Matrix trace = interpolation_on_points(reference, points);
     Matrix lift = xt::linalg::dot(trace, xt::transpose(reference.volume->inverse_mass));
     for (std::size_t q = 0; q < quadrature->weights.size(); ++q) {
