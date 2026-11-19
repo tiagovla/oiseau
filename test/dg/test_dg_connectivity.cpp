@@ -100,8 +100,25 @@ TEST(test_dg_connectivity, face_lookup_rejects_an_out_of_range_cell_index) {
   EXPECT_THROW(connectivity.faces(3), std::out_of_range);
 }
 
-TEST(test_dg_connectivity, rejects_a_one_dimensional_mesh) {
-  Mesh mesh{Topology({{0, 1}}, {get_cell_type(CellKind::Interval)}), Geometry({0, 1}, 1)};
+TEST(test_dg_connectivity, intervals_share_an_endpoint_and_ignore_point_tags) {
+  const auto interval = get_cell_type(CellKind::Interval);
+  const auto point = get_cell_type(CellKind::Point);
+  Mesh mesh{Topology({{0, 1}, {0}, {2, 1}}, {interval, point, interval}), Geometry({0, 2, 5}, 1)};
+  const DGConnectivity connectivity(mesh);
+
+  EXPECT_TRUE(connectivity.faces(1).empty());
+  for (const std::size_t cell : {0, 2}) {
+    const auto faces = connectivity.faces(cell);
+    ASSERT_EQ(faces.size(), 2);
+    EXPECT_TRUE(faces[0].is_boundary());
+    EXPECT_EQ(faces[1].neighbor_cell, 2 - cell);
+    EXPECT_EQ(faces[1].neighbor_face, 1);
+    EXPECT_EQ(faces[1].vertex_permutation, (std::vector<std::size_t>{0}));
+  }
+}
+
+TEST(test_dg_connectivity, rejects_a_zero_dimensional_mesh) {
+  Mesh mesh{Topology({{0}}, {get_cell_type(CellKind::Point)}), Geometry({0}, 1)};
 
   EXPECT_THROW(DGConnectivity{mesh}, std::invalid_argument);
 }
@@ -113,4 +130,49 @@ TEST(test_dg_connectivity, rejects_an_edge_shared_by_three_cells) {
             Geometry({0, 0, 2, 0, 0, 1, 0, -1, 2, 1}, 2)};
 
   EXPECT_THROW(DGConnectivity{mesh}, std::invalid_argument);
+}
+
+TEST(test_dg_connectivity, tetrahedra_store_reciprocal_face_vertex_permutations) {
+  const auto tetrahedron = get_cell_type(CellKind::Tetrahedron);
+  const auto triangle = get_cell_type(CellKind::Triangle);
+  // The tetrahedra share vertices 0, 1, and 2 on z = 0. Cell 1 is a boundary tag.
+  Mesh mesh{Topology({{0, 1, 2, 3}, {0, 1, 3}, {1, 2, 0, 4}}, {tetrahedron, triangle, tetrahedron}),
+            Geometry({0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1}, 3)};
+  const DGConnectivity connectivity(mesh);
+
+  const auto first = connectivity.faces(0);
+  const auto second = connectivity.faces(2);
+  ASSERT_EQ(first.size(), 4);
+  ASSERT_EQ(second.size(), 4);
+  EXPECT_TRUE(connectivity.faces(1).empty());
+  EXPECT_TRUE(first[0].is_boundary());
+  EXPECT_EQ(first[3].neighbor_cell, 2);
+  EXPECT_EQ(first[3].neighbor_face, 3);
+  EXPECT_EQ(first[3].vertex_permutation, (std::vector<std::size_t>{2, 0, 1}));
+  EXPECT_EQ(second[3].neighbor_cell, 0);
+  EXPECT_EQ(second[3].neighbor_face, 3);
+  EXPECT_EQ(second[3].vertex_permutation, (std::vector<std::size_t>{1, 2, 0}));
+}
+
+TEST(test_dg_connectivity, hexahedra_store_reciprocal_face_vertex_permutations) {
+  const auto hexahedron = get_cell_type(CellKind::Hexahedron);
+  // The first cube's top and the second cube's bottom share vertices 4 through 7.
+  Mesh mesh{
+      Topology({{0, 1, 2, 3, 4, 5, 6, 7}, {5, 6, 7, 4, 9, 10, 11, 8}}, {hexahedron, hexahedron}),
+      Geometry({0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1,
+                1, 1, 1, 0, 1, 1, 0, 0, 2, 1, 0, 2, 1, 1, 2, 0, 1, 2},
+               3)};
+  const DGConnectivity connectivity(mesh);
+
+  const auto first = connectivity.faces(0);
+  const auto second = connectivity.faces(1);
+  ASSERT_EQ(first.size(), 6);
+  ASSERT_EQ(second.size(), 6);
+  EXPECT_TRUE(first[0].is_boundary());
+  EXPECT_EQ(first[1].neighbor_cell, 1);
+  EXPECT_EQ(first[1].neighbor_face, 0);
+  EXPECT_EQ(first[1].vertex_permutation, (std::vector<std::size_t>{3, 0, 1, 2}));
+  EXPECT_EQ(second[0].neighbor_cell, 0);
+  EXPECT_EQ(second[0].neighbor_face, 1);
+  EXPECT_EQ(second[0].vertex_permutation, (std::vector<std::size_t>{1, 2, 3, 0}));
 }
