@@ -34,7 +34,7 @@
 #include "oiseau/utils/integration.hpp"
 
 namespace oiseau::dg {
-namespace {
+namespace detail {
 
 using Matrix = DGIntegration::Matrix;
 using Point = std::array<double, 3>;
@@ -203,7 +203,9 @@ Matrix physical_stiffness(const DGIntegration::CellRule& cell, std::size_t d) {
   return stiffness;
 }
 
-}  // namespace
+}  // namespace detail
+
+using namespace detail;
 
 DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
                              const DGConnectivity& connectivity, const DGGeometry& geometry) {
