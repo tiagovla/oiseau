@@ -196,13 +196,13 @@ namespace {
 
 struct ReferenceFaceGeometry {
   std::vector<std::size_t> vertices;
-  double measure;
+  double measure = 0.0;
 };
 
 struct ReferenceCellGeometry {
   // Points, basis indices, and face indices all use mesh-local vertex order.
   std::vector<Point> points;
-  std::array<std::size_t, 4> basis_vertices;
+  std::array<std::size_t, 4> basis_vertices{};
   Matrix inverse_edges;
   std::vector<ReferenceFaceGeometry> faces;
 };
@@ -348,9 +348,9 @@ DGGeometry::DGGeometry(const mesh::Mesh& mesh) : m_mesh(mesh) {
     for (const auto& reference_face : reference.faces) {
       std::vector<Point> physical_face;
       physical_face.reserve(reference_face.vertices.size());
-      for (const auto vertex : reference_face.vertices) {
-        physical_face.push_back(physical_nodes[vertex]);
-      }
+      std::ranges::transform(
+          reference_face.vertices, std::back_inserter(physical_face),
+          [&physical_nodes](std::size_t vertex) -> const Point& { return physical_nodes[vertex]; });
       const auto measure = face_measure(physical_face, dimension - 1);
       if (!std::isfinite(measure) || measure <= 0.0) {
         throw std::invalid_argument("A cell face must have finite, nonzero measure");
