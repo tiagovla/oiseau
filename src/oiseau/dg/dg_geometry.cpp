@@ -188,22 +188,7 @@ Point face_normal(const std::vector<Point>& vertices, const Point& cell_centroid
 
 }  // namespace detail
 
-namespace {
-
-using detail::affine_tolerance;
-using detail::centroid;
-using detail::face_measure;
-using detail::face_normal;
-using detail::independent_vertices;
-using detail::is_degenerate;
-using detail::Matrix;
-using detail::padded_matrix;
-using detail::physical_vertex;
-using detail::Point;
-using detail::point_array;
-using detail::triangle_area;
-
-}  // namespace
+using namespace detail;
 
 DGGeometry::DGGeometry(const mesh::Mesh& mesh) : m_mesh(mesh) {
   const auto& topology = mesh.topology();
