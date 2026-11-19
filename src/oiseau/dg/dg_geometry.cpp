@@ -12,7 +12,6 @@
 #include <cstddef>
 #include <iterator>
 #include <limits>
-#include <numeric>
 #include <ranges>
 #include <stdexcept>
 #include <utility>
@@ -59,22 +58,19 @@ bool is_degenerate(const Matrix& matrix, double determinant) {
 
 double affine_tolerance(const std::vector<Point>& points, std::size_t dimension) {
   double coordinate_scale = 0.0;
-  for (const auto& point : points) {
+  double cell_diameter = 0.0;
+
+  for (std::size_t i = 0; i < points.size(); ++i) {
     for (std::size_t coordinate = 0; coordinate < dimension; ++coordinate) {
-      coordinate_scale = std::max(coordinate_scale, std::abs(point(coordinate)));
+      coordinate_scale = std::max(coordinate_scale, std::abs(points[i](coordinate)));
+    }
+    for (std::size_t j = i + 1; j < points.size(); ++j) {
+      cell_diameter = std::max(cell_diameter, xt::linalg::norm(points[i] - points[j], 2));
     }
   }
-  const auto max_distance_from = [&points](const Point& point) {
-    return std::accumulate(points.begin(), points.end(), 0.0,
-                           [&point](double distance, const Point& other) {
-                             return std::max(distance, xt::linalg::norm(point - other, 2));
-                           });
-  };
-  const auto cell_diameter = std::accumulate(
-      points.begin(), points.end(), 0.0, [&max_distance_from](double diameter, const Point& point) {
-        return std::max(diameter, max_distance_from(point));
-      });
-  return 100.0 * std::numeric_limits<double>::epsilon() * std::max(coordinate_scale, cell_diameter);
+
+  constexpr double factor = 100.0 * std::numeric_limits<double>::epsilon();
+  return factor * std::max(coordinate_scale, cell_diameter);
 }
 
 Point physical_vertex(const mesh::Geometry& geometry, std::size_t vertex, std::size_t dimension) {
