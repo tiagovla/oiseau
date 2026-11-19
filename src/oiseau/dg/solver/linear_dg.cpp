@@ -20,16 +20,13 @@
 #include "oiseau/dg/dg_connectivity.hpp"
 #include "oiseau/dg/dg_geometry.hpp"
 #include "oiseau/dg/dg_integration.hpp"
+#include "oiseau/mesh/topology.hpp"
 
 namespace oiseau::dg::solver {
-namespace {
-
-using FluxMatrices = std::array<std::vector<std::vector<double>>, 2>;
-
-}  // namespace
-
-struct LinearDG2D::Impl {
+template <std::size_t Dimension>
+struct LinearDG<Dimension>::Impl {
   struct FaceFluxOperators {
+    Normal normal{};
     std::vector<double> normal_flux_matrix;  // [equation, field]
   };
 
@@ -45,12 +42,12 @@ struct LinearDG2D::Impl {
   EquationSystem equations;
   NumericalFlux numerical_flux;
   BoundaryState boundary_state;
-  FluxMatrices flux_matrices;
+  std::array<std::vector<std::vector<double>>, Dimension> flux_matrices;
   std::vector<CellFluxOperators> normal_flux_operators;
 
   Impl(mesh::Mesh& mesh, const std::vector<unsigned>& orders, EquationSystem input_equations,
        NumericalFlux input_numerical_flux, BoundaryState input_boundary_state)
-      : owned_space(std::make_shared<DGSpace>(mesh, orders)),
+      : owned_space(std::make_shared<DGSpace>(check_mesh_dimension(mesh), orders)),
         space(owned_space.get()),
         connectivity(mesh),
         geometry(mesh),
@@ -65,7 +62,7 @@ struct LinearDG2D::Impl {
   Impl(mesh::Mesh& mesh, const DGSpace& input_space, EquationSystem input_equations,
        NumericalFlux input_numerical_flux, BoundaryState input_boundary_state)
       : space(&input_space),
-        connectivity(mesh),
+        connectivity(check_mesh_dimension(mesh)),
         geometry(mesh),
         integration(mesh, input_space, connectivity, geometry),
         equations(std::move(input_equations)),
@@ -75,24 +72,35 @@ struct LinearDG2D::Impl {
     initialize_normal_flux_operators();
   }
 
+  static mesh::Mesh& check_mesh_dimension(mesh::Mesh& mesh) {
+    if (mesh.topology().dimension() != static_cast<int>(Dimension)) {
+      throw std::invalid_argument("LinearDG mesh dimension must match the solver dimension");
+    }
+    return mesh;
+  }
+
   void initialize_flux_matrices() {
     if (!numerical_flux) {
-      throw std::invalid_argument("LinearDG2D requires a numerical flux policy");
+      throw std::invalid_argument("LinearDG requires a numerical flux policy");
     }
 
     const auto fields = equations.fields();
-    if (std::ranges::any_of(equations.equations(), [](const Equation& equation) {
-          return std::ranges::any_of(equation.terms, [](const LinearTerm& term) {
-            return term.derivative == Derivative::Z && term.coefficient != 0.0;
-          });
-        })) {
-      throw std::invalid_argument("LinearDG2D only supports x and y derivatives");
+    if constexpr (Dimension < 3) {
+      if (std::ranges::any_of(equations.equations(), [](const Equation& equation) {
+            return std::ranges::any_of(equation.terms, [](const LinearTerm& term) {
+              const auto unsupported = term.derivative == Derivative::Z ||
+                                       (Dimension == 1 && term.derivative == Derivative::Y);
+              return unsupported && term.coefficient != 0.0;
+            });
+          })) {
+        throw std::invalid_argument("Equation derivative exceeds the LinearDG mesh dimension");
+      }
     }
     for (auto& matrix : flux_matrices) {
       matrix.assign(fields.size(), std::vector<double>(fields.size(), 0.0));
     }
-    const std::array<Derivative, 2> directions = {Derivative::X, Derivative::Y};
-    for (std::size_t direction = 0; direction < directions.size(); ++direction) {
+    constexpr std::array directions = {Derivative::X, Derivative::Y, Derivative::Z};
+    for (std::size_t direction = 0; direction < Dimension; ++direction) {
       for (std::size_t equation = 0; equation < fields.size(); ++equation) {
         for (std::size_t field = 0; field < fields.size(); ++field) {
           flux_matrices[direction][equation][field] =
@@ -112,12 +120,14 @@ struct LinearDG2D::Impl {
       cell.faces.reserve(cell_rule.faces.size());
       for (const auto& face_rule : cell_rule.faces) {
         auto& face = cell.faces.emplace_back();
+        std::copy_n(face_rule.outward_normal.begin(), Dimension, face.normal.begin());
         face.normal_flux_matrix.resize(fields * fields);
         for (std::size_t equation = 0; equation < fields; ++equation) {
           for (std::size_t field = 0; field < fields; ++field) {
-            face.normal_flux_matrix[equation * fields + field] =
-                face_rule.outward_normal[0] * flux_matrices[0][equation][field] +
-                face_rule.outward_normal[1] * flux_matrices[1][equation][field];
+            for (std::size_t direction = 0; direction < Dimension; ++direction) {
+              face.normal_flux_matrix[equation * fields + field] +=
+                  face.normal[direction] * flux_matrices[direction][equation][field];
+            }
           }
         }
       }
@@ -169,8 +179,15 @@ struct LinearDG2D::Impl {
       const auto& nodes = groups[group_index].nodes;
       for (std::size_t cell = 0; cell < nodes.shape()[0]; ++cell) {
         for (std::size_t node = 0; node < nodes.shape()[1]; ++node) {
-          state.groups[group_index](cell, node, field_index) =
-              value(nodes(cell, node, 0), nodes(cell, node, 1));
+          if constexpr (Dimension == 1) {
+            state.groups[group_index](cell, node, field_index) = value(nodes(cell, node, 0));
+          } else if constexpr (Dimension == 2) {
+            state.groups[group_index](cell, node, field_index) =
+                value(nodes(cell, node, 0), nodes(cell, node, 1));
+          } else {
+            state.groups[group_index](cell, node, field_index) =
+                value(nodes(cell, node, 0), nodes(cell, node, 1), nodes(cell, node, 2));
+          }
         }
       }
     }
@@ -187,7 +204,7 @@ struct LinearDG2D::Impl {
     auto output = zero_state();
     const auto fields = equations.fields().size();
     std::vector<double> left(fields), right(fields), left_flux(fields), right_flux(fields);
-    std::vector<double> volume_flux_x, volume_flux_y;
+    std::array<std::vector<double>, Dimension> reference_flux;
 
     const auto cell_rules = integration.cells();
     for (std::size_t cell_index = 0; cell_index < cell_rules.size(); ++cell_index) {
@@ -201,19 +218,29 @@ struct LinearDG2D::Impl {
       const auto* cell_values = cell_state.data() + row * node_count * fields;
       auto* cell_derivative = output.groups[group].data() + row * node_count * fields;
 
-      volume_flux_x.resize(node_count * fields);
-      volume_flux_y.resize(node_count * fields);
+      const auto& inverse_jacobian = cell_rule.inverse_jacobian;
+      const std::array derivatives = {cell_rule.reference->derivative_r.data(),
+                                      cell_rule.reference->derivative_s.data(),
+                                      cell_rule.reference->derivative_t.data()};
+      for (auto& flux : reference_flux) flux.resize(node_count * fields);
+      // The affine inverse Jacobian is constant, so transform the flux before differentiating.
       for (std::size_t trial = 0; trial < node_count; ++trial) {
         for (std::size_t equation = 0; equation < fields; ++equation) {
-          double x = 0.0;
-          double y = 0.0;
-          for (std::size_t field = 0; field < fields; ++field) {
-            const auto value = cell_values[trial * fields + field];
-            x += flux_matrices[0][equation][field] * value;
-            y += flux_matrices[1][equation][field] * value;
+          std::array<double, Dimension> physical_flux{};
+          for (std::size_t direction = 0; direction < Dimension; ++direction) {
+            for (std::size_t field = 0; field < fields; ++field) {
+              physical_flux[direction] +=
+                  flux_matrices[direction][equation][field] * cell_values[trial * fields + field];
+            }
           }
-          volume_flux_x[trial * fields + equation] = x;
-          volume_flux_y[trial * fields + equation] = y;
+          for (std::size_t reference_axis = 0; reference_axis < Dimension; ++reference_axis) {
+            double transformed_flux = 0.0;
+            for (std::size_t direction = 0; direction < Dimension; ++direction) {
+              transformed_flux +=
+                  inverse_jacobian[reference_axis * 3 + direction] * physical_flux[direction];
+            }
+            reference_flux[reference_axis][trial * fields + equation] = transformed_flux;
+          }
         }
       }
       for (std::size_t test = 0; test < node_count; ++test) {
@@ -221,10 +248,11 @@ struct LinearDG2D::Impl {
           double value = 0.0;
           for (std::size_t trial = 0; trial < node_count; ++trial) {
             const auto index = test * node_count + trial;
-            value += cell_rule.weak_derivative_x[index] * volume_flux_x[trial * fields + equation] +
-                     cell_rule.weak_derivative_y[index] * volume_flux_y[trial * fields + equation];
+            for (std::size_t axis = 0; axis < Dimension; ++axis) {
+              value += derivatives[axis][index] * reference_flux[axis][trial * fields + equation];
+            }
           }
-          cell_derivative[test * fields + equation] = value;
+          cell_derivative[test * fields + equation] = -value;
         }
       }
 
@@ -253,7 +281,7 @@ struct LinearDG2D::Impl {
           }
 
           if (face.is_boundary()) {
-            right = boundary_state ? boundary_state(left, face.outward_normal) : left;
+            right = boundary_state ? boundary_state(left, face_operators.normal) : left;
             if (right.size() != fields) {
               throw std::invalid_argument(
                   "Boundary state must return one value for every equation field");
@@ -280,15 +308,19 @@ struct LinearDG2D::Impl {
             left_flux[equation] = interior_flux;
             right_flux[equation] = exterior_flux;
           }
-          const auto flux = numerical_flux(left, right, face.outward_normal, left_flux, right_flux);
-          if (flux.size() != fields) {
+          auto flux_correction =
+              numerical_flux(left, right, face_operators.normal, left_flux, right_flux);
+          if (flux_correction.size() != fields) {
             throw std::invalid_argument("Numerical flux must return one value per equation field");
+          }
+          for (std::size_t equation = 0; equation < fields; ++equation) {
+            flux_correction[equation] -= left_flux[equation];
           }
           const auto* lift = face.minus->lift.data() + q * node_count;
           for (std::size_t test = 0; test < node_count; ++test) {
             for (std::size_t equation = 0; equation < fields; ++equation) {
               cell_derivative[test * fields + equation] -=
-                  face.lift_scale * lift[test] * flux[equation];
+                  face.lift_scale * lift[test] * flux_correction[equation];
             }
           }
         }
@@ -298,34 +330,53 @@ struct LinearDG2D::Impl {
   }
 };
 
-LinearDG2D::LinearDG2D(mesh::Mesh& mesh, const std::vector<unsigned>& orders,
-                       EquationSystem equations, WaveSpeed wave_speed, BoundaryState boundary_state)
-    : LinearDG2D(mesh, orders, std::move(equations), rusanov(std::move(wave_speed)),
-                 std::move(boundary_state)) {}
+template <std::size_t Dimension>
+LinearDG<Dimension>::LinearDG(mesh::Mesh& mesh, const std::vector<unsigned>& orders,
+                              EquationSystem equations, WaveSpeed wave_speed,
+                              BoundaryState boundary_state)
+    : LinearDG(mesh, orders, std::move(equations), rusanov(std::move(wave_speed)),
+               std::move(boundary_state)) {}
 
-LinearDG2D::LinearDG2D(mesh::Mesh& mesh, const std::vector<unsigned>& orders,
-                       EquationSystem equations, NumericalFlux numerical_flux,
-                       BoundaryState boundary_state)
+template <std::size_t Dimension>
+LinearDG<Dimension>::LinearDG(mesh::Mesh& mesh, const std::vector<unsigned>& orders,
+                              EquationSystem equations, NumericalFlux numerical_flux,
+                              BoundaryState boundary_state)
     : m_impl(std::make_unique<Impl>(mesh, orders, std::move(equations), std::move(numerical_flux),
                                     std::move(boundary_state))) {}
 
-LinearDG2D::LinearDG2D(mesh::Mesh& mesh, const DGSpace& space, EquationSystem equations,
-                       WaveSpeed wave_speed, BoundaryState boundary_state)
-    : LinearDG2D(mesh, space, std::move(equations), rusanov(std::move(wave_speed)),
-                 std::move(boundary_state)) {}
+template <std::size_t Dimension>
+LinearDG<Dimension>::LinearDG(mesh::Mesh& mesh, const DGSpace& space, EquationSystem equations,
+                              WaveSpeed wave_speed, BoundaryState boundary_state)
+    : LinearDG(mesh, space, std::move(equations), rusanov(std::move(wave_speed)),
+               std::move(boundary_state)) {}
 
-LinearDG2D::LinearDG2D(mesh::Mesh& mesh, const DGSpace& space, EquationSystem equations,
-                       NumericalFlux numerical_flux, BoundaryState boundary_state)
+template <std::size_t Dimension>
+LinearDG<Dimension>::LinearDG(mesh::Mesh& mesh, const DGSpace& space, EquationSystem equations,
+                              NumericalFlux numerical_flux, BoundaryState boundary_state)
     : m_impl(std::make_unique<Impl>(mesh, space, std::move(equations), std::move(numerical_flux),
                                     std::move(boundary_state))) {}
 
-LinearDG2D::~LinearDG2D() = default;
-LinearDG2D::LinearDG2D(LinearDG2D&&) noexcept = default;
-LinearDG2D& LinearDG2D::operator=(LinearDG2D&&) noexcept = default;
+template <std::size_t Dimension>
+LinearDG<Dimension>::~LinearDG() = default;
 
-const DGSpace& LinearDG2D::space() const { return *m_impl->space; }
-const EquationSystem& LinearDG2D::equations() const { return m_impl->equations; }
-LinearDG2D::NumericalFlux LinearDG2D::rusanov(WaveSpeed wave_speed) {
+template <std::size_t Dimension>
+LinearDG<Dimension>::LinearDG(LinearDG&&) noexcept = default;
+
+template <std::size_t Dimension>
+LinearDG<Dimension>& LinearDG<Dimension>::operator=(LinearDG&&) noexcept = default;
+
+template <std::size_t Dimension>
+const DGSpace& LinearDG<Dimension>::space() const {
+  return *m_impl->space;
+}
+
+template <std::size_t Dimension>
+const EquationSystem& LinearDG<Dimension>::equations() const {
+  return m_impl->equations;
+}
+
+template <std::size_t Dimension>
+auto LinearDG<Dimension>::rusanov(WaveSpeed wave_speed) -> NumericalFlux {
   if (!wave_speed) throw std::invalid_argument("Rusanov flux requires a wave-speed bound");
   return [wave_speed = std::move(wave_speed)](
              std::span<const double> left, std::span<const double> right, const Normal& normal,
@@ -346,15 +397,31 @@ LinearDG2D::NumericalFlux LinearDG2D::rusanov(WaveSpeed wave_speed) {
     return flux;
   };
 }
-LinearDG2D::State LinearDG2D::zero_state() const { return m_impl->zero_state(); }
-LinearDG2D::State LinearDG2D::initial_state(const Field& field,
-                                            const InitialCondition& value) const {
+
+template <std::size_t Dimension>
+auto LinearDG<Dimension>::zero_state() const -> State {
+  return m_impl->zero_state();
+}
+
+template <std::size_t Dimension>
+auto LinearDG<Dimension>::initial_state(const Field& field, const InitialCondition& value) const
+    -> State {
   return m_impl->initial_state(field, value);
 }
-void LinearDG2D::set_initial_condition(State& state, const Field& field,
-                                       const InitialCondition& value) const {
+
+template <std::size_t Dimension>
+void LinearDG<Dimension>::set_initial_condition(State& state, const Field& field,
+                                                const InitialCondition& value) const {
   m_impl->set_initial_condition(state, field, value);
 }
-LinearDG2D::State LinearDG2D::rhs(const State& state) const { return m_impl->rhs(state); }
+
+template <std::size_t Dimension>
+auto LinearDG<Dimension>::rhs(const State& state) const -> State {
+  return m_impl->rhs(state);
+}
+
+template class LinearDG<1>;
+template class LinearDG<2>;
+template class LinearDG<3>;
 
 }  // namespace oiseau::dg::solver
