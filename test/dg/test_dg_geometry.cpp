@@ -57,11 +57,6 @@ TEST(test_dg_geometry, ref_type_for) {
   EXPECT_THROW(ref_type_for(CellKind::Undefined), std::invalid_argument);
 }
 
-TEST(test_dg_geometry, matrix_scale) {
-  const oiseau::dg::detail::Matrix matrix = {{2.0, 1.0}, {1.0, 3.0}};
-  EXPECT_DOUBLE_EQ(oiseau::dg::detail::matrix_scale(matrix, 2), 3.0);
-}
-
 TEST(test_dg_geometry, is_degenerate) {
   using oiseau::dg::detail::is_degenerate;
   const oiseau::dg::detail::Matrix matrix = {{2.0, 1.0}, {1.0, 3.0}};

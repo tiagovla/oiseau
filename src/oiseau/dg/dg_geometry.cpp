@@ -18,6 +18,7 @@
 #include <utility>
 #include <vector>
 #include <xtensor-blas/xlinalg.hpp>
+#include <xtensor/core/xmath.hpp>
 #include <xtensor/generators/xbuilder.hpp>
 #include <xtensor/views/xslice.hpp>
 #include <xtensor/views/xview.hpp>
@@ -48,18 +49,8 @@ std::array<double, 3> point_array(const Point& point) {
   return output;
 }
 
-double matrix_scale(const Matrix& matrix, std::size_t dimension) {
-  double scale = 0.0;
-  for (std::size_t row = 0; row < dimension; ++row) {
-    for (std::size_t column = 0; column < dimension; ++column) {
-      scale = std::max(scale, std::abs(matrix(row, column)));
-    }
-  }
-  return scale;
-}
-
 bool is_degenerate(const Matrix& matrix, double determinant, std::size_t dimension) {
-  const auto scale = matrix_scale(matrix, dimension);
+  const auto scale = xt::amax(xt::abs(matrix))();
   if (!std::isfinite(determinant) || !std::isfinite(scale) || scale == 0.0) return true;
   const auto relative_threshold =
       100.0 * std::numeric_limits<double>::epsilon() * std::pow(scale, dimension);
