@@ -98,20 +98,15 @@ Point physical_vertex(const mesh::Geometry& geometry, std::size_t vertex, std::s
 
 std::array<std::size_t, 4> independent_vertices(const std::vector<Point>& reference_points,
                                                 std::size_t dimension) {
-  // Select independent reference edges from vertex zero. Some reference-node
-  // orderings (notably tensor-product cells) do not put an independent basis
-  // in their first dimension + 1 nodes.
   std::array<std::size_t, 4> result{};
   double largest_determinant = 0.0;
+  const auto second_end = dimension > 1 ? reference_points.size() : 2;
+  const auto third_end = dimension > 2 ? reference_points.size() : 2;
   for (std::size_t first = 1; first < reference_points.size(); ++first) {
-    const auto second_end = dimension > 1 ? reference_points.size() : 2;
-    const auto third_end = dimension > 2 ? reference_points.size() : 2;
-    for (std::size_t second = 1; second < second_end; ++second) {
-      for (std::size_t third = 1; third < third_end; ++third) {
-        if ((dimension > 1 && second == first) ||
-            (dimension > 2 && (third == first || third == second))) {
-          continue;
-        }
+    const auto second_start = dimension > 1 ? first + 1 : 1;
+    for (auto second = second_start; second < second_end; ++second) {
+      const auto third_start = dimension > 2 ? second + 1 : 1;
+      for (auto third = third_start; third < third_end; ++third) {
         const std::array<std::size_t, 3> indices = {first, second, third};
         Matrix edges = xt::zeros<double>({dimension, dimension});
         for (std::size_t column = 0; column < dimension; ++column) {

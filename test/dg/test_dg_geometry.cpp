@@ -98,6 +98,13 @@ TEST(test_dg_geometry, independent_vertices) {
   const auto second = triangle[basis[2]] - triangle[basis[0]];
   EXPECT_GT(std::abs(first(0) * second(1) - first(1) * second(0)),
             std::numeric_limits<double>::epsilon());
+
+  const std::vector<Point> points_3d = {make_point({0.0, 0.0, 0.0}), make_point({1.0, 0.0, 0.0}),
+                                        make_point({0.0, 1.0, 0.0}), make_point({0.0, 0.0, 1.0}),
+                                        make_point({0.0, 0.0, 2.0})};
+  const std::array<std::size_t, 4> largest_basis = {0, 1, 2, 4};
+  EXPECT_EQ(independent_vertices(points_3d, 3), largest_basis);
+
   EXPECT_THROW(independent_vertices(
                    {make_point({0.0, 0.0}), make_point({1.0, 0.0}), make_point({2.0, 0.0})}, 2),
                std::logic_error);
