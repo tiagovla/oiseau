@@ -204,7 +204,7 @@ Matrix physical_stiffness(const DGIntegration::CellRule& cell, std::size_t d) {
   const auto has_y = reference.stiffness_s.dimension() == 2;
   const auto has_z = reference.stiffness_t.dimension() == 2;
   if ((d == 1 && !has_y) || (d == 2 && !has_z)) return {};
-  const auto& inverse_jacobian = cell.spatial_inverse_jacobian;
+  const auto& inverse_jacobian = cell.inverse_jacobian;
   Matrix stiffness = inverse_jacobian[d] * reference.stiffness_r;
   if (has_y) stiffness += inverse_jacobian[3 + d] * reference.stiffness_s;
   if (has_z) stiffness += inverse_jacobian[6 + d] * reference.stiffness_t;
@@ -229,9 +229,8 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
   const auto dimension = mesh.topology().dimension();
   const auto face_dimension = dimension - 1;
 
+  m_cells.resize(cell_count);
   std::vector<ReferenceOperators> reference_operators;
-  std::vector<std::size_t> cell_group(cell_count, DGConnectivity::no_neighbor);
-  std::vector<std::size_t> cell_group_row(cell_count, 0);
   reference_operators.reserve(groups.size());
   for (std::size_t group_index = 0; group_index < groups.size(); ++group_index) {
     const auto& group = groups[group_index];
@@ -242,9 +241,9 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
         reference_vertex_coordinates(cell_types[first_cell], connectivity_data[first_cell]);
     reference.faces = cell_types[first_cell]->get_entity_vertices(face_dimension);
     for (std::size_t row = 0; row < group.cell_indices.size(); ++row) {
-      const auto cell_index = group.cell_indices[row];
-      cell_group[cell_index] = group_index;
-      cell_group_row[cell_index] = row;
+      auto& cell_rule = m_cells[group.cell_indices[row]];
+      cell_rule.group_index = group_index;
+      cell_rule.group_cell_index = row;
     }
   }
 
@@ -280,27 +279,20 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
     return rule;
   };
 
-  m_cells.resize(cell_count);
   for (std::size_t cell_index = 0; cell_index < cell_count; ++cell_index) {
-    if (cell_group[cell_index] == DGConnectivity::no_neighbor) continue;
+    auto& cell_rule = m_cells[cell_index];
+    const auto group_index = cell_rule.group_index;
+    if (group_index == DGConnectivity::no_neighbor) continue;
 
-    const auto group_index = cell_group[cell_index];
-    const auto row = cell_group_row[cell_index];
     const auto& reference = reference_operators[group_index];
     const auto& cell_geometry = geometry.cell(cell_index);
     const auto determinant = std::abs(cell_geometry.determinant);
-    auto& cell_rule = m_cells[cell_index];
-    cell_rule.group_index = group_index;
-    cell_rule.group_cell_index = row;
     cell_rule.reference = reference.volume;
     cell_rule.volume_jacobian = determinant;
-    cell_rule.inverse_jacobian = {
-        cell_geometry.inverse_jacobian[0], cell_geometry.inverse_jacobian[1],
-        cell_geometry.inverse_jacobian[3], cell_geometry.inverse_jacobian[4]};
-    cell_rule.spatial_inverse_jacobian = cell_geometry.inverse_jacobian;
+    cell_rule.inverse_jacobian = cell_geometry.inverse_jacobian;
 
     const auto nodes = cell_rule.node_count();
-    const auto& inverse_jacobian = cell_rule.spatial_inverse_jacobian;
+    const auto& inverse_jacobian = cell_rule.inverse_jacobian;
     const auto has_y = cell_geometry.dimension >= 2;
     const auto has_z = cell_geometry.dimension == 3;
     const auto set_weak_derivative = [&](std::size_t d, std::vector<double>& derivative) {
@@ -331,8 +323,7 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
       const auto& connection = face_connections[face_index];
       auto& face_rule = cell_rule.faces.emplace_back();
       const auto& face_geometry = cell_geometry.faces[face_index];
-      face_rule.outward_normal = {face_geometry.outward_normal[0], face_geometry.outward_normal[1]};
-      face_rule.normal_z = face_geometry.outward_normal[2];
+      face_rule.outward_normal = face_geometry.outward_normal;
       face_rule.neighbor_cell = connection.neighbor_cell;
 
       const auto corners = local_faces[face_index].size();
@@ -341,7 +332,7 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
       auto minus_permutation = identity_permutation;
       auto plus_permutation = identity_permutation;
       if (!connection.is_boundary()) {
-        neighbor_group = cell_group.at(connection.neighbor_cell);
+        neighbor_group = m_cells.at(connection.neighbor_cell).group_index;
         if (neighbor_group == DGConnectivity::no_neighbor) {
           throw std::invalid_argument("DGIntegration neighbor cell is absent from DGSpace");
         }

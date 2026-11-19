@@ -86,10 +86,8 @@ class DGIntegration {
 
   /** @brief Integration data for one physical cell face. */
   struct FaceRule {
-    /** @brief The x and y components of the outward unit normal. */
-    std::array<double, 2> outward_normal{};
-    /** @brief The z component of the outward unit normal. */
-    double normal_z = 0.0;
+    /** @brief Outward unit normal, padded to three coordinates. */
+    std::array<double, 3> outward_normal{};
     /** @brief Mesh index of the neighbor cell, or DGConnectivity::no_neighbor on a boundary. */
     std::size_t neighbor_cell = DGConnectivity::no_neighbor;
     /** @brief Reference face rule for the local cell. */
@@ -137,10 +135,8 @@ class DGIntegration {
     std::shared_ptr<const ReferenceRule> reference;
     /** @brief Absolute Jacobian determinant used to scale volume integrals. */
     double volume_jacobian = 0.0;
-    /** @brief Upper-left 2 by 2 block of the inverse Jacobian in row-major order. */
-    std::array<double, 4> inverse_jacobian{};
     /** @brief Padded row-major 3 by 3 inverse Jacobian @f$\partial(r,s,t)/\partial(x,y,z)@f$. */
-    std::array<double, 9> spatial_inverse_jacobian{};
+    std::array<double, 9> inverse_jacobian{};
 
     /** @return Number of cell nodes, or zero for an inactive cell. */
     std::size_t node_count() const { return reference ? reference->mass.shape()[0] : 0; }
