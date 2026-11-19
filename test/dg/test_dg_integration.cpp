@@ -10,9 +10,14 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include <numeric>
+#include <stdexcept>
 #include <vector>
+#include <xtensor/core/xmath.hpp>
+#include <xtensor/views/xview.hpp>
 
+#include "oiseau/dg/detail/integration.hpp"
 #include "oiseau/dg/dg_connectivity.hpp"
 #include "oiseau/dg/dg_geometry.hpp"
 #include "oiseau/dg/dg_integration.hpp"
@@ -23,6 +28,54 @@
 namespace {
 
 using namespace oiseau::dg;
+using oiseau::mesh::CellKind;
+
+TEST(DGFaceQuadratureTest, point_has_one_weight_and_no_coordinates) {
+  const auto [nodes, weights] = detail::make_face_quadrature(CellKind::Point, 2);
+  ASSERT_EQ(nodes.dimension(), 2);
+  EXPECT_EQ(nodes.shape()[0], 1);
+  EXPECT_EQ(nodes.shape()[1], 0);
+  ASSERT_EQ(weights.size(), 1);
+  EXPECT_DOUBLE_EQ(weights(0), 1.0);
+}
+
+TEST(DGFaceQuadratureTest, line_integrates_fourth_degree_moment) {
+  const auto [nodes, weights] = detail::make_face_quadrature(CellKind::Interval, 2);
+  ASSERT_EQ(nodes.dimension(), 1);
+  ASSERT_EQ(nodes.size(), weights.size());
+  EXPECT_NEAR(xt::sum(weights)(), 2.0, 1e-12);
+  EXPECT_NEAR(xt::sum(xt::pow(nodes, 4) * weights)(), 2.0 / 5.0, 1e-12);
+}
+
+TEST(DGFaceQuadratureTest, triangle_integrates_mixed_fifth_degree_moment) {
+  const auto [nodes, weights] = detail::make_face_quadrature(CellKind::Triangle, 2);
+  ASSERT_EQ(nodes.dimension(), 2);
+  ASSERT_EQ(nodes.shape()[0], weights.size());
+  ASSERT_EQ(nodes.shape()[1], 2);
+  const auto r = xt::col(nodes, 0);
+  const auto s = xt::col(nodes, 1);
+  EXPECT_NEAR(xt::sum(weights)(), 2.0, 1e-12);
+  // Integrate r^3 s^2 over -1 <= r <= 1 and -1 <= s <= -r.
+  EXPECT_NEAR(xt::sum(xt::pow(r, 3) * xt::pow(s, 2) * weights)(), -2.0 / 21.0, 1e-12);
+}
+
+TEST(DGFaceQuadratureTest, square_integrates_tensor_product_moment) {
+  const auto [nodes, weights] = detail::make_face_quadrature(CellKind::Quadrilateral, 2);
+  ASSERT_EQ(nodes.dimension(), 2);
+  ASSERT_EQ(nodes.shape()[0], weights.size());
+  ASSERT_EQ(nodes.shape()[1], 2);
+  const auto r = xt::col(nodes, 0);
+  const auto s = xt::col(nodes, 1);
+  EXPECT_NEAR(xt::sum(weights)(), 4.0, 1e-12);
+  EXPECT_NEAR(xt::sum(xt::pow(r, 4) * xt::pow(s, 4) * weights)(), 4.0 / 25.0, 1e-12);
+}
+
+TEST(DGFaceQuadratureTest, rejects_invalid_shape_and_order) {
+  EXPECT_THROW(detail::make_face_quadrature(CellKind::Tetrahedron, 2), std::logic_error);
+  const auto oversized_order = std::numeric_limits<unsigned>::max();
+  EXPECT_THROW(detail::make_face_quadrature(CellKind::Interval, oversized_order),
+               std::invalid_argument);
+}
 
 // One quadrilateral and two triangles, followed by a boundary edge.
 // Apply a shear and translation so the physical Jacobian is not diagonal.
