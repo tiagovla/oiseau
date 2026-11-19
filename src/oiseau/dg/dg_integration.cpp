@@ -81,7 +81,9 @@ ReferenceOperators make_reference_operators(mesh::CellKind kind, unsigned order)
   }
   return {.element = std::move(element),
           .volume = std::move(volume),
-          .inverse_vandermonde = std::move(inverse_vandermonde)};
+          .inverse_vandermonde = std::move(inverse_vandermonde),
+          .vertices = {},
+          .faces = {}};
 }
 
 std::vector<Point> reference_vertex_coordinates(mesh::CellType type,
