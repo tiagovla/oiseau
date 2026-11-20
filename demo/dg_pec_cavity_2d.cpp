@@ -9,18 +9,8 @@
 #include <cstddef>
 #include <iostream>
 #include <numbers>
+#include <oiseau.hpp>
 #include <vector>
-
-#include "oiseau/dg/dg_space.hpp"
-#include "oiseau/dg/equation.hpp"
-#include "oiseau/dg/field.hpp"
-#include "oiseau/dg/solver/linear_dg.hpp"
-#include "oiseau/mesh/cell.hpp"
-#include "oiseau/mesh/geometry.hpp"
-#include "oiseau/mesh/mesh.hpp"
-#include "oiseau/mesh/topology.hpp"
-#include "oiseau/time/rk4.hpp"
-#include "oiseau/time/run.hpp"
 
 int main() {
   using namespace oiseau::dg;
