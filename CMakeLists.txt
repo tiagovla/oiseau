@@ -97,7 +97,8 @@ endif()
 
 target_link_libraries(oiseau PRIVATE oiseau_deps)
 target_include_directories(
-    oiseau PUBLIC $<BUILD_INTERFACE:${OISEAU_PUBLIC_INCLUDE_DIR}> $<INSTALL_INTERFACE:include>
+    oiseau PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                  $<BUILD_INTERFACE:${OISEAU_PUBLIC_INCLUDE_DIR}> $<INSTALL_INTERFACE:include>
 )
 
 # ------------------------------------------------------------------------------
@@ -111,6 +112,7 @@ install(
     INCLUDES
     DESTINATION include
 )
+install(FILES include/oiseau.hpp DESTINATION include)
 install(
     DIRECTORY ${OISEAU_PUBLIC_INCLUDE_DIR}/
     DESTINATION include
