@@ -12,6 +12,7 @@ namespace py = pybind11;
 namespace oiseau::wrappers {
 void mesh(py::module& m);
 void io(py::module& m);
+void dg(py::module& m);
 }  // namespace oiseau::wrappers
 
 PYBIND11_MODULE(cpp, m) {
@@ -22,4 +23,7 @@ PYBIND11_MODULE(cpp, m) {
 
   py::module io = m.def_submodule("io", "IO module");
   oiseau::wrappers::io(io);
+
+  py::module dg = m.def_submodule("dg", "Discontinuous Galerkin solvers");
+  oiseau::wrappers::dg(dg);
 }
