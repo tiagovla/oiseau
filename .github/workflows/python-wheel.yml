@@ -22,8 +22,10 @@ jobs:
         uses: pypa/cibuildwheel@v4.3.5
         with:
           package-dir: python
-          only: cp313-manylinux_x86_64
         env:
+          # cibuildwheel builds the abi3 wheel on 3.13 and reuses it on newer CPython versions.
+          CIBW_BUILD: "cp*-manylinux_x86_64"
+          CIBW_SKIP: "cp*t-*"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_34
           CIBW_ENVIRONMENT: CMAKE_ARGS="-DOISEAU_USE_BUNDLED_OPENBLAS=ON"
           # A unique wheel build tag lets us upload before removing the previous wheel.
@@ -35,6 +37,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_NOTES: Release build for CPython 3.13 and newer on Linux x86-64 (glibc 2.34+) with statically linked OpenBLAS.
         run: |
           repo_api="repos/$GITHUB_REPOSITORY"
           head_sha=$(gh api "$repo_api/git/ref/heads/$GITHUB_REF_NAME" --jq .object.sha)
@@ -46,12 +49,13 @@ jobs:
           wheels=(wheelhouse/*.whl)
           test "${#wheels[@]}" -eq 1 && test -f "${wheels[0]}" || exit 1
           wheel=${wheels[0]}
+          [[ "$wheel" == *-cp313-abi3-*.whl ]] || exit 1
           if gh release view dev --json tagName >/dev/null 2>&1; then
             gh release upload dev "$wheel"
+            gh release edit dev --notes "$RELEASE_NOTES"
           else
             gh release create dev "$wheel" --target "$GITHUB_SHA" --title "Development wheel" \
-              --prerelease --latest=false \
-              --notes "Release build for CPython 3.13 on Linux x86-64 (glibc 2.34+) with statically linked OpenBLAS."
+              --prerelease --latest=false --notes "$RELEASE_NOTES"
           fi
           gh api --method PATCH "$repo_api/git/refs/tags/dev" \
             -f sha="$GITHUB_SHA" -F force=true --silent
