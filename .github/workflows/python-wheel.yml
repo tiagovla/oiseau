@@ -28,7 +28,9 @@ jobs:
           CIBW_ENVIRONMENT: CMAKE_ARGS="-DOISEAU_USE_BUNDLED_OPENBLAS=ON"
           # A unique wheel build tag lets us upload before removing the previous wheel.
           CIBW_CONFIG_SETTINGS: --build-option=--build-number=${{ github.run_id }}r${{ github.run_attempt }}
-          CIBW_TEST_COMMAND: python -c "import numpy; from oiseau.dg import LinearDG2D"
+          CIBW_TEST_GROUPS: dev
+          CIBW_TEST_SOURCES: python/test
+          CIBW_TEST_COMMAND: python -m pytest -q python/test
       - name: Update the dev prerelease
         shell: bash
         env:
