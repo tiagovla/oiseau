@@ -6,7 +6,7 @@
 
 FROM node:20-slim
 
-RUN npm install -g prettier
+RUN npm install -g prettier@3.10.1
 
 WORKDIR /work
 
