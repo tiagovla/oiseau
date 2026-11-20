@@ -1,7 +1,7 @@
 dist/
 sdist/
 build/
-setup.py
+.venv/
 *.egg-info/
 .eggs/
 __pycache__/

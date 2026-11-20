@@ -10,7 +10,7 @@ import subprocess
 from pathlib import Path
 
 import ninja
-from setuptools import Extension
+from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
 
@@ -30,8 +30,9 @@ class CMakeBuild(build_ext):
             "cmake",
             ext.sourcedir,
             f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}{os.sep}",
-            f"-DPYTHON_EXECUTABLE={sys.executable}",
+            f"-DPython_EXECUTABLE={sys.executable}",
             "-DCMAKE_BUILD_TYPE=Release",
+            "-DCMAKE_POSITION_INDEPENDENT_CODE=ON",
             "-GNinja",
             f"-DCMAKE_MAKE_PROGRAM={Path(ninja.BIN_DIR) / 'ninja'}",
         ]
@@ -49,20 +50,7 @@ class CMakeBuild(build_ext):
             raise
 
 
-def build(setup_kwargs):
-    os.environ["CFLAGS"] = "-O3"
-
-    setup_kwargs.update(
-        {
-            "version": "0.1.0",
-            "author": "tiagovla",
-            "author_email": "tiagovla@gmail.com",
-            "description": "DG Framework",
-            "packages": ["oiseau", "oiseau.wrappers"],
-            "package_data": {"oiseau.cpp": ["*.h"]},
-            "ext_modules": [CMakeExtension("oiseau.cpp")],
-            "cmdclass": {"build_ext": CMakeBuild},
-            "zip_safe": False,
-            "setup_requires": ["pybind11"],
-        }
-    )
+setup(
+    ext_modules=[CMakeExtension("oiseau.cpp")],
+    cmdclass={"build_ext": CMakeBuild},
+)
