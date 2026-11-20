@@ -113,16 +113,10 @@ install(
     INCLUDES
     DESTINATION include
 )
-if(TARGET openblas_static)
-    if(NOT OISEAU_BUILD_SHARED)
-        install(TARGETS openblas_static ARCHIVE DESTINATION lib)
-    endif()
-    get_target_property(OPENBLAS_SOURCE_DIR openblas_static SOURCE_DIR)
-    install(FILES "${OPENBLAS_SOURCE_DIR}/LICENSE" DESTINATION share/licenses/oiseau/openblas)
-    install(FILES "${OPENBLAS_SOURCE_DIR}/lapack-netlib/LICENSE"
-            DESTINATION share/licenses/oiseau/lapack
-    )
+if(TARGET openblas_static AND NOT OISEAU_BUILD_SHARED)
+    install(TARGETS openblas_static ARCHIVE DESTINATION lib)
 endif()
+
 install(FILES include/oiseau.hpp DESTINATION include)
 install(
     DIRECTORY ${OISEAU_PUBLIC_INCLUDE_DIR}/
