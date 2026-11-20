@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <benchmark/benchmark.h>
-#include <omp.h>
 
 // #undef WITH_OPENBLAS to disable openblas
 
@@ -81,7 +80,6 @@ void Dot_Acol_Bcol(benchmark::State& state) {
 BENCHMARK(Dot_Acol_Bcol)->RangeMultiplier(MULTIPLIER)->Range(RANGE)->Unit(benchmark::kMillisecond);
 
 int main(int argc, char** argv) {
-  omp_set_num_threads(8);  // Set the number of threads to 8
   benchmark::MaybeReenterWithoutASLR(argc, argv);
   benchmark::Initialize(&argc, argv);
   benchmark::RunSpecifiedBenchmarks();

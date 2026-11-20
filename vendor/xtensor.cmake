@@ -4,10 +4,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-find_package(LAPACK REQUIRED)
-find_package(OpenMP QUIET)
-find_package(BLAS QUIET)
-
 FetchContent_Declare(
     xtl
     GIT_REPOSITORY https://github.com/xtensor-stack/xtl.git
@@ -26,26 +22,20 @@ FetchContent_Declare(
     FIND_PACKAGE_ARGS 0.26.0
 )
 
+# The installed xtensor-blas package can resolve its own BLAS and LAPACK libraries.
 FetchContent_Declare(
     xtensor-blas
     GIT_REPOSITORY https://github.com/xtensor-stack/xtensor-blas
     GIT_TAG ${XTENSOR-BLAS_VERSION}
     GIT_SHALLOW 1
     GIT_PROGRESS 1
-    FIND_PACKAGE_ARGS 0.22.0
 )
 
 FetchContent_MakeAvailable(xtl xtensor xtensor-blas)
 
 add_library(xtensor_stack INTERFACE)
-target_link_libraries(xtensor_stack INTERFACE xtl xtensor xtensor-blas LAPACK::LAPACK)
-
-if(BLAS_FOUND AND OpenMP_FOUND)
-    target_compile_definitions(xtensor-blas INTERFACE WITH_BLAS)
-    target_link_libraries(xtensor_stack INTERFACE BLAS::BLAS)
-    target_link_libraries(xtensor_stack INTERFACE OpenMP::OpenMP_CXX)
-    message(STATUS "xtensor_stack: BLAS found, linking against BLAS")
-endif()
+target_link_libraries(xtensor_stack INTERFACE xtl xtensor xtensor-blas)
+include(blas.cmake)
 
 get_target_property(XTL_INCLUDES xtl INTERFACE_INCLUDE_DIRECTORIES)
 get_target_property(XTENSOR_INCLUDES xtensor INTERFACE_INCLUDE_DIRECTORIES)
