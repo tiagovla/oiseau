@@ -73,9 +73,7 @@ point_data = {
     )
 }
 
-mesh = meshio.Mesh(
-    points=points, cells=cells, cell_data=cell_data, point_data=point_data
-)
+mesh = meshio.Mesh(points=points, cells=cells, cell_data=cell_data, point_data=point_data)
 
 meshio.write(
     "mesh3d_tetra_hexa_block.msh",
