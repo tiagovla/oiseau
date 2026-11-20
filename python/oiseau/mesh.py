@@ -6,6 +6,11 @@
 
 import oiseau.cpp as cpp
 
+CellKind = cpp.mesh.CellKind
+Mesh = cpp.mesh.Mesh
 
-def get_cell_type(cell_type: str):
+
+def get_cell_type(cell_type: str | CellKind):
+    if isinstance(cell_type, str):
+        cell_type = CellKind.__members__[cell_type.capitalize()]
     return cpp.mesh.get_cell_type(cell_type)
