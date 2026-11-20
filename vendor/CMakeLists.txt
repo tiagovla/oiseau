@@ -49,6 +49,9 @@ include(spdlog.cmake)
 include(pybind11.cmake)
 include(mdspan.cmake)
 
-target_link_libraries(
-    oiseau_deps INTERFACE xtensor_stack fmt::fmt spdlog::spdlog pybind11::embed std::mdspan
-)
+target_link_libraries(oiseau_deps INTERFACE xtensor_stack fmt::fmt spdlog::spdlog std::mdspan)
+if(OISEAU_BUILD_PYTHON_EXTENSION)
+    target_link_libraries(oiseau_deps INTERFACE pybind11::module)
+else()
+    target_link_libraries(oiseau_deps INTERFACE pybind11::embed)
+endif()

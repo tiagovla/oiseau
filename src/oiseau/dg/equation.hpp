@@ -70,17 +70,17 @@ inline DifferentialTerm dz(const Field& field) {
 
 inline LinearExpression operator+(const LinearExpression& lhs, const LinearExpression& rhs) {
   auto terms = lhs.terms();
-  terms.append_range(rhs.terms());
+  terms.insert(terms.end(), rhs.terms().begin(), rhs.terms().end());
   return LinearExpression(std::move(terms));
 }
 
 inline LinearExpression operator+(LinearExpression&& lhs, const LinearExpression& rhs) {
   if (&lhs == &rhs) {
     const auto terms = rhs.terms();
-    lhs.m_terms.append_range(terms);
+    lhs.m_terms.insert(lhs.m_terms.end(), terms.begin(), terms.end());
     return std::move(lhs);
   }
-  lhs.m_terms.append_range(rhs.terms());
+  lhs.m_terms.insert(lhs.m_terms.end(), rhs.terms().begin(), rhs.terms().end());
   return std::move(lhs);
 }
 

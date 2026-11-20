@@ -17,6 +17,7 @@ set(OISEAU_BUILD_TEST OFF)
 set(OISEAU_BUILD_DOCS OFF)
 set(OISEAU_BUILD_BENCHMARK OFF)
 set(OISEAU_BUILD_SHARED OFF)
+set(OISEAU_BUILD_PYTHON_EXTENSION ON)
 
 add_subdirectory(.. oiseau)
 pybind11_add_module(
@@ -25,3 +26,18 @@ pybind11_add_module(
 )
 target_link_libraries(cpp PRIVATE oiseau xtensor_stack)
 target_include_directories(cpp PRIVATE ../src)
+
+if(CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+    set(WHEEL_LICENSE_DIR "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/licenses")
+    configure_file(../LICENSE "${WHEEL_LICENSE_DIR}/Oiseau.txt" COPYONLY)
+    if(TARGET openblas_static)
+        get_target_property(OPENBLAS_SOURCE_DIR openblas_static SOURCE_DIR)
+        configure_file(
+            "${OPENBLAS_SOURCE_DIR}/LICENSE" "${WHEEL_LICENSE_DIR}/OpenBLAS.txt" COPYONLY
+        )
+        configure_file(
+            "${OPENBLAS_SOURCE_DIR}/lapack-netlib/LICENSE" "${WHEEL_LICENSE_DIR}/LAPACK.txt"
+            COPYONLY
+        )
+    endif()
+endif()

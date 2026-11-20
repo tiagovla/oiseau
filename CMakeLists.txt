@@ -45,6 +45,7 @@ option(OISEAU_COVERAGE_AUTO_INSTALL_GCOVR
        "Install the required gcovr version into the build directory when needed" ON
 )
 option(OISEAU_BUILD_SHARED "Build shared library" OFF)
+option(OISEAU_USE_BUNDLED_OPENBLAS "Use bundled static OpenBLAS instead of system BLAS" OFF)
 option(OISEAU_PRECOMPILE_HEADERS "Precompile common STL and xtensor headers" OFF)
 
 # ------------------------------------------------------------------------------
