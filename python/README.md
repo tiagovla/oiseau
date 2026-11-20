@@ -1,7 +1,7 @@
 # Oiseau Python bindings
 
-From `oiseau/python/`, sync the Python 3.13 environment and build the bindings.
-The build requires Git, CMake, a C++23 compiler, and BLAS/LAPACK development
+From `oiseau/python/`, sync the environment with CPython 3.13 or later and build the bindings.
+The build requires Git, CMake 3.26 or later, a C++23 compiler, and BLAS/LAPACK development
 libraries. CMake fetches the C++ dependencies on the first build.
 
 ```sh

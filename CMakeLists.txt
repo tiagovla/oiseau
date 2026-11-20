@@ -101,6 +101,9 @@ target_include_directories(
     oiseau PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                   $<BUILD_INTERFACE:${OISEAU_PUBLIC_INCLUDE_DIR}> $<INSTALL_INTERFACE:include>
 )
+if(NOT OISEAU_BUILD_PYTHON_EXTENSION)
+    include(vendor/nanobind.cmake)
+endif()
 
 # ------------------------------------------------------------------------------
 # Install the library

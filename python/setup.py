@@ -16,11 +16,19 @@ from setuptools.command.build_ext import build_ext
 
 class CMakeExtension(Extension):
     def __init__(self, name: str, sourcedir: str = ""):
-        super().__init__(name, sources=[])
+        super().__init__(name, sources=[], py_limited_api=True)
         self.sourcedir = str(Path(sourcedir).resolve())
 
 
 class CMakeBuild(build_ext):
+    def get_ext_filename(self, fullname: str) -> str:
+        filename = super().get_ext_filename(fullname)
+        stem, marker, platform_suffix = filename.partition(".abi3-")
+        if marker:
+            # Nanobind uses the unqualified suffix understood by Python 3.13 and 3.14.
+            return f"{stem}.abi3{Path(platform_suffix).suffix}"
+        return filename
+
     def build_extension(self, ext):
         extdir = Path(self.get_ext_fullpath(ext.name)).parent.resolve()
         build_temp = Path(self.build_temp) / ext.name
@@ -53,4 +61,5 @@ class CMakeBuild(build_ext):
 setup(
     ext_modules=[CMakeExtension("oiseau.cpp")],
     cmdclass={"build_ext": CMakeBuild},
+    options={"bdist_wheel": {"py_limited_api": "cp313"}},
 )

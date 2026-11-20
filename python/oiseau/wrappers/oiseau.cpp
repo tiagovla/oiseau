@@ -4,26 +4,25 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include <pybind11/detail/common.h>
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
 
-namespace py = pybind11;
+namespace py = nanobind;
 
 namespace oiseau::wrappers {
-void mesh(py::module& m);
-void io(py::module& m);
-void dg(py::module& m);
+void mesh(py::module_& m);
+void io(py::module_& m);
+void dg(py::module_& m);
 }  // namespace oiseau::wrappers
 
-PYBIND11_MODULE(cpp, m) {
-  m.doc() = "OISEAU Python interface";
+NB_MODULE(cpp, m) {
+  m.attr("__doc__") = "OISEAU Python interface";
 
-  py::module mesh = m.def_submodule("mesh", "Mesh module");
+  py::module_ mesh = m.def_submodule("mesh", "Mesh module");
   oiseau::wrappers::mesh(mesh);
 
-  py::module io = m.def_submodule("io", "IO module");
+  py::module_ io = m.def_submodule("io", "IO module");
   oiseau::wrappers::io(io);
 
-  py::module dg = m.def_submodule("dg", "Discontinuous Galerkin solvers");
+  py::module_ dg = m.def_submodule("dg", "Discontinuous Galerkin solvers");
   oiseau::wrappers::dg(dg);
 }

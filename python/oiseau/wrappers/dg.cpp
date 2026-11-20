@@ -4,15 +4,19 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include <pybind11/functional.h>
-#include <pybind11/numpy.h>
-#include <pybind11/operators.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/ndarray.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/array.h>
+#include <nanobind/stl/function.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <functional>
+#include <memory>
+#include <new>
 #include <span>
 #include <string>
 #include <utility>
@@ -22,18 +26,20 @@
 #include "oiseau/time/rk4.hpp"
 #include "oiseau/time/run.hpp"
 
-namespace py = pybind11;
+namespace py = nanobind;
 
 namespace oiseau::wrappers {
 namespace {
-py::array_t<double> copy_array(const xt::xarray<double>& values) {
-  py::array_t<double> result(values.shape());
-  std::copy_n(values.data(), values.size(), result.mutable_data());
-  return result;
+py::ndarray<py::numpy, double> copy_array(const xt::xarray<double>& values) {
+  auto data = std::make_unique_for_overwrite<double[]>(values.size());
+  std::copy_n(values.data(), values.size(), data.get());
+  py::capsule owner(data.get(),
+                    [](void* pointer) noexcept { delete[] static_cast<double*>(pointer); });
+  return {data.release(), values.dimension(), values.shape().data(), owner};
 }
 }  // namespace
 
-void dg(py::module& m) {
+void dg(py::module_& m) {
   using namespace oiseau::dg;
   using solver::DGState;
   using solver::LinearDG2D;
@@ -64,7 +70,7 @@ void dg(py::module& m) {
       .def(py::init<const mesh::Mesh&, const std::vector<unsigned>&>(), py::arg("mesh"),
            py::arg("order"), py::keep_alive<1, 2>(),
            "Assign one positive polynomial order per top-dimensional cell in mesh order.")
-      .def_property_readonly(
+      .def_prop_ro(
           "group_nodes",
           [](const DGSpace& space) {
             py::list nodes;
@@ -74,7 +80,7 @@ void dg(py::module& m) {
           "Copies of node coordinates with shape (cells, nodes, dimension), in state group order.");
 
   py::class_<DGState>(m, "DGState")
-      .def_property_readonly(
+      .def_prop_ro(
           "groups",
           [](const DGState& state) {
             py::list groups;
@@ -84,21 +90,24 @@ void dg(py::module& m) {
           "Copies of nodal values with shape (cells, nodes, fields), one array per element group.");
 
   py::class_<LinearDG2D>(m, "LinearDG2D")
-      .def(py::init([](mesh::Mesh& mesh, const DGSpace& space, EquationSystem equations,
-                       double wave_speed, BoundaryCallback boundary) {
-             LinearDG2D::BoundaryState ghost_state;
-             if (boundary) {
-               ghost_state = [boundary = std::move(boundary)](std::span<const double> interior,
-                                                              const LinearDG2D::Normal& normal) {
-                 return boundary(std::vector<double>(interior.begin(), interior.end()), normal);
-               };
-             }
-             return LinearDG2D(
-                 mesh, space, std::move(equations),
-                 [wave_speed](const auto&) { return wave_speed; }, std::move(ghost_state));
-           }),
-           py::arg("mesh"), py::arg("space"), py::arg("equations"), py::arg("wave_speed"),
-           py::arg("boundary_state") = py::none(), py::keep_alive<1, 2>(), py::keep_alive<1, 3>())
+      .def(
+          "__init__",
+          [](LinearDG2D* self, mesh::Mesh& mesh, const DGSpace& space, EquationSystem equations,
+             double wave_speed, BoundaryCallback boundary) {
+            LinearDG2D::BoundaryState ghost_state;
+            if (boundary) {
+              ghost_state = [boundary = std::move(boundary)](std::span<const double> interior,
+                                                             const LinearDG2D::Normal& normal) {
+                return boundary(std::vector<double>(interior.begin(), interior.end()), normal);
+              };
+            }
+            new (self) LinearDG2D(
+                mesh, space, std::move(equations), [wave_speed](const auto&) { return wave_speed; },
+                std::move(ghost_state));
+          },
+          py::arg("mesh"), py::arg("space"), py::arg("equations"), py::arg("wave_speed"),
+          py::arg("boundary_state").none() = py::none(), py::keep_alive<1, 2>(),
+          py::keep_alive<1, 3>())
       .def("initial_state", &LinearDG2D::initial_state, py::arg("field"), py::arg("value"));
 
   m.def(

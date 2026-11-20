@@ -4,36 +4,23 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include <pybind11/cast.h>
-#include <pybind11/detail/common.h>
-#include <pybind11/detail/descr.h>
-#include <pybind11/embed.h>
-#include <pybind11/functional.h>
-#include <pybind11/numpy.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/pytypes.h>
-#include <pybind11/stl.h>
+#pragma once
 
+#include <nanobind/nanobind.h>
+#include <nanobind/ndarray.h>
+#include <nanobind/stl/array.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+
+#include <memory>
 #include <utility>
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/core/xexpression.hpp>
-#include <xtensor/core/xtensor_forward.hpp>
 
-namespace py = pybind11;
+namespace py = nanobind;
 using namespace py::literals;
 
-namespace pybind11::detail {
-
-template <typename T>
-struct type_caster<xt::xarray<T>> {
- public:
-  PYBIND11_TYPE_CASTER(xt::xarray<T>, const_name("xarray"));
-  static handle cast(xt::xarray<T>& src, return_value_policy, handle) {
-    auto v = py::array(src.size(), src.data(), py::capsule([]() {}));
-    v.resize(src.shape());
-    return v.release();
-  }
-};
+namespace nanobind::detail {
 
 template <typename E>
   requires xt::is_xexpression<E>::value
@@ -41,24 +28,43 @@ struct type_caster<E> {
   using value_type = typename E::value_type;
   using array_type = xt::xarray<value_type>;
 
-  PYBIND11_TYPE_CASTER(array_type, _("xexpression"));
-  static handle cast(const E& expr, return_value_policy, handle) {
-    xt::xarray<value_type> tmp = xt::eval(expr);
-    auto* data_holder = new xt::xarray<double>(std::move(tmp));
-    py::capsule owner_capsule(data_holder,
-                              [](void* p) { delete static_cast<xt::xarray<value_type>*>(p); });
-    py::array result(data_holder->shape(), data_holder->data(), owner_capsule);
-    return result.release();
+  NB_TYPE_CASTER(array_type, const_name("numpy.ndarray"));
+  static handle from_cpp(const E& expr, rv_policy, cleanup_list*) {
+    auto data = std::make_unique<array_type>(expr);
+    py::capsule owner(data.get(),
+                      [](void* pointer) noexcept { delete static_cast<array_type*>(pointer); });
+    auto* array = data.release();
+    return py::ndarray<py::numpy, value_type>(array->data(), array->dimension(),
+                                              array->shape().data(), owner)
+        .cast()
+        .release();
   }
 };
 
-}  // namespace pybind11::detail
+}  // namespace nanobind::detail
 
 namespace plt {
 
-using scoped_interpreter = py::scoped_interpreter;
+class scoped_interpreter {
+ public:
+  NB_INLINE scoped_interpreter() {
+    // Register nanobind state in the calling binary as well as the plotting library.
+    if (!py::register_module(initialize())) fail_initialization();
+  }
+  ~scoped_interpreter();
 
-inline auto plt() { return py::module_::import("matplotlib.pyplot"); }
+  scoped_interpreter(const scoped_interpreter&) = delete;
+  scoped_interpreter& operator=(const scoped_interpreter&) = delete;
+  scoped_interpreter(scoped_interpreter&& other) noexcept
+      : m_active(std::exchange(other.m_active, false)) {}
+
+ private:
+  static NB_EXPORT py::module_ initialize();
+  [[noreturn]] static void fail_initialization();
+  bool m_active = true;
+};
+
+inline auto plt() { return py::module_::import_("matplotlib.pyplot"); }
 
 #define DEFINE_PYPLOT_FUNC(name)                           \
   template <typename... Args>                              \
@@ -86,7 +92,7 @@ inline auto plt() { return py::module_::import("matplotlib.pyplot"); }
 
 // --- Classes using the simplified macros ---
 
-class PYBIND11_EXPORT AxesSubPlot {
+class NB_EXPORT AxesSubPlot {
  public:
   explicit AxesSubPlot(py::object axes) : m_obj(std::move(axes)) {}
 
@@ -111,7 +117,7 @@ class PYBIND11_EXPORT AxesSubPlot {
   py::object m_obj;
 };
 
-class PYBIND11_EXPORT Figure {
+class NB_EXPORT Figure {
  public:
   explicit Figure(py::object fig) : m_obj(std::move(fig)) {}
 
@@ -139,8 +145,7 @@ DEFINE_PYPLOT_FUNC_WRAPPED(Figure, figure)
 
 template <typename... Args>
 std::pair<Figure, AxesSubPlot> subplots(Args&&... args) {
-  py::object result = plt().attr("subplots")(std::forward<Args>(args)...);
-  auto res = result.cast<py::tuple>();
+  auto res = py::cast<py::tuple>(plt().attr("subplots")(std::forward<Args>(args)...));
   return {Figure(res[0]), AxesSubPlot(res[1])};
 }
 

@@ -4,8 +4,6 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include <pybind11/cast.h>
-
 #include <cstddef>
 #include <vector>
 #include <xtensor/containers/xbuffer_adaptor.hpp>

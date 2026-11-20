@@ -4,10 +4,10 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include <pybind11/pybind11.h>
+#include <nanobind/nanobind.h>
 
-namespace py = pybind11;
+namespace py = nanobind;
 
 namespace oiseau::wrappers {
-void io(py::module& m) {}
+void io(py::module_&) {}
 }  // namespace oiseau::wrappers
