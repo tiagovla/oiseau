@@ -30,28 +30,13 @@ std::pair<xt::xarray<double>, xt::xarray<double>> jacobi_gq(unsigned n, double a
  */
 xt::xarray<double> jacobi_gl(unsigned n, double alpha, double beta);
 
-xt::xarray<double> generate_tetrahedron_equidistant_nodes(unsigned n);
 xt::xarray<double> generate_hexahedron_nodes(unsigned n);
-xt::xarray<double> eval_warp(int p, const xt::xarray<double>& xnodes,
-                             const xt::xarray<double>& xout);
-xt::xarray<double> eval_shift(int p, double pval, const xt::xarray<double>& l1,
-                              const xt::xarray<double>& l2, const xt::xarray<double>& l3);
-xt::xarray<double> generate_tetrahedron_nodes(unsigned n);
-xt::xarray<double> warp_shift_face_3d(int p, double pval, double pval2,
-                                      const xt::xarray<double>& l1, const xt::xarray<double>& l2,
-                                      const xt::xarray<double>& l3, const xt::xarray<double>& l4);
-xt::xarray<double> conversion_equilateral_xyz_to_rst(const xt::xarray<double>& coords);
-xt::xarray<double> conversion_rst_to_abc(const xt::xarray<double>& rst);
 
 xt::xarray<double> d_matrix_3d(const xt::xarray<double>& v, const xt::xarray<double>& gv);
-xt::xarray<double> vandermonde_3d(unsigned n, const xt::xarray<double>& rst);
 xt::xarray<double> vandermonde_3d_tensor(unsigned n, const xt::xarray<double>& rst);
-xt::xarray<double> grad_simplexp_3d(const xt::xarray<double>& abc, int i, int j, int k);
 xt::xarray<double> grad_tensorp_3d(const xt::xarray<double>& rst, int i, int j, int k);
-xt::xarray<double> grad_vandermonde_3d(unsigned n, const xt::xarray<double>& rst);
 xt::xarray<double> grad_vandermonde_3d_tensor(unsigned n, const xt::xarray<double>& rst);
 
-xt::xarray<double> simplexp_3d(const xt::xarray<double>& abc, int i, int j, int k);
 xt::xarray<double> tensorp_3d(const xt::xarray<double>& abc, int i, int j, int k);
 
 }  // namespace oiseau::dg::nodal::utils
