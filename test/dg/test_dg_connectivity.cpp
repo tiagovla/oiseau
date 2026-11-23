@@ -132,6 +132,29 @@ TEST(test_dg_connectivity, rejects_an_edge_shared_by_three_cells) {
   EXPECT_THROW(DGConnectivity{mesh}, std::invalid_argument);
 }
 
+TEST(test_mesh_topology, rejects_two_faces_of_the_same_cell_with_the_same_vertices) {
+  const auto interval = get_cell_type(CellKind::Interval);
+  Topology topology({{0, 0}}, {interval});
+
+  EXPECT_THROW(topology.calculate_connectivity(), std::invalid_argument);
+}
+
+TEST(test_mesh_topology, invalid_face_vertex_preserves_adjacency_from_previous_build) {
+  const auto interval = get_cell_type(CellKind::Interval);
+  Topology topology({{0, 1}, {1, 2}}, {interval, interval});
+  topology.calculate_connectivity();
+
+  topology.conn()[1] = {2};
+  EXPECT_THROW(topology.calculate_connectivity(), std::invalid_argument);
+
+  ASSERT_EQ(topology.e_to_e().size(), 2);
+  ASSERT_EQ(topology.e_to_f().size(), 2);
+  EXPECT_EQ(topology.e_to_e()[0], (std::vector<std::size_t>{0, 1}));
+  EXPECT_EQ(topology.e_to_e()[1], (std::vector<std::size_t>{0, 1}));
+  EXPECT_EQ(topology.e_to_f()[0], (std::vector<std::size_t>{0, 0}));
+  EXPECT_EQ(topology.e_to_f()[1], (std::vector<std::size_t>{1, 1}));
+}
+
 TEST(test_dg_connectivity, tetrahedra_store_reciprocal_face_vertex_permutations) {
   const auto tetrahedron = get_cell_type(CellKind::Tetrahedron);
   const auto triangle = get_cell_type(CellKind::Triangle);
