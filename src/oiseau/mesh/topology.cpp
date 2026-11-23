@@ -37,8 +37,8 @@ std::vector<std::size_t> canonical_face_key(std::span<const int> local_vertices,
 }
 
 void connect_faces(FaceLocation face, FaceLocation other,
-                   std::span<std::vector<std::size_t>> element_to_element,
-                   std::span<std::vector<std::size_t>> element_to_face) {
+                   std::vector<std::vector<std::size_t>>& element_to_element,
+                   std::vector<std::vector<std::size_t>>& element_to_face) {
   const auto [cell_index, face_index] = face;
   const auto [other_cell, other_face] = other;
   if (other_cell == cell_index || element_to_element[other_cell][other_face] != other_cell) {
