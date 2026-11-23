@@ -49,28 +49,6 @@ TEST(test_dg_nodal_utils, test_jacobi_gl) {
   EXPECT_FLOATS_NEARLY_EQ(output, expected, 0.0001);
 }
 
-TEST(test_dg_nodal_utils, test_vandermonde_1d) {
-  unsigned n = 4;
-  xt::xarray<double> r = {0.1, 0.3, 0.7, 0.9};
-  auto output = vandermonde_1d(n, r);
-  xt::xarray<double> expected = {{0.70710678, 0.12247449, -0.76685233, -0.27594723, 0.71687369},
-                                 {0.70710678, 0.36742346, -0.57711567, -0.71559198, 0.1547238},
-                                 {0.70710678, 0.85732141, 0.37156763, -0.36013452, -0.87411656},
-                                 {0.70710678, 1.10227038, 1.13051426, 0.88396656, 0.44110205}};
-  EXPECT_FLOATS_NEARLY_EQ(output, expected, 0.0001);
-}
-
-TEST(test_dg_nodal_utils, test_grad_vandermonde_1d) {
-  unsigned n = 4;
-  xt::xarray<double> r = {0.1, 0.3, 0.7, 0.9};
-  auto output = grad_vandermonde_1d(n, r);
-  xt::xarray<double> expected = {{0., 1.22474487, 0.47434165, -2.66593089, -1.55386715},
-                                 {0., 1.22474487, 1.42302495, -1.54343367, -3.77064691},
-                                 {0., 1.22474487, 3.32039154, 4.06905241, 1.59629356},
-                                 {0., 1.22474487, 4.26907484, 8.55904127, 12.74383196}};
-  EXPECT_FLOATS_NEARLY_EQ(output, expected, 0.0001);
-}
-
 TEST(test_dg_nodal_utils, d_matrix_2d_tensor_correctness) {
   const unsigned order = 5;
 
@@ -138,29 +116,6 @@ TEST(test_dg_nodal_utils, d_matrix_3d_tensor_correctness) {
   EXPECT_FLOATS_NEARLY_EQ(df_dr, df_dr_expected, 1e-10);
   EXPECT_FLOATS_NEARLY_EQ(df_ds, df_ds_expected, 1e-10);
   EXPECT_FLOATS_NEARLY_EQ(df_dt, df_dt_expected, 1e-10);
-}
-
-TEST(test_dg_nodal_utils, d_matrix_1d_consistency) {
-  for (unsigned order = 2; order < 10; ++order) {
-    auto r = jacobi_gl(order, 0, 0);
-    auto vandermonde = vandermonde_1d(order, r);
-    auto grad_vandermonde = grad_vandermonde_1d(order, r);
-    auto d_matrix_from_v = d_matrix_1d(vandermonde, grad_vandermonde);
-    auto d_matrix_direct = d_matrix_1d(order, r);
-    EXPECT_FLOATS_NEARLY_EQ(d_matrix_from_v, d_matrix_direct, 1e-10);
-  }
-}
-
-TEST(test_dg_nodal_utils, d_matrix_1d_differentiates_polynomials) {
-  unsigned order = 10;
-  auto r = jacobi_gl(order, 0, 0);
-  auto d = d_matrix_1d(order, r);
-  for (unsigned i = 1; i < order; ++i) {
-    auto y = xt::pow(r, i);             // y = r^i
-    auto dydr = xt::linalg::dot(d, y);  // dydr = i * r^(i-1)
-    auto expected = (i)*xt::pow(r, (i - 1));
-    EXPECT_FLOATS_NEARLY_EQ(dydr, expected, 1e-10);
-  }
 }
 
 TEST(test_dg_nodal_utils, test_generate_tetrahedron_equidistant_nodes) {
