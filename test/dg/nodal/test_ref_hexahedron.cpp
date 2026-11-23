@@ -11,8 +11,8 @@
 #include <xtensor/misc/xmanipulation.hpp>
 #include <xtensor/views/xview.hpp>
 
+#include "oiseau/dg/nodal/ref_element.hpp"
 #include "oiseau/dg/nodal/ref_hexahedron.hpp"
-#include "oiseau/dg/nodal/utils.hpp"
 #include "oiseau/test_macros.hpp"
 
 TEST(test_ref_hexahedron, get_order) {
@@ -33,12 +33,13 @@ TEST(test_ref_hexahedron, get_number_of_nodes) {
 TEST(test_ref_hexahedron, vandermonde_interpolation) {
   for (unsigned order = 2; order <= 3; ++order) {
     // Coarse and fine reference elements
-    auto coarse_ref = oiseau::dg::nodal::RefHexahedron(order);
+    const oiseau::dg::nodal::RefHexahedron coarse_element(order);
+    const oiseau::dg::nodal::RefElement& coarse_ref = coarse_element;
     auto fine_ref = oiseau::dg::nodal::RefHexahedron(order + 2);
 
     // Vandermonde matrices at coarse and fine nodes
     auto V_coarse = coarse_ref.v();
-    auto V_fine = oiseau::dg::nodal::utils::vandermonde_3d_tensor(order, fine_ref.r());
+    auto V_fine = coarse_ref.vandermonde(fine_ref.r());
 
     // Function at coarse nodes: f(r, s) = r² + s² + t²
     auto r_coarse = xt::col(coarse_ref.r(), 0);
@@ -59,4 +60,34 @@ TEST(test_ref_hexahedron, vandermonde_interpolation) {
     // Verify interpolation accuracy
     EXPECT_FLOATS_NEARLY_EQ(interpolated, f_fine_exact, 1e-10);
   }
+}
+
+TEST(test_ref_hexahedron, differentiation_matrix_differentiates_polynomials) {
+  const oiseau::dg::nodal::RefHexahedron ref(4);
+  auto r = xt::col(ref.r(), 0);
+  auto s = xt::col(ref.r(), 1);
+  auto t = xt::col(ref.r(), 2);
+
+  const auto& D = ref.d();
+  xt::xarray<double> Dr = xt::view(D, xt::all(), xt::all(), 0);
+  xt::xarray<double> Ds = xt::view(D, xt::all(), xt::all(), 1);
+  xt::xarray<double> Dt = xt::view(D, xt::all(), xt::all(), 2);
+
+  // Test function: f(r, s, t) = r^3 + s^3 + t^3
+  xt::xarray<double> f = xt::pow(r, 3) + xt::pow(s, 3) + xt::pow(t, 3);
+
+  // Compute numerical derivatives
+  auto df_dr = xt::linalg::dot(Dr, f);
+  auto df_ds = xt::linalg::dot(Ds, f);
+  auto df_dt = xt::linalg::dot(Dt, f);
+
+  // Compute exact derivatives
+  auto df_dr_expected = 3.0 * xt::pow(r, 2);
+  auto df_ds_expected = 3.0 * xt::pow(s, 2);
+  auto df_dt_expected = 3.0 * xt::pow(t, 2);
+
+  // Check gradients with tight tolerance
+  EXPECT_FLOATS_NEARLY_EQ(df_dr, df_dr_expected, 1e-10);
+  EXPECT_FLOATS_NEARLY_EQ(df_ds, df_ds_expected, 1e-10);
+  EXPECT_FLOATS_NEARLY_EQ(df_dt, df_dt_expected, 1e-10);
 }
