@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include <stdexcept>
+#include <xtensor/containers/xarray.hpp>
 
 #include "oiseau/dg/solver/linear_dg.hpp"
 #include "oiseau/mesh/mesh.hpp"
@@ -32,6 +33,31 @@ TEST(test_linear_dg, validates_spatial_directions_and_flux_policy) {
   EXPECT_THROW(LinearDG1D(mesh, {1}, zero_term, LinearDG1D::NumericalFlux{}),
                std::invalid_argument);
   EXPECT_NO_THROW(LinearDG1D(mesh, {1}, zero_term, speed));
+}
+
+TEST(test_linear_dg, validates_state_shape_and_strides_before_sampling_or_computing_rhs) {
+  auto mesh = interval_mesh();
+  const Field u{"u"}, v{"v"};
+  const EquationSystem equations({u, v}, {dt(u) == -dx(v), dt(v) == -dx(u)});
+  const LinearDG1D solver(mesh, {1}, equations, [](const auto&) { return 1.0; });
+
+  EXPECT_THROW(solver.rhs(DGState{}), std::invalid_argument);
+  auto state = solver.zero_state();
+  state.groups[0].reshape({2, 2});
+  EXPECT_THROW(solver.rhs(state), std::invalid_argument);
+
+  using Array = xt::xarray<double>;
+  state.groups[0] = Array(Array::storage_type(4, 0.0), {1, 2, 2}, {0, 1, 2});
+  EXPECT_THROW(solver.set_initial_condition(state, u, [](double x) { return x; }),
+               std::invalid_argument);
+
+  state = solver.initial_state(v, [](double x) { return x + 1.0; });
+  EXPECT_THROW(solver.set_initial_condition(state, u, {}), std::invalid_argument);
+  solver.set_initial_condition(state, u, [](double x) { return 2.0 * x; });
+  EXPECT_DOUBLE_EQ(state.groups[0](0, 0, 0), 0.0);
+  EXPECT_DOUBLE_EQ(state.groups[0](0, 1, 0), 4.0);
+  EXPECT_DOUBLE_EQ(state.groups[0](0, 0, 1), 1.0);
+  EXPECT_DOUBLE_EQ(state.groups[0](0, 1, 1), 3.0);
 }
 
 }  // namespace
