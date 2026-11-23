@@ -23,6 +23,7 @@
 #include "oiseau/dg/dg_integration.hpp"
 #include "oiseau/dg/dg_space.hpp"
 #include "oiseau/dg/solver/linear_dg.hpp"
+#include "oiseau/mesh/cell.hpp"
 #include "oiseau/mesh/mesh.hpp"
 
 namespace {
@@ -97,9 +98,9 @@ TEST(DGFaceQuadratureTest, corner_weights_map_a_point_on_an_oriented_edge) {
 // Apply a shear and translation so the physical Jacobian is not diagonal.
 //
 // 3-------2-------5
-// |       |     / |
-// |       |   /   |
-// |       | /     |
+// |       | \     |
+// |       |   \   |
+// |       |     \ |
 // 0-------1-------4
 
 oiseau::mesh::Mesh mixed_mesh(bool reversed) {
@@ -235,7 +236,7 @@ TEST_P(DGIntegrationTest, linear_solver_preserves_constants_and_differentiates_q
 }
 
 TEST_P(DGIntegrationTest, reference_operators_are_shared_and_own_their_lifetime) {
-  const auto integration = [this] {
+  const auto integration = [] {
     auto mesh = mixed_mesh(GetParam());
     const DGSpace space(mesh, 3);
     const DGConnectivity connectivity(mesh);
