@@ -97,4 +97,17 @@ TEST(test_linear_dg, passes_both_normal_fluxes_to_the_policy_and_lifts_its_corre
   }
 }
 
+TEST(test_linear_dg, rejects_callbacks_with_the_wrong_number_of_fields) {
+  auto mesh = interval_mesh();
+  const Field u{"u"};
+  const EquationSystem equations({u}, {dt(u) == -dx(u)});
+  const auto empty_result = [](const auto&...) { return std::vector<double>{}; };
+  const LinearDG1D bad_boundary(
+      mesh, {1}, equations, [](const auto&) { return 1.0; }, empty_result);
+  const LinearDG1D bad_flux(mesh, {1}, equations, LinearDG1D::NumericalFlux(empty_result));
+
+  EXPECT_THROW(bad_boundary.rhs(bad_boundary.zero_state()), std::invalid_argument);
+  EXPECT_THROW(bad_flux.rhs(bad_flux.zero_state()), std::invalid_argument);
+}
+
 }  // namespace
