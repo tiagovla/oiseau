@@ -350,6 +350,72 @@ TEST_P(DGIntegrationTest, face_rules_share_reference_data_and_apply_cell_scaling
   EXPECT_EQ(reversed, GetParam());
 }
 
+TEST(DGIntegrationInputTest, rejects_inputs_from_different_meshes) {
+  auto mesh = mixed_mesh(false);
+  auto other_mesh = mesh;
+  const DGSpace space(mesh, 1);
+  const DGConnectivity connectivity(mesh);
+  const DGGeometry geometry(mesh);
+  const DGSpace other_space(other_mesh, 1);
+  const DGConnectivity other_connectivity(other_mesh);
+  const DGGeometry other_geometry(other_mesh);
+
+  EXPECT_THROW(DGIntegration(mesh, other_space, connectivity, geometry), std::invalid_argument);
+  EXPECT_THROW(DGIntegration(mesh, space, other_connectivity, geometry), std::invalid_argument);
+  EXPECT_THROW(DGIntegration(mesh, space, connectivity, other_geometry), std::invalid_argument);
+}
+
+TEST(DGIntegrationDimensionTest, interval_has_only_x_volume_operators) {
+  using namespace oiseau::mesh;
+  const auto interval = get_cell_type(CellKind::Interval);
+  Mesh mesh{Topology({{0, 1}}, {interval}), Geometry({0.0, 2.0}, 1)};
+  const DGSpace space(mesh, 1);
+  const DGConnectivity connectivity(mesh);
+  const DGGeometry geometry(mesh);
+  const DGIntegration integration(mesh, space, connectivity, geometry);
+  const auto& cell = integration.cell(0);
+
+  EXPECT_EQ(cell.weak_derivative_x.size(), 4);
+  EXPECT_TRUE(cell.weak_derivative_y.empty());
+  EXPECT_TRUE(cell.weak_derivative_z.empty());
+  EXPECT_EQ(cell.stiffness_y().dimension(), 0);
+  EXPECT_EQ(cell.stiffness_z().dimension(), 0);
+  ASSERT_EQ(cell.faces.size(), 2);
+  EXPECT_EQ(cell.faces[0].minus->quadrature, cell.faces[1].minus->quadrature);
+}
+
+TEST(DGIntegrationDimensionTest, rotated_tetrahedral_interface_shares_both_oriented_rules) {
+  using namespace oiseau::mesh;
+  const auto tetrahedron = get_cell_type(CellKind::Tetrahedron);
+  Mesh mesh{Topology({{0, 1, 2, 3}, {2, 0, 1, 4}}, {tetrahedron, tetrahedron}),
+            Geometry({0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1}, 3)};
+  const DGSpace space(mesh, {1, 2});
+  const DGConnectivity connectivity(mesh);
+  const DGGeometry geometry(mesh);
+  const DGIntegration integration(mesh, space, connectivity, geometry);
+
+  constexpr std::size_t shared_face = 3;
+  const auto& connection = connectivity.faces(0)[shared_face];
+  ASSERT_EQ(connection.neighbor_cell, 1);
+  ASSERT_EQ(connection.neighbor_face, shared_face);
+  EXPECT_EQ(connection.vertex_permutation, (std::vector<std::size_t>{1, 2, 0}));
+
+  const auto& cell = integration.cell(0);
+  const auto& first = cell.faces[shared_face];
+  const auto& second = integration.cell(1).faces[shared_face];
+  ASSERT_TRUE(first.plus);
+  ASSERT_TRUE(second.plus);
+  EXPECT_EQ(first.minus, second.plus);
+  EXPECT_EQ(first.plus, second.minus);
+  EXPECT_EQ(first.minus->quadrature, first.plus->quadrature);
+
+  const auto weak_z = xt::linalg::dot(cell.inverse_mass(), cell.stiffness_z());
+  ASSERT_EQ(cell.weak_derivative_z.size(), weak_z.size());
+  for (const auto [i, expected] : std::views::enumerate(weak_z)) {
+    EXPECT_NEAR(cell.weak_derivative_z[i], expected, 1e-12);
+  }
+}
+
 INSTANTIATE_TEST_SUITE_P(Orientations, DGIntegrationTest, ::testing::Bool());
 
 }  // namespace

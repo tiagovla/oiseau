@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdlib>
 #include <limits>
 #include <map>
 #include <memory>
@@ -33,6 +34,7 @@
 #include "oiseau/dg/ref_element_type.hpp"
 #include "oiseau/mesh/cell.hpp"
 #include "oiseau/mesh/mesh.hpp"
+#include "oiseau/mesh/topology.hpp"
 #include "oiseau/utils/integration.hpp"
 
 namespace oiseau::dg {
@@ -216,20 +218,14 @@ Matrix physical_stiffness(const DGIntegration::CellRule& cell, std::size_t d) {
 
 using namespace detail;
 
-DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
-                             const DGConnectivity& connectivity, const DGGeometry& geometry) {
-  if (&space.mesh() != &mesh || &connectivity.mesh() != &mesh || &geometry.mesh() != &mesh) {
-    throw std::invalid_argument("DGIntegration inputs must refer to the same mesh");
-  }
+namespace {
 
-  const auto groups = space.element_groups();
-  const auto cell_types = mesh.topology().cell_types();
-  const auto connectivity_data = mesh.topology().conn();
-  const auto cell_count = mesh.topology().n_cells();
-  const auto dimension = mesh.topology().dimension();
-  const auto face_dimension = dimension - 1;
-
-  m_cells.resize(cell_count);
+std::vector<ReferenceOperators> make_group_operators(const mesh::Topology& topology,
+                                                     std::span<const DGSpace::ElementGroup> groups,
+                                                     int face_dimension,
+                                                     std::span<DGIntegration::CellRule> cells) {
+  const auto cell_types = topology.cell_types();
+  const auto connectivity = topology.conn();
   std::vector<ReferenceOperators> reference_operators;
   reference_operators.reserve(groups.size());
   for (std::size_t group_index = 0; group_index < groups.size(); ++group_index) {
@@ -238,34 +234,135 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
         reference_operators.emplace_back(make_reference_operators(group.kind, group.order));
     const auto first_cell = group.cell_indices.front();
     reference.vertices =
-        reference_vertex_coordinates(cell_types[first_cell], connectivity_data[first_cell]);
+        reference_vertex_coordinates(cell_types[first_cell], connectivity[first_cell]);
     reference.faces = cell_types[first_cell]->get_entity_vertices(face_dimension);
     for (std::size_t row = 0; row < group.cell_indices.size(); ++row) {
-      auto& cell_rule = m_cells[group.cell_indices[row]];
+      auto& cell_rule = cells[group.cell_indices[row]];
       cell_rule.group_index = group_index;
       cell_rule.group_cell_index = row;
     }
   }
+  return reference_operators;
+}
 
-  std::map<std::pair<mesh::CellKind, unsigned>, std::shared_ptr<const QuadratureRule>> quadratures;
+void set_weak_derivative(std::vector<double>& derivative, const DGIntegration::CellRule& cell,
+                         std::size_t dimension, std::size_t d) {
+  const auto nodes = cell.node_count();
+  const auto& reference = *cell.reference;
+  const auto& inverse_jacobian = cell.inverse_jacobian;
+  const auto has_y = dimension >= 2;
+  const auto has_z = dimension == 3;
+  derivative.resize(nodes * nodes);
+  for (std::size_t test = 0; test < nodes; ++test) {
+    for (std::size_t trial = 0; trial < nodes; ++trial) {
+      auto entry = inverse_jacobian[d] * reference.weak_derivative_r(test, trial);
+      if (has_y) {
+        entry += inverse_jacobian[3 + d] * reference.weak_derivative_s(test, trial);
+      }
+      if (has_z) {
+        entry += inverse_jacobian[6 + d] * reference.weak_derivative_t(test, trial);
+      }
+      derivative[test * nodes + trial] = entry;
+    }
+  }
+}
+
+void set_volume_rule(DGIntegration::CellRule& cell,
+                     const std::shared_ptr<const DGIntegration::ReferenceRule>& reference,
+                     const DGGeometry::CellGeometry& geometry) {
+  cell.reference = reference;
+  cell.volume_jacobian = std::abs(geometry.determinant);
+  cell.inverse_jacobian = geometry.inverse_jacobian;
+
+  const auto dimension = geometry.dimension;
+  set_weak_derivative(cell.weak_derivative_x, cell, dimension, 0);
+  if (dimension >= 2) set_weak_derivative(cell.weak_derivative_y, cell, dimension, 1);
+  if (dimension == 3) set_weak_derivative(cell.weak_derivative_z, cell, dimension, 2);
+}
+
+FacePermutation inverse_face_permutation(const FacePermutation& permutation, std::size_t corners) {
+  auto inverse = identity_permutation;
+  for (std::size_t corner = 0; corner < corners; ++corner) {
+    inverse[permutation[corner]] = corner;
+  }
+  return inverse;
+}
+
+class FaceRuleBuilder {
+  using QuadratureRule = DGIntegration::QuadratureRule;
+  using ReferenceFaceRule = DGIntegration::ReferenceFaceRule;
   using FaceKey = std::tuple<std::size_t, std::size_t, unsigned, FacePermutation>;
-  std::map<FaceKey, std::shared_ptr<const ReferenceFaceRule>> face_rules;
-  const auto face_reference = [&](std::size_t group_index, std::size_t face_index, unsigned order,
-                                  const FacePermutation& permutation) {
-    const auto& reference = reference_operators[group_index];
+
+ public:
+  FaceRuleBuilder(std::span<const DGSpace::ElementGroup> groups,
+                  std::span<const ReferenceOperators> references, std::size_t dimension)
+      : m_groups(groups), m_references(references), m_dimension(dimension) {}
+
+  void add_cell_faces(std::vector<DGIntegration::CellRule>& cells, std::size_t cell_index,
+                      std::span<const DGConnectivity::FaceConnection> face_connections,
+                      const DGGeometry::CellGeometry& geometry) {
+    auto& cell_rule = cells[cell_index];
+    const auto group_index = cell_rule.group_index;
+    const auto& local_faces = m_references[group_index].faces;
+    cell_rule.faces.reserve(local_faces.size());
+    for (std::size_t face_index = 0; face_index < local_faces.size(); ++face_index) {
+      const auto& connection = face_connections[face_index];
+      auto& face_rule = cell_rule.faces.emplace_back();
+      const auto& face_geometry = geometry.faces[face_index];
+      face_rule.outward_normal = face_geometry.outward_normal;
+      face_rule.neighbor_cell = connection.neighbor_cell;
+
+      const auto corners = local_faces[face_index].size();
+      auto neighbor_group = group_index;
+      auto quadrature_order = m_groups[group_index].order;
+      auto minus_permutation = identity_permutation;
+      auto plus_permutation = identity_permutation;
+      if (!connection.is_boundary()) {
+        const auto& neighbor = cells.at(connection.neighbor_cell);
+        if (!neighbor.has_group()) {
+          throw std::invalid_argument("DGIntegration neighbor cell is absent from DGSpace");
+        }
+        neighbor_group = neighbor.group_index;
+        quadrature_order = std::max(quadrature_order, m_groups[neighbor_group].order);
+        const auto permutation = face_permutation(connection.vertex_permutation, corners);
+        // Both directions use one 3D face orientation, even for nonsymmetric cubature.
+        if (geometry.dimension == 3 && connection.neighbor_cell < cell_index) {
+          minus_permutation = inverse_face_permutation(permutation, corners);
+        } else {
+          plus_permutation = permutation;
+        }
+      }
+      face_rule.minus =
+          face_reference(group_index, face_index, quadrature_order, minus_permutation);
+      face_rule.weight_scale = face_geometry.measure / canonical_face_measures[corners - 1];
+      face_rule.lift_scale = face_rule.weight_scale / cell_rule.volume_jacobian;
+      if (!connection.is_boundary()) {
+        face_rule.plus = face_reference(neighbor_group, connection.neighbor_face, quadrature_order,
+                                        plus_permutation);
+      }
+    }
+  }
+
+ private:
+  std::shared_ptr<const ReferenceFaceRule> face_reference(std::size_t group_index,
+                                                          std::size_t face_index, unsigned order,
+                                                          const FacePermutation& permutation) {
+    const auto& reference = m_references[group_index];
     const auto& vertices = reference.faces.at(face_index);
     const auto face_kind = canonical_face_kinds.at(vertices.size() - 1);
     const auto face_order = face_kind == mesh::CellKind::Point ? 0U : order;
     const FaceKey key{group_index, face_index, face_order, permutation};
-    if (const auto found = face_rules.find(key); found != face_rules.end()) return found->second;
+    if (const auto found = m_face_rules.find(key); found != m_face_rules.end()) {
+      return found->second;
+    }
 
-    auto& quadrature = quadratures[{face_kind, face_order}];
+    auto& quadrature = m_quadratures[{face_kind, face_order}];
     if (!quadrature) {
       quadrature =
           std::make_shared<const QuadratureRule>(make_face_quadrature(face_kind, face_order));
     }
-    const auto points = face_points(reference.vertices, vertices,
-                                    static_cast<std::size_t>(dimension), permutation, *quadrature);
+    const auto points =
+        face_points(reference.vertices, vertices, m_dimension, permutation, *quadrature);
     Matrix trace = interpolation_on_points(reference, points);
     Matrix lift = xt::linalg::dot(trace, xt::transpose(reference.volume->inverse_mass));
     for (std::size_t q = 0; q < quadrature->weights.size(); ++q) {
@@ -275,88 +372,41 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
     }
     auto rule = std::make_shared<const ReferenceFaceRule>(ReferenceFaceRule{
         .quadrature = quadrature, .trace = std::move(trace), .lift = std::move(lift)});
-    face_rules.emplace(key, rule);
+    m_face_rules.emplace(key, rule);
     return rule;
-  };
+  }
 
+  std::span<const DGSpace::ElementGroup> m_groups;
+  std::span<const ReferenceOperators> m_references;
+  std::size_t m_dimension;
+  std::map<std::pair<mesh::CellKind, unsigned>, std::shared_ptr<const QuadratureRule>>
+      m_quadratures;
+  std::map<FaceKey, std::shared_ptr<const ReferenceFaceRule>> m_face_rules;
+};
+
+}  // namespace
+
+DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
+                             const DGConnectivity& connectivity, const DGGeometry& geometry) {
+  if (&space.mesh() != &mesh || &connectivity.mesh() != &mesh || &geometry.mesh() != &mesh) {
+    throw std::invalid_argument("DGIntegration inputs must refer to the same mesh");
+  }
+
+  const auto groups = space.element_groups();
+  const auto& topology = mesh.topology();
+  const auto cell_count = topology.n_cells();
+  const auto dimension = topology.dimension();
+  m_cells.resize(cell_count);
+  const auto reference_operators = make_group_operators(topology, groups, dimension - 1, m_cells);
+
+  FaceRuleBuilder face_rules(groups, reference_operators, static_cast<std::size_t>(dimension));
   for (std::size_t cell_index = 0; cell_index < cell_count; ++cell_index) {
     auto& cell_rule = m_cells[cell_index];
     if (!cell_rule.has_group()) continue;
-    const auto group_index = cell_rule.group_index;
 
-    const auto& reference = reference_operators[group_index];
     const auto& cell_geometry = geometry.cell(cell_index);
-    const auto determinant = std::abs(cell_geometry.determinant);
-    cell_rule.reference = reference.volume;
-    cell_rule.volume_jacobian = determinant;
-    cell_rule.inverse_jacobian = cell_geometry.inverse_jacobian;
-
-    const auto nodes = cell_rule.node_count();
-    const auto& inverse_jacobian = cell_rule.inverse_jacobian;
-    const auto has_y = cell_geometry.dimension >= 2;
-    const auto has_z = cell_geometry.dimension == 3;
-    const auto set_weak_derivative = [&](std::size_t d, std::vector<double>& derivative) {
-      derivative.resize(nodes * nodes);
-      for (std::size_t test = 0; test < nodes; ++test) {
-        for (std::size_t trial = 0; trial < nodes; ++trial) {
-          auto entry = inverse_jacobian[d] * reference.volume->weak_derivative_r(test, trial);
-          if (has_y) {
-            entry += inverse_jacobian[3 + d] * reference.volume->weak_derivative_s(test, trial);
-          }
-          if (has_z) {
-            entry += inverse_jacobian[6 + d] * reference.volume->weak_derivative_t(test, trial);
-          }
-          derivative[test * nodes + trial] = entry;
-        }
-      }
-    };
-    set_weak_derivative(0, cell_rule.weak_derivative_x);
-    if (has_y) set_weak_derivative(1, cell_rule.weak_derivative_y);
-    if (has_z) {
-      set_weak_derivative(2, cell_rule.weak_derivative_z);
-    }
-
-    const auto& local_faces = reference.faces;
-    const auto face_connections = connectivity.faces(cell_index);
-    cell_rule.faces.reserve(local_faces.size());
-    for (std::size_t face_index = 0; face_index < local_faces.size(); ++face_index) {
-      const auto& connection = face_connections[face_index];
-      auto& face_rule = cell_rule.faces.emplace_back();
-      const auto& face_geometry = cell_geometry.faces[face_index];
-      face_rule.outward_normal = face_geometry.outward_normal;
-      face_rule.neighbor_cell = connection.neighbor_cell;
-
-      const auto corners = local_faces[face_index].size();
-      auto neighbor_group = group_index;
-      auto quadrature_order = groups[group_index].order;
-      auto minus_permutation = identity_permutation;
-      auto plus_permutation = identity_permutation;
-      if (!connection.is_boundary()) {
-        const auto& neighbor = m_cells.at(connection.neighbor_cell);
-        if (!neighbor.has_group()) {
-          throw std::invalid_argument("DGIntegration neighbor cell is absent from DGSpace");
-        }
-        neighbor_group = neighbor.group_index;
-        quadrature_order = std::max(quadrature_order, groups[neighbor_group].order);
-        const auto permutation = face_permutation(connection.vertex_permutation, corners);
-        // Both directions use one 3D face orientation, even for nonsymmetric cubature.
-        if (has_z && connection.neighbor_cell < cell_index) {
-          for (std::size_t corner = 0; corner < corners; ++corner) {
-            minus_permutation[permutation[corner]] = corner;
-          }
-        } else {
-          plus_permutation = permutation;
-        }
-      }
-      face_rule.minus =
-          face_reference(group_index, face_index, quadrature_order, minus_permutation);
-      face_rule.weight_scale = face_geometry.measure / canonical_face_measures[corners - 1];
-      face_rule.lift_scale = face_rule.weight_scale / determinant;
-      if (!connection.is_boundary()) {
-        face_rule.plus = face_reference(neighbor_group, connection.neighbor_face, quadrature_order,
-                                        plus_permutation);
-      }
-    }
+    set_volume_rule(cell_rule, reference_operators[cell_rule.group_index].volume, cell_geometry);
+    face_rules.add_cell_faces(m_cells, cell_index, connectivity.faces(cell_index), cell_geometry);
   }
 }
 
