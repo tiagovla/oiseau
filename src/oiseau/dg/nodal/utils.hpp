@@ -30,18 +30,6 @@ std::pair<xt::xarray<double>, xt::xarray<double>> jacobi_gq(unsigned n, double a
  */
 xt::xarray<double> jacobi_gl(unsigned n, double alpha, double beta);
 
-xt::xarray<double> d_matrix_1d(const xt::xarray<double>& v, const xt::xarray<double>& gv);
-xt::xarray<double> d_matrix_1d(unsigned n, const xt::xarray<double>& r);
-
-/**
- * @brief initialize the gradient of the modal basis at r at order n
- *
- * @param n order
- * @param r locations [-1, 1]
- */
-xt::xarray<double> vandermonde_1d(unsigned n, const xt::xarray<double>& r);
-xt::xarray<double> grad_vandermonde_1d(unsigned n, const xt::xarray<double>& r);
-
 xt::xarray<double> d_matrix_2d(const xt::xarray<double>& v, const xt::xarray<double>& gv);
 xt::xarray<double> vandermonde_2d_tensor(unsigned n, const xt::xarray<double>& rs);
 xt::xarray<double> grad_vandermonde_2d_tensor(unsigned n, const xt::xarray<double>& rs);

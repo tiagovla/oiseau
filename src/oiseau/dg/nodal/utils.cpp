@@ -58,34 +58,6 @@ xt::xarray<double> jacobi_gl(unsigned n, double alpha, double beta) {
   return xt::concatenate(xt::xtuple(-xt::ones<double>({1}), x, xt::ones<double>({1})));
 }
 
-xt::xarray<double> vandermonde_1d(unsigned n, const xt::xarray<double>& r) {
-  std::array<size_t, 2> shape = {r.size(), n + 1};
-  xt::xtensor<double, 2> output(shape);
-  for (size_t i = 0; i < n + 1; ++i) {
-    xt::view(output, xt::all(), i) = oiseau::utils::jacobi_p(i, 0.0, 0.0, r);
-  }
-  return output;
-}
-
-xt::xarray<double> grad_vandermonde_1d(unsigned n, const xt::xarray<double>& r) {
-  std::array<size_t, 2> shape = {r.size(), n + 1};
-  auto output = xt::xtensor<double, 2>::from_shape(shape);
-  for (size_t i = 0; i < n + 1; ++i) {
-    xt::view(output, xt::all(), i) = oiseau::utils::grad_jacobi_p(i, 0.0, 0.0, r);
-  }
-  return output;
-}
-
-xt::xarray<double> d_matrix_1d(const xt::xarray<double>& v, const xt::xarray<double>& gv) {
-  return xt::transpose(xt::linalg::solve(xt::transpose(v), xt::transpose(gv)));
-}
-
-xt::xarray<double> d_matrix_1d(unsigned n, const xt::xarray<double>& r) {
-  auto v = vandermonde_1d(n, r);
-  auto gv = grad_vandermonde_1d(n, r);
-  return d_matrix_1d(v, gv);
-}
-
 xt::xarray<double> tensorp_2d(const xt::xarray<double>& rs, int i, int j) {
   xt::xarray<double> r = xt::col(rs, 0);
   xt::xarray<double> s = xt::col(rs, 1);
