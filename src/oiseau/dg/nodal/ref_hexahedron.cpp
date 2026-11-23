@@ -16,7 +16,7 @@
 #include <xtensor/views/xview.hpp>
 
 #include "oiseau/dg/nodal/ref_element.hpp"
-#include "oiseau/dg/nodal/utils.hpp"
+#include "oiseau/utils/integration.hpp"
 #include "oiseau/utils/math.hpp"
 
 namespace oiseau::dg::nodal {
@@ -119,7 +119,7 @@ xt::xarray<double> RefHexahedron::grad_operator(const xt::xarray<double>& v,
 
 namespace oiseau::dg::nodal::detail {
 xt::xarray<double> generate_hexahedron_nodes(unsigned order) {
-  xt::xarray<double> r1d = utils::jacobi_gl(order, 0.0, 0.0);
+  xt::xarray<double> r1d = oiseau::utils::integration::jacobi_gl(order, 0.0, 0.0);
   auto [R, S, T] = xt::meshgrid(r1d, r1d, r1d);
   return xt::stack(xt::xtuple(xt::flatten(R), xt::flatten(S), xt::flatten(T)), 1);
 }

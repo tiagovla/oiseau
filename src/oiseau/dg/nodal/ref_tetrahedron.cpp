@@ -21,7 +21,7 @@
 #include <xtensor/views/xview.hpp>
 
 #include "oiseau/dg/nodal/ref_element.hpp"
-#include "oiseau/dg/nodal/utils.hpp"
+#include "oiseau/utils/integration.hpp"
 #include "oiseau/utils/math.hpp"
 
 namespace oiseau::dg::nodal {
@@ -187,7 +187,7 @@ xt::xarray<double> eval_warp(int p, const xt::xarray<double>& xnodes,
 
 xt::xarray<double> eval_shift(int p, double pval, const xt::xarray<double>& l1,
                               const xt::xarray<double>& l2, const xt::xarray<double>& l3) {
-  auto gaussX = -oiseau::dg::nodal::utils::jacobi_gl(p, 0.0, 0.0);
+  auto gaussX = -oiseau::utils::integration::jacobi_gl(p, 0.0, 0.0);
   auto blend1 = l2 * l3;
   auto blend2 = l1 * l3;
   auto blend3 = l1 * l2;

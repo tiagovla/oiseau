@@ -28,8 +28,6 @@
 #include <xtensor/views/xstrided_view.hpp>
 #include <xtensor/views/xview.hpp>
 
-#include "oiseau/dg/nodal/utils.hpp"
-
 namespace {
 
 // Cools, R. "Monomial Cubature Rules Since "Stroud":
@@ -1509,8 +1507,8 @@ std::pair<xt::xarray<double>, xt::xarray<double>> cubature(int order) {
   default:
     // TODO(tiagovla): check order/number of nodes relationship
     int cubNA = std::ceil((order + 1) / 2);
-    auto [cubA, cubWA] = oiseau::dg::nodal::utils::jacobi_gq(cubNA - 1, 0, 0);
-    auto [cubB, cubWB] = oiseau::dg::nodal::utils::jacobi_gq(cubNA - 1, 1, 0);
+    auto [cubA, cubWA] = jacobi_gq(cubNA - 1, 0, 0);
+    auto [cubB, cubWB] = jacobi_gq(cubNA - 1, 1, 0);
     auto r0 = xt::reshape_view(xt::tile(cubA, {cubNA}), {cubNA, cubNA});
     auto r1 = xt::transpose(xt::reshape_view(xt::tile(cubB, {cubNA}), {cubNA, cubNA}));
     xt::xarray<double> cubR = xt::flatten(xt::eval((0.5 * ((1.0 + r0) * (1.0 - r1)) - 1.0)));
@@ -1583,6 +1581,14 @@ std::pair<xt::xarray<double>, xt::xarray<double>> jacobi_gq(unsigned n, double a
                std::tgamma(beta + 1) / std::tgamma(alpha + beta + 1);
   xt::xarray<double> w = cte * xt::square(xt::view(v, 0, xt::all())), x = d;
   return {x, w};
+}
+
+xt::xarray<double> jacobi_gl(unsigned n, double alpha, double beta) {
+  if (n == 1) {
+    return xt::xarray<double>{-1.0, 1.0};
+  }
+  auto [x, _] = jacobi_gq(n - 2, alpha + 1.0, beta + 1.0);
+  return xt::concatenate(xt::xtuple(-xt::ones<double>({1}), x, xt::ones<double>({1})));
 }
 
 }  // namespace oiseau::utils::integration

@@ -10,7 +10,6 @@
 #include <xtensor-blas/xlinalg.hpp>
 #include <xtensor/core/xshape.hpp>
 #include <xtensor/core/xtensor_forward.hpp>
-#include <xtensor/generators/xbuilder.hpp>
 #include <xtensor/misc/xmanipulation.hpp>
 #include <xtensor/views/xslice.hpp>
 #include <xtensor/views/xview.hpp>
@@ -68,10 +67,6 @@ xt::xarray<double> RefLine::grad_operator(const xt::xarray<double>& v,
 namespace oiseau::dg::nodal::detail {
 
 xt::xarray<double> generate_line_nodes(unsigned order) {
-  if (order == 1) {
-    return xt::xarray<double>{-1.0, 1.0};
-  }
-  auto [x, _] = oiseau::utils::integration::jacobi_gq(order - 2, 1.0, 1.0);
-  return xt::concatenate(xt::xtuple(-xt::ones<double>({1}), x, xt::ones<double>({1})));
+  return oiseau::utils::integration::jacobi_gl(order, 0.0, 0.0);
 }
 }  // namespace oiseau::dg::nodal::detail

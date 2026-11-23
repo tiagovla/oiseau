@@ -14,4 +14,6 @@ namespace oiseau::utils::integration {
 std::pair<xt::xarray<double>, xt::xarray<double>> cubature(int order);
 std::pair<xt::xarray<double>, xt::xarray<double>> quadrature(int order);
 std::pair<xt::xarray<double>, xt::xarray<double>> jacobi_gq(unsigned n, double alpha, double beta);
+// Returns n + 1 Gauss–Lobatto–Jacobi nodes for polynomial order n >= 1.
+xt::xarray<double> jacobi_gl(unsigned n, double alpha, double beta);
 }  // namespace oiseau::utils::integration

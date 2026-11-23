@@ -21,7 +21,7 @@
 #include <xtensor/views/xview.hpp>
 
 #include "oiseau/dg/nodal/ref_element.hpp"
-#include "oiseau/dg/nodal/utils.hpp"
+#include "oiseau/utils/integration.hpp"
 #include "oiseau/utils/math.hpp"
 
 namespace oiseau::dg::nodal {
@@ -201,7 +201,7 @@ xt::xarray<double> equilateral_xy_to_rs(const xt::xarray<double>& xy) {
 }
 
 xt::xarray<double> warp_factor(unsigned order, const xt::xarray<double>& rs) {
-  auto lgl_r = oiseau::dg::nodal::utils::jacobi_gl(order, 0.0, 0.0);
+  auto lgl_r = oiseau::utils::integration::jacobi_gl(order, 0.0, 0.0);
 
   xt::xarray<double> r_eq = xt::linspace<double>(-1.0, 1.0, order + 1);
   xt::xarray<double> v_eq(xt::dynamic_shape<std::size_t>({r_eq.size(), order + 1}));
