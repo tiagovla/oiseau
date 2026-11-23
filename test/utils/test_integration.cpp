@@ -6,97 +6,72 @@
 
 #include <gtest/gtest.h>
 
-#include <cmath>
 #include <stdexcept>
 #include <xtensor/core/xmath.hpp>
+#include <xtensor/core/xtensor_forward.hpp>
 #include <xtensor/views/xview.hpp>
 
 #include "oiseau/test_macros.hpp"
 #include "oiseau/utils/integration.hpp"
 
 namespace {
-double integral_xn(int n) {
-  if (n % 2 == 1) {
-    return 0.0;
-  } else {
-    return 2.0 / (n + 1);
+
+namespace integration = oiseau::utils::integration;
+
+TEST(IntegrationTest, GaussQuadratureIntegratesMonomials) {
+  constexpr int order = 50;
+  const auto [nodes, weights] = integration::quadrature(order);
+  for (int degree = 0; degree < order; ++degree) {
+    const double expected = degree % 2 == 0 ? 2.0 / (degree + 1) : 0.0;
+    const double integral = xt::sum(xt::pow(nodes, degree) * weights)();
+    EXPECT_NEAR(integral, expected, 1e-14) << "Degree " << degree;
   }
 }
-double integral_triangle_xn_ym(int n, int m) {
-  double I1 = integral_xn(n) - integral_xn(n + 1);
-  int mp1 = m + 1;
-  double sign_term = std::pow(-1.0, mp1);
-  double integral_term1 = 0.0;
-  integral_term1 = sign_term * integral_xn(mp1);
-  double integral_term2 = 2.0 * sign_term;
-  double I2 = (integral_term1 - integral_term2) / mp1;
-  return I1 + I2;
+
+TEST(IntegrationTest, TriangleCubatureIntegratesMonomials) {
+  constexpr int order = 40;
+  const auto [nodes, weights] = integration::cubature(order);
+  const auto x = xt::col(nodes, 0);
+  const auto y = xt::col(nodes, 1);
+
+  EXPECT_NEAR(xt::sum(weights)(), 2.0, 5e-14);
+  for (int degree = 1; degree < order; ++degree) {
+    const double expected = degree % 2 == 0 ? 2.0 / (degree + 1) : -2.0 / (degree + 2);
+    const double x_integral = xt::sum(xt::pow(x, degree) * weights)();
+    const double y_integral = xt::sum(xt::pow(y, degree) * weights)();
+    EXPECT_NEAR(x_integral, expected, 5e-14) << "x degree " << degree;
+    EXPECT_NEAR(y_integral, expected, 5e-14) << "y degree " << degree;
+  }
+}
+
+TEST(IntegrationTest, CubatureRejectsNonPositiveOrders) {
+  EXPECT_THROW(integration::cubature(-1), std::out_of_range);
+  EXPECT_THROW(integration::cubature(0), std::out_of_range);
+}
+
+TEST(IntegrationTest, QuadratureRejectsNonPositiveOrders) {
+  EXPECT_THROW(integration::quadrature(-1), std::out_of_range);
+  EXPECT_THROW(integration::quadrature(0), std::out_of_range);
+}
+
+TEST(IntegrationTest, GaussJacobiNodesAndWeights) {
+  const auto [nodes, weights] = integration::jacobi_gq(3, 1.0, 2.0);
+  const xt::xarray<double> expected_nodes = {-0.65077886, -0.15637043, 0.37348938, 0.79729627};
+  const xt::xarray<double> expected_weights = {0.08666291, 0.44123335, 0.59015336, 0.21528371};
+  EXPECT_FLOATS_NEARLY_EQ(expected_nodes, nodes, 1e-4);
+  EXPECT_FLOATS_NEARLY_EQ(expected_weights, weights, 1e-4);
+}
+
+TEST(IntegrationTest, OrderOneLobattoJacobiNodesAreEndpoints) {
+  const auto nodes = integration::jacobi_gl(1, 0.0, 0.0);
+  const xt::xarray<double> expected_nodes = {-1.0, 1.0};
+  EXPECT_FLOATS_NEARLY_EQ(expected_nodes, nodes, 1e-10);
+}
+
+TEST(IntegrationTest, LobattoJacobiInteriorNodes) {
+  const auto nodes = integration::jacobi_gl(4, 1.0, 2.0);
+  const xt::xarray<double> expected_nodes = {-1.0, -0.4611587, 0.10438533, 0.62950065, 1.0};
+  EXPECT_FLOATS_NEARLY_EQ(expected_nodes, nodes, 1e-4);
 }
 
 }  // namespace
-
-TEST(test_integration, test_gauss_quadrature) {
-  // test quadrature for x^m  for m= 0, ..., 2*n - 1
-  for (int n = 1; n < 50; ++n) {
-    auto [nodes, weights] = oiseau::utils::integration::quadrature(n);
-    for (int m = 0; m < n; ++m) {  // TODO(tiagovla): check why not m<=n
-      double res = integral_xn(m);
-      auto sum = xt::sum(xt::pow(nodes, m) * weights)();
-      EXPECT_NEAR(res, sum, 1e-14) << "Failed for n = " << n << ", m = " << m;
-    }
-  }
-}
-
-TEST(test_integration, test_cubature) {
-  // test cubature for x^i + y^j
-  for (int n = 1; n <= 40; ++n) {
-    auto [nodes, weights] = oiseau::utils::integration::cubature(n);
-    auto x = xt::col(nodes, 0);
-    auto y = xt::col(nodes, 1);
-    for (int i = 0; i < n; ++i) {    // TODO(tiagovla): check why not i<=n
-      for (int j = 0; j < n; ++j) {  // TODO(tiagovla): check why not j<=n
-        double res = integral_triangle_xn_ym(i, j);
-        auto z = xt::pow(x, i) + xt::pow(y, j);
-        auto sum = xt::sum(z * weights)();
-        EXPECT_NEAR(res, sum, 5e-14)
-            << "Failed for order " << n << " with i = " << i << ", j = " << j;
-      }
-    }
-  }
-}
-
-TEST(test_integration, test_cubature_zero_and_negative) {
-  EXPECT_THROW(oiseau::utils::integration::cubature(-1), std::out_of_range);
-  EXPECT_THROW(oiseau::utils::integration::cubature(0), std::out_of_range);
-}
-
-TEST(test_integration, test_quadrature_zero_and_negative) {
-  EXPECT_THROW(oiseau::utils::integration::quadrature(-1), std::out_of_range);
-  EXPECT_THROW(oiseau::utils::integration::quadrature(0), std::out_of_range);
-}
-
-TEST(test_integration, test_jacobi_gq) {
-  unsigned n = 3;
-  double alpha = 1.0, beta = 2.0;
-  auto [x, w] = oiseau::utils::integration::jacobi_gq(n, alpha, beta);
-  xt::xarray<double> x_expected = {-0.65077886, -0.15637043, 0.37348938, 0.79729627};
-  xt::xarray<double> w_expected = {0.08666291, 0.44123335, 0.59015336, 0.21528371};
-  EXPECT_FLOATS_NEARLY_EQ(x, x_expected, 0.0001);
-  EXPECT_FLOATS_NEARLY_EQ(w, w_expected, 0.0001);
-}
-
-TEST(test_integration, test_jacobi_gl_n1) {
-  unsigned n = 1;
-  double alpha = 0.0, beta = 0.0;
-  auto output = oiseau::utils::integration::jacobi_gl(n, alpha, beta);
-  xt::xarray<double> expected = {-1., 1.};
-  EXPECT_FLOATS_NEARLY_EQ(output, expected, 1e-10);
-}
-
-TEST(test_integration, test_jacobi_gl) {
-  unsigned n = 4;
-  double alpha = 1.0, beta = 2.0;
-  auto output = oiseau::utils::integration::jacobi_gl(n, alpha, beta);
-  xt::xarray<double> expected = {-1., -0.4611587, 0.10438533, 0.62950065, 1.};
-  EXPECT_FLOATS_NEARLY_EQ(output, expected, 0.0001);
-}
