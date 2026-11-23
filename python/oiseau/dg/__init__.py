@@ -6,7 +6,7 @@
 
 """Discontinuous Galerkin spaces, equations, and time stepping."""
 
-from .cpp.dg import (
+from ..cpp.dg import (
     DGSpace,
     DGState,
     Equation,

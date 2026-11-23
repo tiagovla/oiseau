@@ -9,6 +9,7 @@
 #include <nanobind/operators.h>
 #include <nanobind/stl/array.h>
 #include <nanobind/stl/function.h>
+#include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
@@ -22,6 +23,13 @@
 #include <utility>
 #include <vector>
 
+#include "oiseau/dg/nodal/element.hpp"
+#include "oiseau/dg/nodal/ref_element.hpp"
+#include "oiseau/dg/nodal/ref_hexahedron.hpp"
+#include "oiseau/dg/nodal/ref_line.hpp"
+#include "oiseau/dg/nodal/ref_quadrilateral.hpp"
+#include "oiseau/dg/nodal/ref_tetrahedron.hpp"
+#include "oiseau/dg/nodal/ref_triangle.hpp"
 #include "oiseau/dg/solver/linear_dg.hpp"
 #include "oiseau/time/rk4.hpp"
 #include "oiseau/time/run.hpp"
@@ -30,12 +38,92 @@ namespace py = nanobind;
 
 namespace oiseau::wrappers {
 namespace {
+using NumpyCoordinates = py::ndarray<py::numpy, const double, py::c_contig, py::device::cpu>;
+
+xt::xarray<double> copy_coordinates(const NumpyCoordinates& coordinates) {
+  const auto* shape = coordinates.shape_ptr();
+  auto values = xt::xarray<double>::from_shape(
+      xt::xarray<double>::shape_type(shape, shape + coordinates.ndim()));
+  std::copy_n(coordinates.data(), coordinates.size(), values.data());
+  return values;
+}
+
 py::ndarray<py::numpy, double> copy_array(const xt::xarray<double>& values) {
   auto data = std::make_unique_for_overwrite<double[]>(values.size());
   std::copy_n(values.data(), values.size(), data.get());
   py::capsule owner(data.get(),
                     [](void* pointer) noexcept { delete[] static_cast<double*>(pointer); });
   return {data.release(), values.dimension(), values.shape().data(), owner};
+}
+
+void bind_nodal_elements(py::module_& m) {
+  using namespace oiseau::dg::nodal;
+
+  py::enum_<RefElementType>(m, "RefElementType")
+      .value("Line", RefElementType::Line)
+      .value("Triangle", RefElementType::Triangle)
+      .value("Quadrilateral", RefElementType::Quadrilateral)
+      .value("Tetrahedron", RefElementType::Tetrahedron)
+      .value("Hexahedron", RefElementType::Hexahedron);
+
+  py::class_<RefElement>(m, "RefElement")
+      .def_prop_ro("order", &RefElement::order)
+      .def_prop_ro("number_of_nodes", &RefElement::number_of_nodes)
+      .def_prop_ro("number_of_face_nodes", &RefElement::number_of_face_nodes)
+      .def_prop_ro(
+          "r", [](const RefElement& ref) { return copy_array(ref.r()); }, py::rv_policy::reference,
+          "Copy of the reference node coordinates.")
+      .def_prop_ro(
+          "v", [](const RefElement& ref) { return copy_array(ref.v()); }, py::rv_policy::reference,
+          "Copy of the Vandermonde matrix at the reference nodes.")
+      .def_prop_ro(
+          "gv", [](const RefElement& ref) { return copy_array(ref.gv()); },
+          py::rv_policy::reference,
+          "Copy of the gradient Vandermonde matrix at the reference nodes.")
+      .def_prop_ro(
+          "d", [](const RefElement& ref) { return copy_array(ref.d()); }, py::rv_policy::reference,
+          "Copy of the nodal differentiation matrix.")
+      .def(
+          "vandermonde",
+          [](const RefElement& ref, const NumpyCoordinates& points) {
+            const auto& nodes = ref.r();
+            if (points.ndim() != nodes.dimension() ||
+                (points.ndim() == 2 && points.shape(1) != nodes.shape()[1])) {
+              throw py::value_error(
+                  "Points must have shape (n,) for line elements or "
+                  "(n, reference dimension) for other elements");
+            }
+            return copy_array(ref.vandermonde(copy_coordinates(points)));
+          },
+          py::arg("points"), "Evaluate the reference basis at the given points.");
+
+  py::class_<RefLine, RefElement>(m, "RefLine").def(py::init<unsigned>(), py::arg("order"));
+  py::class_<RefTriangle, RefElement>(m, "RefTriangle").def(py::init<unsigned>(), py::arg("order"));
+  py::class_<RefQuadrilateral, RefElement>(m, "RefQuadrilateral")
+      .def(py::init<unsigned>(), py::arg("order"));
+  py::class_<RefTetrahedron, RefElement>(m, "RefTetrahedron")
+      .def(py::init<unsigned>(), py::arg("order"));
+  py::class_<RefHexahedron, RefElement>(m, "RefHexahedron")
+      .def(py::init<unsigned>(), py::arg("order"));
+
+  m.def("get_ref_element", &get_ref_element, py::arg("type"), py::arg("order"));
+
+  py::class_<Element>(m, "Element")
+      .def(
+          "__init__",
+          [](Element* self, std::shared_ptr<RefElement> reference, const NumpyCoordinates& nodes) {
+            if ((nodes.ndim() != 1 && nodes.ndim() != 2) ||
+                nodes.shape(0) != reference->number_of_nodes()) {
+              throw py::value_error("Expected one set of coordinates per reference node");
+            }
+            new (self) Element(std::move(reference), copy_coordinates(nodes));
+          },
+          py::arg("reference"), py::arg("nodes"))
+      .def_prop_ro("reference", &Element::reference, py::rv_policy::reference_internal)
+      .def_prop_ro("order", &Element::order)
+      .def_prop_ro(
+          "nodes", [](const Element& element) { return copy_array(element.nodes()); },
+          py::rv_policy::reference, "Copy of the physical node coordinates.");
 }
 }  // namespace
 
@@ -45,6 +133,9 @@ void dg(py::module_& m) {
   using solver::LinearDG2D;
   using BoundaryCallback =
       std::function<std::vector<double>(const std::vector<double>&, const LinearDG2D::Normal&)>;
+
+  auto nodal = m.def_submodule("nodal", "Nodal Discontinuous Galerkin elements");
+  bind_nodal_elements(nodal);
 
   py::class_<Field>(m, "Field").def(py::init<std::string>(), py::arg("name"));
   py::class_<Equation>(m, "Equation");
