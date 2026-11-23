@@ -11,15 +11,21 @@
 #include <cmath>
 #include <cstddef>
 #include <memory>
+#include <span>
 #include <stdexcept>
 #include <utility>
 #include <vector>
 #include <xtensor/containers/xarray.hpp>
+#include <xtensor/core/xtensor_forward.hpp>
 #include <xtensor/generators/xbuilder.hpp>
 
 #include "oiseau/dg/dg_connectivity.hpp"
 #include "oiseau/dg/dg_geometry.hpp"
 #include "oiseau/dg/dg_integration.hpp"
+#include "oiseau/dg/dg_space.hpp"
+#include "oiseau/dg/equation.hpp"
+#include "oiseau/dg/field.hpp"
+#include "oiseau/mesh/mesh.hpp"
 #include "oiseau/mesh/topology.hpp"
 
 namespace oiseau::dg::solver {
@@ -33,6 +39,23 @@ struct LinearDG<Dimension>::Impl {
   struct CellFluxOperators {
     std::vector<FaceFluxOperators> faces;
   };
+
+  struct NodalValues {
+    const double* data;
+    std::size_t node_count;
+  };
+
+  struct FaceScratch {
+    explicit FaceScratch(std::size_t fields)
+        : left(fields), right(fields), left_flux(fields), right_flux(fields) {}
+
+    std::vector<double> left;
+    std::vector<double> right;
+    std::vector<double> left_flux;
+    std::vector<double> right_flux;
+  };
+
+  using ReferenceFlux = std::array<std::vector<double>, Dimension>;
 
   std::shared_ptr<DGSpace> owned_space;
   const DGSpace* space = nullptr;
@@ -79,12 +102,11 @@ struct LinearDG<Dimension>::Impl {
     return mesh;
   }
 
-  void initialize_flux_matrices() {
+  void validate_flux_policy() const {
     if (!numerical_flux) {
       throw std::invalid_argument("LinearDG requires a numerical flux policy");
     }
 
-    const auto fields = equations.fields();
     if constexpr (Dimension < 3) {
       if (std::ranges::any_of(equations.equations(), [](const Equation& equation) {
             return std::ranges::any_of(equation.terms, [](const LinearTerm& term) {
@@ -96,6 +118,11 @@ struct LinearDG<Dimension>::Impl {
         throw std::invalid_argument("Equation derivative exceeds the LinearDG mesh dimension");
       }
     }
+  }
+
+  void initialize_flux_matrices() {
+    validate_flux_policy();
+    const auto fields = equations.fields();
     for (auto& matrix : flux_matrices) {
       matrix.assign(fields.size(), std::vector<double>(fields.size(), 0.0));
     }
@@ -105,6 +132,18 @@ struct LinearDG<Dimension>::Impl {
         for (std::size_t field = 0; field < fields.size(); ++field) {
           flux_matrices[direction][equation][field] =
               equations.flux_coefficient(fields[equation], directions[direction], fields[field]);
+        }
+      }
+    }
+  }
+
+  void initialize_normal_flux_matrix(FaceFluxOperators& face, std::size_t fields) const {
+    face.normal_flux_matrix.resize(fields * fields);
+    for (std::size_t equation = 0; equation < fields; ++equation) {
+      for (std::size_t field = 0; field < fields; ++field) {
+        for (std::size_t direction = 0; direction < Dimension; ++direction) {
+          face.normal_flux_matrix[equation * fields + field] +=
+              face.normal[direction] * flux_matrices[direction][equation][field];
         }
       }
     }
@@ -121,16 +160,20 @@ struct LinearDG<Dimension>::Impl {
       for (const auto& face_rule : cell_rule.faces) {
         auto& face = cell.faces.emplace_back();
         std::copy_n(face_rule.outward_normal.begin(), Dimension, face.normal.begin());
-        face.normal_flux_matrix.resize(fields * fields);
-        for (std::size_t equation = 0; equation < fields; ++equation) {
-          for (std::size_t field = 0; field < fields; ++field) {
-            for (std::size_t direction = 0; direction < Dimension; ++direction) {
-              face.normal_flux_matrix[equation * fields + field] +=
-                  face.normal[direction] * flux_matrices[direction][equation][field];
-            }
-          }
-        }
+        initialize_normal_flux_matrix(face, fields);
       }
+    }
+  }
+
+  static void validate_state_strides(const xt::xarray<double>& values) {
+    const auto& shape = values.shape();
+    const auto& strides = values.strides();
+    const auto wrong_field_stride = shape[2] > 1 && strides[2] != 1;
+    const auto wrong_node_stride = shape[1] > 1 && std::cmp_not_equal(strides[1], shape[2]);
+    const auto wrong_cell_stride =
+        shape[0] > 1 && std::cmp_not_equal(strides[0], shape[1] * shape[2]);
+    if (wrong_field_stride || wrong_node_stride || wrong_cell_stride) {
+      throw std::invalid_argument("DGState arrays must use contiguous row-major storage");
     }
   }
 
@@ -147,12 +190,7 @@ struct LinearDG<Dimension>::Impl {
         throw std::invalid_argument(
             "DGState arrays must have shape [group cells, group nodes, number of fields]");
       }
-      const auto& strides = values.strides();
-      if ((values.shape()[2] > 1 && strides[2] != 1) ||
-          (values.shape()[1] > 1 && std::cmp_not_equal(strides[1], values.shape()[2])) ||
-          (values.shape()[0] > 1 && strides[0] != values.shape()[1] * values.shape()[2])) {
-        throw std::invalid_argument("DGState arrays must use contiguous row-major storage");
-      }
+      validate_state_strides(values);
     }
   }
 
@@ -169,6 +207,18 @@ struct LinearDG<Dimension>::Impl {
     return state;
   }
 
+  static double sample_initial_condition(const InitialCondition& value,
+                                         const xt::xarray<double>& nodes, std::size_t cell,
+                                         std::size_t node) {
+    if constexpr (Dimension == 1) {
+      return value(nodes(cell, node, 0));
+    } else if constexpr (Dimension == 2) {
+      return value(nodes(cell, node, 0), nodes(cell, node, 1));
+    } else {
+      return value(nodes(cell, node, 0), nodes(cell, node, 1), nodes(cell, node, 2));
+    }
+  }
+
   void set_initial_condition(State& state, const Field& field,
                              const InitialCondition& value) const {
     if (!value) throw std::invalid_argument("Initial condition callback cannot be empty");
@@ -179,15 +229,8 @@ struct LinearDG<Dimension>::Impl {
       const auto& nodes = groups[group_index].nodes;
       for (std::size_t cell = 0; cell < nodes.shape()[0]; ++cell) {
         for (std::size_t node = 0; node < nodes.shape()[1]; ++node) {
-          if constexpr (Dimension == 1) {
-            state.groups[group_index](cell, node, field_index) = value(nodes(cell, node, 0));
-          } else if constexpr (Dimension == 2) {
-            state.groups[group_index](cell, node, field_index) =
-                value(nodes(cell, node, 0), nodes(cell, node, 1));
-          } else {
-            state.groups[group_index](cell, node, field_index) =
-                value(nodes(cell, node, 0), nodes(cell, node, 1), nodes(cell, node, 2));
-          }
+          state.groups[group_index](cell, node, field_index) =
+              sample_initial_condition(value, nodes, cell, node);
         }
       }
     }
@@ -199,131 +242,161 @@ struct LinearDG<Dimension>::Impl {
     return state;
   }
 
+  static NodalValues nodal_values(const State& state, const DGIntegration::CellRule& cell,
+                                  std::size_t fields) {
+    const auto& group = state.groups[cell.group_index];
+    const auto node_count = group.shape()[1];
+    return {group.data() + cell.group_cell_index * node_count * fields, node_count};
+  }
+
+  std::array<double, Dimension> reference_flux_at_node(
+      const double* node_values, std::size_t fields, std::size_t equation,
+      const std::array<double, 9>& inverse_jacobian) const {
+    std::array<double, Dimension> physical_flux{};
+    for (std::size_t direction = 0; direction < Dimension; ++direction) {
+      for (std::size_t field = 0; field < fields; ++field) {
+        physical_flux[direction] += flux_matrices[direction][equation][field] * node_values[field];
+      }
+    }
+    std::array<double, Dimension> transformed_flux{};
+    for (std::size_t axis = 0; axis < Dimension; ++axis) {
+      for (std::size_t direction = 0; direction < Dimension; ++direction) {
+        transformed_flux[axis] += inverse_jacobian[axis * 3 + direction] * physical_flux[direction];
+      }
+    }
+    return transformed_flux;
+  }
+
+  static double flux_divergence(const ReferenceFlux& reference_flux,
+                                const std::array<const double*, 3>& derivatives,
+                                std::size_t node_count, std::size_t fields, std::size_t test,
+                                std::size_t equation) {
+    double value = 0.0;
+    for (std::size_t trial = 0; trial < node_count; ++trial) {
+      const auto index = test * node_count + trial;
+      for (std::size_t axis = 0; axis < Dimension; ++axis) {
+        value += derivatives[axis][index] * reference_flux[axis][trial * fields + equation];
+      }
+    }
+    return value;
+  }
+
+  void set_volume_derivative(const DGIntegration::CellRule& cell, NodalValues values,
+                             std::size_t fields, double* derivative,
+                             ReferenceFlux& reference_flux) const {
+    const auto node_count = values.node_count;
+    const std::array derivatives = {cell.reference->derivative_r.data(),
+                                    cell.reference->derivative_s.data(),
+                                    cell.reference->derivative_t.data()};
+    for (auto& flux : reference_flux) flux.resize(node_count * fields);
+    // The affine inverse Jacobian is constant, so transform the flux before differentiating.
+    for (std::size_t trial = 0; trial < node_count; ++trial) {
+      for (std::size_t equation = 0; equation < fields; ++equation) {
+        const auto flux = reference_flux_at_node(values.data + trial * fields, fields, equation,
+                                                 cell.inverse_jacobian);
+        for (std::size_t axis = 0; axis < Dimension; ++axis) {
+          reference_flux[axis][trial * fields + equation] = flux[axis];
+        }
+      }
+    }
+    for (std::size_t test = 0; test < node_count; ++test) {
+      for (std::size_t equation = 0; equation < fields; ++equation) {
+        derivative[test * fields + equation] =
+            -flux_divergence(reference_flux, derivatives, node_count, fields, test, equation);
+      }
+    }
+  }
+
+  static void interpolate_trace(std::vector<double>& trace, const double* basis,
+                                NodalValues values) {
+    const auto fields = trace.size();
+    for (std::size_t node = 0; node < values.node_count; ++node) {
+      for (std::size_t field = 0; field < fields; ++field) {
+        trace[field] += basis[node] * values.data[node * fields + field];
+      }
+    }
+  }
+
+  std::vector<double> face_flux_correction(const FaceFluxOperators& operators,
+                                           FaceScratch& scratch) const {
+    const auto fields = scratch.left.size();
+    for (std::size_t equation = 0; equation < fields; ++equation) {
+      const auto* normal_matrix = operators.normal_flux_matrix.data() + equation * fields;
+      double interior_flux = 0.0;
+      double exterior_flux = 0.0;
+      for (std::size_t field = 0; field < fields; ++field) {
+        interior_flux += normal_matrix[field] * scratch.left[field];
+        exterior_flux += normal_matrix[field] * scratch.right[field];
+      }
+      scratch.left_flux[equation] = interior_flux;
+      scratch.right_flux[equation] = exterior_flux;
+    }
+    auto correction = numerical_flux(scratch.left, scratch.right, operators.normal,
+                                     scratch.left_flux, scratch.right_flux);
+    if (correction.size() != fields) {
+      throw std::invalid_argument("Numerical flux must return one value per equation field");
+    }
+    for (std::size_t equation = 0; equation < fields; ++equation) {
+      correction[equation] -= scratch.left_flux[equation];
+    }
+    return correction;
+  }
+
+  void add_face_derivative(const DGIntegration::FaceRule& face, const FaceFluxOperators& operators,
+                           NodalValues cell, NodalValues neighbor, double* derivative,
+                           FaceScratch& scratch) const {
+    const auto fields = scratch.left.size();
+    const auto node_count = cell.node_count;
+    const auto face_points = face.point_count();
+    for (std::size_t q = 0; q < face_points; ++q) {
+      std::ranges::fill(scratch.left, 0.0);
+      std::ranges::fill(scratch.right, 0.0);
+      interpolate_trace(scratch.left, face.minus->trace.data() + q * node_count, cell);
+      if (face.is_boundary()) {
+        scratch.right =
+            boundary_state ? boundary_state(scratch.left, operators.normal) : scratch.left;
+        if (scratch.right.size() != fields) {
+          throw std::invalid_argument(
+              "Boundary state must return one value for every equation field");
+        }
+      } else {
+        interpolate_trace(scratch.right, face.plus->trace.data() + q * neighbor.node_count,
+                          neighbor);
+      }
+
+      const auto correction = face_flux_correction(operators, scratch);
+      const auto* lift = face.minus->lift.data() + q * node_count;
+      for (std::size_t test = 0; test < node_count; ++test) {
+        for (std::size_t equation = 0; equation < fields; ++equation) {
+          derivative[test * fields + equation] -=
+              face.lift_scale * lift[test] * correction[equation];
+        }
+      }
+    }
+  }
+
   State rhs(const State& state) const {
     validate_state(state);
     auto output = zero_state();
     const auto fields = equations.fields().size();
-    std::vector<double> left(fields), right(fields), left_flux(fields), right_flux(fields);
-    std::array<std::vector<double>, Dimension> reference_flux;
+    FaceScratch scratch(fields);
+    ReferenceFlux reference_flux;
 
     const auto cell_rules = integration.cells();
     for (std::size_t cell_index = 0; cell_index < cell_rules.size(); ++cell_index) {
-      const auto& cell_rule = cell_rules[cell_index];
-      if (!cell_rule.has_group()) continue;
+      const auto& cell = cell_rules[cell_index];
+      if (!cell.has_group()) continue;
+      const auto values = nodal_values(state, cell, fields);
+      auto* derivative = output.groups[cell.group_index].data() +
+                         cell.group_cell_index * values.node_count * fields;
+      set_volume_derivative(cell, values, fields, derivative, reference_flux);
+
       const auto& operators = normal_flux_operators[cell_index];
-      const auto group = cell_rule.group_index;
-      const auto row = cell_rule.group_cell_index;
-      const auto& cell_state = state.groups[group];
-      const auto node_count = cell_rule.node_count();
-      const auto* cell_values = cell_state.data() + row * node_count * fields;
-      auto* cell_derivative = output.groups[group].data() + row * node_count * fields;
-
-      const auto& inverse_jacobian = cell_rule.inverse_jacobian;
-      const std::array derivatives = {cell_rule.reference->derivative_r.data(),
-                                      cell_rule.reference->derivative_s.data(),
-                                      cell_rule.reference->derivative_t.data()};
-      for (auto& flux : reference_flux) flux.resize(node_count * fields);
-      // The affine inverse Jacobian is constant, so transform the flux before differentiating.
-      for (std::size_t trial = 0; trial < node_count; ++trial) {
-        for (std::size_t equation = 0; equation < fields; ++equation) {
-          std::array<double, Dimension> physical_flux{};
-          for (std::size_t direction = 0; direction < Dimension; ++direction) {
-            for (std::size_t field = 0; field < fields; ++field) {
-              physical_flux[direction] +=
-                  flux_matrices[direction][equation][field] * cell_values[trial * fields + field];
-            }
-          }
-          for (std::size_t reference_axis = 0; reference_axis < Dimension; ++reference_axis) {
-            double transformed_flux = 0.0;
-            for (std::size_t direction = 0; direction < Dimension; ++direction) {
-              transformed_flux +=
-                  inverse_jacobian[reference_axis * 3 + direction] * physical_flux[direction];
-            }
-            reference_flux[reference_axis][trial * fields + equation] = transformed_flux;
-          }
-        }
-      }
-      for (std::size_t test = 0; test < node_count; ++test) {
-        for (std::size_t equation = 0; equation < fields; ++equation) {
-          double value = 0.0;
-          for (std::size_t trial = 0; trial < node_count; ++trial) {
-            const auto index = test * node_count + trial;
-            for (std::size_t axis = 0; axis < Dimension; ++axis) {
-              value += derivatives[axis][index] * reference_flux[axis][trial * fields + equation];
-            }
-          }
-          cell_derivative[test * fields + equation] = -value;
-        }
-      }
-
-      for (std::size_t face_index = 0; face_index < cell_rule.faces.size(); ++face_index) {
-        const auto& face = cell_rule.faces[face_index];
-        const auto& face_operators = operators.faces[face_index];
-        const auto* neighbor_rule =
-            face.is_boundary() ? &cell_rule : &integration.cell(face.neighbor_cell);
-        const auto neighbor_group = neighbor_rule->group_index;
-        const auto neighbor_row = neighbor_rule->group_cell_index;
-        const auto& neighbor_state = state.groups[neighbor_group];
-        const auto neighbor_nodes = neighbor_state.shape()[1];
-        const auto* neighbor_values =
-            neighbor_state.data() + neighbor_row * neighbor_nodes * fields;
-        const auto face_points = face.point_count();
-
-        for (std::size_t q = 0; q < face_points; ++q) {
-          std::ranges::fill(left, 0.0);
-          std::ranges::fill(right, 0.0);
-          const auto* minus_trace = face.minus->trace.data() + q * node_count;
-          for (std::size_t node = 0; node < node_count; ++node) {
-            const auto basis = minus_trace[node];
-            for (std::size_t field = 0; field < fields; ++field) {
-              left[field] += basis * cell_values[node * fields + field];
-            }
-          }
-
-          if (face.is_boundary()) {
-            right = boundary_state ? boundary_state(left, face_operators.normal) : left;
-            if (right.size() != fields) {
-              throw std::invalid_argument(
-                  "Boundary state must return one value for every equation field");
-            }
-          } else {
-            const auto* plus_trace = face.plus->trace.data() + q * neighbor_nodes;
-            for (std::size_t node = 0; node < neighbor_nodes; ++node) {
-              const auto basis = plus_trace[node];
-              for (std::size_t field = 0; field < fields; ++field) {
-                right[field] += basis * neighbor_values[node * fields + field];
-              }
-            }
-          }
-
-          for (std::size_t equation = 0; equation < fields; ++equation) {
-            const auto* normal_matrix =
-                face_operators.normal_flux_matrix.data() + equation * fields;
-            double interior_flux = 0.0;
-            double exterior_flux = 0.0;
-            for (std::size_t field = 0; field < fields; ++field) {
-              interior_flux += normal_matrix[field] * left[field];
-              exterior_flux += normal_matrix[field] * right[field];
-            }
-            left_flux[equation] = interior_flux;
-            right_flux[equation] = exterior_flux;
-          }
-          auto flux_correction =
-              numerical_flux(left, right, face_operators.normal, left_flux, right_flux);
-          if (flux_correction.size() != fields) {
-            throw std::invalid_argument("Numerical flux must return one value per equation field");
-          }
-          for (std::size_t equation = 0; equation < fields; ++equation) {
-            flux_correction[equation] -= left_flux[equation];
-          }
-          const auto* lift = face.minus->lift.data() + q * node_count;
-          for (std::size_t test = 0; test < node_count; ++test) {
-            for (std::size_t equation = 0; equation < fields; ++equation) {
-              cell_derivative[test * fields + equation] -=
-                  face.lift_scale * lift[test] * flux_correction[equation];
-            }
-          }
-        }
+      for (std::size_t face_index = 0; face_index < cell.faces.size(); ++face_index) {
+        const auto& face = cell.faces[face_index];
+        const auto& neighbor = face.is_boundary() ? cell : integration.cell(face.neighbor_cell);
+        add_face_derivative(face, operators.faces[face_index], values,
+                            nodal_values(state, neighbor, fields), derivative, scratch);
       }
     }
     return output;
