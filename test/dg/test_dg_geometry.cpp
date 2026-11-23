@@ -23,6 +23,7 @@
 #include "oiseau/dg/ref_element_type.hpp"
 #include "oiseau/io/gmsh.hpp"
 #include "oiseau/mesh/cell.hpp"
+#include "oiseau/mesh/mesh.hpp"
 
 namespace {
 
@@ -90,6 +91,10 @@ TEST(test_dg_geometry, physical_vertex) {
 
 TEST(test_dg_geometry, independent_vertices) {
   using namespace oiseau::dg::detail;
+  const std::vector<Point> line = {make_point({0.0, 0.0}), make_point({1.0, 3.0}),
+                                   make_point({-2.0, 0.0}), make_point({2.0, 0.0})};
+  EXPECT_EQ(independent_vertices(line, 1), (std::array<std::size_t, 4>{0, 2, 1, 1}));
+
   const std::vector<Point> triangle = {make_point({0.0, 0.0}), make_point({1.0, 0.0}),
                                        make_point({0.0, 1.0})};
   const auto basis = independent_vertices(triangle, 2);
@@ -311,6 +316,19 @@ $EndElements)");
     EXPECT_NEAR(skew.faces[face].surface_jacobian,
                 0.5 * std::sqrt(along_first_mesh_edge ? 5.0 : 17.0), 1e-12);
   }
+}
+
+TEST(test_dg_geometry, rejects_degenerate_and_non_affine_cells) {
+  using oiseau::dg::DGGeometry;
+  using namespace oiseau::mesh;
+
+  const Mesh degenerate{Topology({{0, 1, 2}}, {get_cell_type(CellKind::Triangle)}),
+                        Geometry({0.0, 0.0, 1.0, 0.0, 2.0, 0.0}, 2)};
+  EXPECT_THROW(DGGeometry{degenerate}, std::invalid_argument);
+
+  const Mesh non_affine{Topology({{0, 1, 2, 3}}, {get_cell_type(CellKind::Quadrilateral)}),
+                        Geometry({0.0, 0.0, 2.0, 0.0, 1.0, 1.0, 0.0, 1.0}, 2)};
+  EXPECT_THROW(DGGeometry{non_affine}, std::invalid_argument);
 }
 
 TEST(test_dg_geometry, one_tetrahedron_has_outward_face_normals) {

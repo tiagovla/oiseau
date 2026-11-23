@@ -35,6 +35,41 @@
 #include "xtensor/containers/xadapt.hpp"
 
 namespace oiseau::dg {
+namespace {
+
+using detail::Matrix;
+using detail::Point;
+
+Matrix edge_matrix(const std::vector<Point>& points, const std::array<std::size_t, 4>& basis,
+                   std::size_t dimension) {
+  Matrix edges = xt::zeros<double>({dimension, dimension});
+  for (std::size_t column = 0; column < dimension; ++column) {
+    const auto edge = points[basis[column + 1]] - points[basis[0]];
+    xt::view(edges, xt::all(), column) = xt::view(edge, xt::range(0, dimension));
+  }
+  return edges;
+}
+
+struct VertexBasis {
+  std::array<std::size_t, 4> indices{};
+  double determinant = 0.0;
+};
+
+void consider_basis_completions(const std::vector<Point>& points, std::size_t dimension,
+                                std::size_t first, std::size_t second, VertexBasis& best) {
+  const auto third_start = dimension > 2 ? second + 1 : 1;
+  const auto third_end = dimension > 2 ? points.size() : 2;
+  for (auto third = third_start; third < third_end; ++third) {
+    const std::array<std::size_t, 4> indices = {0, first, second, third};
+    const auto determinant = std::abs(xt::linalg::det(edge_matrix(points, indices, dimension)));
+    if (determinant > best.determinant) {
+      best = {.indices = indices, .determinant = determinant};
+    }
+  }
+}
+
+}  // namespace
+
 namespace detail {
 
 double triangle_area(const Point& a, const Point& b, const Point& c) {
@@ -106,35 +141,18 @@ Point physical_vertex(const mesh::Geometry& geometry, std::size_t vertex, std::s
 
 std::array<std::size_t, 4> independent_vertices(const std::vector<Point>& reference_points,
                                                 std::size_t dimension) {
-  std::array<std::size_t, 4> result{};
-  double largest_determinant = 0.0;
+  VertexBasis best;
   const auto second_end = dimension > 1 ? reference_points.size() : 2;
-  const auto third_end = dimension > 2 ? reference_points.size() : 2;
   for (std::size_t first = 1; first < reference_points.size(); ++first) {
     const auto second_start = dimension > 1 ? first + 1 : 1;
     for (auto second = second_start; second < second_end; ++second) {
-      const auto third_start = dimension > 2 ? second + 1 : 1;
-      for (auto third = third_start; third < third_end; ++third) {
-        const std::array<std::size_t, 3> indices = {first, second, third};
-        Matrix edges = xt::zeros<double>({dimension, dimension});
-        for (std::size_t column = 0; column < dimension; ++column) {
-          const auto edge = reference_points[indices[column]] - reference_points[0];
-          for (std::size_t row = 0; row < dimension; ++row) {
-            edges(row, column) = edge(row);
-          }
-        }
-        const auto determinant = std::abs(xt::linalg::det(edges));
-        if (determinant > largest_determinant) {
-          largest_determinant = determinant;
-          result = {0, first, second, third};
-        }
-      }
+      consider_basis_completions(reference_points, dimension, first, second, best);
     }
   }
-  if (largest_determinant <= std::numeric_limits<double>::epsilon()) {
+  if (best.determinant <= std::numeric_limits<double>::epsilon()) {
     throw std::logic_error("Reference element has degenerate vertices");
   }
-  return result;
+  return best.indices;
 }
 
 double face_measure(const std::vector<Point>& vertices, std::size_t face_dimension) {
@@ -209,13 +227,32 @@ struct ReferenceCellGeometry {
   std::vector<ReferenceFaceGeometry> faces;
 };
 
-Matrix edge_matrix(const std::vector<Point>& points, const std::array<std::size_t, 4>& basis,
-                   std::size_t dimension) {
-  Matrix edges = xt::zeros<double>({dimension, dimension});
-  for (std::size_t column = 0; column < dimension; ++column) {
-    xt::view(edges, xt::all(), column) = points[basis[column + 1]] - points[basis[0]];
+std::vector<ReferenceFaceGeometry> make_reference_faces(mesh::CellType cell_type,
+                                                        const std::vector<Point>& points,
+                                                        std::size_t face_dimension) {
+  const auto local_faces = cell_type->get_entity_vertices(static_cast<int>(face_dimension));
+  std::vector<ReferenceFaceGeometry> faces;
+  faces.reserve(local_faces.size());
+  for (const auto& local_face : local_faces) {
+    std::vector<std::size_t> face_vertices;
+    std::vector<Point> face_points;
+    face_vertices.reserve(local_face.size());
+    face_points.reserve(local_face.size());
+    for (const auto vertex : local_face) {
+      if (vertex < 0 || std::cmp_greater_equal(vertex, points.size())) {
+        throw std::logic_error("Cell face references an invalid local vertex");
+      }
+      const auto index = static_cast<std::size_t>(vertex);
+      face_vertices.push_back(index);
+      face_points.push_back(points[index]);
+    }
+    const auto measure = face_measure(face_points, face_dimension);
+    if (!std::isfinite(measure) || measure <= 0.0) {
+      throw std::logic_error("Reference face has zero measure");
+    }
+    faces.push_back({.vertices = std::move(face_vertices), .measure = measure});
   }
-  return edges;
+  return faces;
 }
 
 ReferenceCellGeometry make_reference_geometry(mesh::CellType cell_type, std::size_t vertex_count,
@@ -259,28 +296,85 @@ ReferenceCellGeometry make_reference_geometry(mesh::CellType cell_type, std::siz
     reference.points[reference_to_mesh[vertex]] = std::move(reference_points[vertex]);
   }
 
-  const auto local_faces = cell_type->get_entity_vertices(static_cast<int>(dimension - 1));
-  reference.faces.reserve(local_faces.size());
-  for (const auto& local_face : local_faces) {
-    std::vector<std::size_t> face_vertices;
-    std::vector<Point> face_points;
-    face_vertices.reserve(local_face.size());
-    face_points.reserve(local_face.size());
-    for (const auto vertex : local_face) {
-      if (vertex < 0 || std::cmp_greater_equal(vertex, vertex_count)) {
-        throw std::logic_error("Cell face references an invalid local vertex");
-      }
-      const auto index = static_cast<std::size_t>(vertex);
-      face_vertices.push_back(index);
-      face_points.push_back(reference.points[index]);
-    }
-    const auto measure = face_measure(face_points, dimension - 1);
-    if (!std::isfinite(measure) || measure <= 0.0) {
-      throw std::logic_error("Reference face has zero measure");
-    }
-    reference.faces.push_back({.vertices = std::move(face_vertices), .measure = measure});
-  }
+  reference.faces = make_reference_faces(cell_type, reference.points, dimension - 1);
   return reference;
+}
+
+std::size_t validated_mesh_dimension(const mesh::Topology& topology,
+                                     const mesh::Geometry& geometry) {
+  const auto dimension = static_cast<std::size_t>(topology.dimension());
+  if (dimension < 1 || dimension > 3) {
+    throw std::invalid_argument("DGGeometry supports meshes with dimensions 1 through 3");
+  }
+  if (geometry.dim() < dimension || geometry.x().size() % geometry.dim() != 0) {
+    throw std::invalid_argument("Mesh coordinate data is inconsistent with its dimension");
+  }
+  if (topology.cell_types().size() != topology.conn().size()) {
+    throw std::invalid_argument("Mesh cell types and connectivity counts must match");
+  }
+  return dimension;
+}
+
+DGGeometry::CellGeometry make_cell_geometry(const mesh::Geometry& geometry,
+                                            const std::vector<std::size_t>& mesh_vertices,
+                                            const ReferenceCellGeometry& reference,
+                                            std::size_t dimension, std::size_t cell_index) {
+  if (mesh_vertices.size() != reference.points.size()) {
+    throw std::invalid_argument("Cell connectivity does not match its cell type");
+  }
+
+  std::vector<Point> physical_nodes;
+  physical_nodes.reserve(mesh_vertices.size());
+  std::ranges::transform(mesh_vertices, std::back_inserter(physical_nodes),
+                         [&geometry, dimension](std::size_t vertex) {
+                           return physical_vertex(geometry, vertex, dimension);
+                         });
+  const auto physical_edges = edge_matrix(physical_nodes, reference.basis_vertices, dimension);
+  const auto jacobian = xt::linalg::dot(physical_edges, reference.inverse_edges);
+  const auto determinant = xt::linalg::det(jacobian);
+  if (is_degenerate(jacobian, determinant)) {
+    throw std::invalid_argument("Cell vertices define a degenerate element");
+  }
+  const auto inverse_jacobian = xt::linalg::inv(jacobian);
+
+  const auto tolerance = affine_tolerance(physical_nodes, dimension);
+  const auto anchor = reference.basis_vertices[0];
+  for (std::size_t vertex_index = 0; vertex_index < physical_nodes.size(); ++vertex_index) {
+    const auto reference_offset = reference.points[vertex_index] - reference.points[anchor];
+    const auto expected = xt::linalg::dot(jacobian, reference_offset);
+    const auto actual = physical_nodes[vertex_index] - physical_nodes[anchor];
+    if (xt::linalg::norm(expected - actual, 2) > tolerance) {
+      throw std::invalid_argument("DGGeometry requires affine cell mappings");
+    }
+  }
+
+  std::vector<DGGeometry::FaceGeometry> faces;
+  faces.reserve(reference.faces.size());
+  const auto cell_centroid = centroid(physical_nodes);
+  for (const auto& reference_face : reference.faces) {
+    std::vector<Point> physical_face;
+    physical_face.reserve(reference_face.vertices.size());
+    std::ranges::transform(
+        reference_face.vertices, std::back_inserter(physical_face),
+        [&physical_nodes](std::size_t vertex) -> const Point& { return physical_nodes[vertex]; });
+    const auto measure = face_measure(physical_face, dimension - 1);
+    if (!std::isfinite(measure) || measure <= 0.0) {
+      throw std::invalid_argument("A cell face must have finite, nonzero measure");
+    }
+    faces.push_back(
+        {.outward_normal = point_array(face_normal(physical_face, cell_centroid, dimension)),
+         .measure = measure,
+         .surface_jacobian = measure / reference_face.measure});
+  }
+
+  return {
+      .mesh_cell_index = cell_index,
+      .dimension = dimension,
+      .jacobian = padded_matrix(jacobian, dimension),
+      .inverse_jacobian = padded_matrix(inverse_jacobian, dimension),
+      .determinant = determinant,
+      .faces = std::move(faces),
+  };
 }
 
 }  // namespace
@@ -288,19 +382,9 @@ ReferenceCellGeometry make_reference_geometry(mesh::CellType cell_type, std::siz
 DGGeometry::DGGeometry(const mesh::Mesh& mesh) : m_mesh(mesh) {
   const auto& topology = mesh.topology();
   const auto& geometry = mesh.geometry();
+  const auto dimension = validated_mesh_dimension(topology, geometry);
   const auto cell_types = topology.cell_types();
   const auto connectivity = topology.conn();
-  const auto dimension = static_cast<std::size_t>(topology.dimension());
-
-  if (dimension < 1 || dimension > 3) {
-    throw std::invalid_argument("DGGeometry supports meshes with dimensions 1 through 3");
-  }
-  if (geometry.dim() < dimension || geometry.x().size() % geometry.dim() != 0) {
-    throw std::invalid_argument("Mesh coordinate data is inconsistent with its dimension");
-  }
-  if (cell_types.size() != connectivity.size()) {
-    throw std::invalid_argument("Mesh cell types and connectivity counts must match");
-  }
 
   m_cells.resize(topology.n_cells());
   std::unordered_map<mesh::CellType, ReferenceCellGeometry> reference_geometry;
@@ -314,63 +398,8 @@ DGGeometry::DGGeometry(const mesh::Mesh& mesh) : m_mesh(mesh) {
     if (inserted) {
       entry->second = make_reference_geometry(cell_type, mesh_vertices.size(), dimension);
     }
-    const auto& reference = entry->second;
-    if (mesh_vertices.size() != reference.points.size()) {
-      throw std::invalid_argument("Cell connectivity does not match its cell type");
-    }
-
-    std::vector<Point> physical_nodes;
-    physical_nodes.reserve(mesh_vertices.size());
-    std::ranges::transform(mesh_vertices, std::back_inserter(physical_nodes),
-                           [&geometry, dimension](std::size_t vertex) {
-                             return physical_vertex(geometry, vertex, dimension);
-                           });
-    const auto physical_edges = edge_matrix(physical_nodes, reference.basis_vertices, dimension);
-    const auto jacobian = xt::linalg::dot(physical_edges, reference.inverse_edges);
-    const auto determinant = xt::linalg::det(jacobian);
-    if (is_degenerate(jacobian, determinant)) {
-      throw std::invalid_argument("Cell vertices define a degenerate element");
-    }
-    const auto inverse_jacobian = xt::linalg::inv(jacobian);
-
-    const auto tolerance = affine_tolerance(physical_nodes, dimension);
-    const auto anchor = reference.basis_vertices[0];
-    for (std::size_t vertex_index = 0; vertex_index < physical_nodes.size(); ++vertex_index) {
-      const auto reference_offset = reference.points[vertex_index] - reference.points[anchor];
-      const auto expected = xt::linalg::dot(jacobian, reference_offset);
-      const auto actual = physical_nodes[vertex_index] - physical_nodes[anchor];
-      if (xt::linalg::norm(expected - actual, 2) > tolerance) {
-        throw std::invalid_argument("DGGeometry requires affine cell mappings");
-      }
-    }
-
-    std::vector<FaceGeometry> faces;
-    faces.reserve(reference.faces.size());
-    const auto cell_centroid = centroid(physical_nodes);
-    for (const auto& reference_face : reference.faces) {
-      std::vector<Point> physical_face;
-      physical_face.reserve(reference_face.vertices.size());
-      std::ranges::transform(
-          reference_face.vertices, std::back_inserter(physical_face),
-          [&physical_nodes](std::size_t vertex) -> const Point& { return physical_nodes[vertex]; });
-      const auto measure = face_measure(physical_face, dimension - 1);
-      if (!std::isfinite(measure) || measure <= 0.0) {
-        throw std::invalid_argument("A cell face must have finite, nonzero measure");
-      }
-      faces.push_back(
-          {.outward_normal = point_array(face_normal(physical_face, cell_centroid, dimension)),
-           .measure = measure,
-           .surface_jacobian = measure / reference_face.measure});
-    }
-
-    m_cells[cell_index] = CellGeometry{
-        .mesh_cell_index = cell_index,
-        .dimension = dimension,
-        .jacobian = padded_matrix(jacobian, dimension),
-        .inverse_jacobian = padded_matrix(inverse_jacobian, dimension),
-        .determinant = determinant,
-        .faces = std::move(faces),
-    };
+    m_cells[cell_index] =
+        make_cell_geometry(geometry, mesh_vertices, entry->second, dimension, cell_index);
   }
 }
 
