@@ -6,7 +6,10 @@
 
 #include <gtest/gtest.h>
 
+#include <cstddef>
+#include <span>
 #include <stdexcept>
+#include <vector>
 #include <xtensor/containers/xarray.hpp>
 
 #include "oiseau/dg/solver/linear_dg.hpp"
@@ -58,6 +61,40 @@ TEST(test_linear_dg, validates_state_shape_and_strides_before_sampling_or_comput
   EXPECT_DOUBLE_EQ(state.groups[0](0, 1, 0), 4.0);
   EXPECT_DOUBLE_EQ(state.groups[0](0, 0, 1), 1.0);
   EXPECT_DOUBLE_EQ(state.groups[0](0, 1, 1), 3.0);
+}
+
+TEST(test_linear_dg, passes_both_normal_fluxes_to_the_policy_and_lifts_its_correction) {
+  auto mesh = interval_mesh();
+  const Field u{"u"}, v{"v"};
+  const EquationSystem equations({u, v}, {dt(u) == -dx(v), dt(v) == -2.0 * dx(u)});
+  std::vector<double> normals;
+  const LinearDG1D::NumericalFlux flux =
+      [&normals](std::span<const double> left, std::span<const double> right,
+                 const LinearDG1D::Normal& normal, std::span<const double> left_flux,
+                 std::span<const double> right_flux) {
+        normals.push_back(normal[0]);
+        EXPECT_NEAR(left[0], 2.0, 1e-12);
+        EXPECT_NEAR(left[1], 3.0, 1e-12);
+        EXPECT_NEAR(right[0], 3.0, 1e-12);
+        EXPECT_NEAR(right[1], 1.0, 1e-12);
+        EXPECT_NEAR(left_flux[0], 3.0 * normal[0], 1e-12);
+        EXPECT_NEAR(left_flux[1], 4.0 * normal[0], 1e-12);
+        EXPECT_NEAR(right_flux[0], normal[0], 1e-12);
+        EXPECT_NEAR(right_flux[1], 6.0 * normal[0], 1e-12);
+        return std::vector<double>{left_flux[0] + 1.0, left_flux[1] - 2.0};
+      };
+  const LinearDG1D solver(mesh, {1}, equations, flux, [](const auto& inside, const auto&) {
+    return std::vector<double>{inside[0] + 1.0, inside[1] - 2.0};
+  });
+  auto state = solver.initial_state(u, [](double) { return 2.0; });
+  solver.set_initial_condition(state, v, [](double) { return 3.0; });
+
+  const auto rhs = solver.rhs(state);
+  EXPECT_EQ(normals, (std::vector<double>{-1.0, 1.0}));
+  for (std::size_t node = 0; node < 2; ++node) {
+    EXPECT_NEAR(rhs.groups[0](0, node, 0), -1.0, 1e-12);
+    EXPECT_NEAR(rhs.groups[0](0, node, 1), 2.0, 1e-12);
+  }
 }
 
 }  // namespace
