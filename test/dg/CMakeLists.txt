@@ -10,5 +10,6 @@ add_test(oiseau_test_dg_field test_field.cpp)
 add_test(oiseau_test_dg_geometry test_dg_geometry.cpp)
 add_test(oiseau_test_dg_integration test_dg_integration.cpp)
 add_test(oiseau_test_dg_space test_dg_space.cpp)
+add_test(oiseau_test_dg_linear_dg test_linear_dg.cpp)
 
 add_subdirectory(nodal)
