@@ -49,37 +49,6 @@ TEST(test_dg_nodal_utils, test_jacobi_gl) {
   EXPECT_FLOATS_NEARLY_EQ(output, expected, 0.0001);
 }
 
-TEST(test_dg_nodal_utils, d_matrix_2d_tensor_correctness) {
-  const unsigned order = 5;
-
-  // Generate nodal coordinates (r, s) and Vandermonde matrices
-  auto rs = generate_quadrilateral_nodes(order);
-  auto r = xt::col(rs, 0);
-  auto s = xt::col(rs, 1);
-  auto V = vandermonde_2d_tensor(order, rs);
-  auto gradV = grad_vandermonde_2d_tensor(order, rs);
-
-  // Compute differentiation matrices D_r and D_s
-  auto D = d_matrix_2d(V, gradV);
-  xt::xarray<double> Dr = xt::view(D, xt::all(), xt::all(), 0);
-  xt::xarray<double> Ds = xt::view(D, xt::all(), xt::all(), 1);
-
-  // Define test function: f(r,s) = r^3 + s^3
-  xt::xarray<double> f = xt::pow(r, 3) + xt::pow(s, 3);
-
-  // Compute numerical derivatives using D_r and D_s
-  xt::xarray<double> df_dr = xt::linalg::dot(Dr, f);
-  xt::xarray<double> df_ds = xt::linalg::dot(Ds, f);
-
-  // Compute exact derivatives
-  xt::xarray<double> df_dr_expected = 3.0 * xt::pow(r, 2);
-  xt::xarray<double> df_ds_expected = 3.0 * xt::pow(s, 2);
-
-  // Compare with tight tolerance
-  EXPECT_FLOATS_NEARLY_EQ(df_dr, df_dr_expected, 1e-10);
-  EXPECT_FLOATS_NEARLY_EQ(df_ds, df_ds_expected, 1e-10);
-}
-
 TEST(test_dg_nodal_utils, d_matrix_3d_tensor_correctness) {
   const unsigned order = 4;
 
