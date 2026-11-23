@@ -30,13 +30,4 @@ std::pair<xt::xarray<double>, xt::xarray<double>> jacobi_gq(unsigned n, double a
  */
 xt::xarray<double> jacobi_gl(unsigned n, double alpha, double beta);
 
-xt::xarray<double> generate_hexahedron_nodes(unsigned n);
-
-xt::xarray<double> d_matrix_3d(const xt::xarray<double>& v, const xt::xarray<double>& gv);
-xt::xarray<double> vandermonde_3d_tensor(unsigned n, const xt::xarray<double>& rst);
-xt::xarray<double> grad_tensorp_3d(const xt::xarray<double>& rst, int i, int j, int k);
-xt::xarray<double> grad_vandermonde_3d_tensor(unsigned n, const xt::xarray<double>& rst);
-
-xt::xarray<double> tensorp_3d(const xt::xarray<double>& abc, int i, int j, int k);
-
 }  // namespace oiseau::dg::nodal::utils
