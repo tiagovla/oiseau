@@ -58,14 +58,6 @@ xt::xarray<double> jacobi_gl(unsigned n, double alpha, double beta) {
   return xt::concatenate(xt::xtuple(-xt::ones<double>({1}), x, xt::ones<double>({1})));
 }
 
-xt::xarray<double> tensorp_2d(const xt::xarray<double>& rs, int i, int j) {
-  xt::xarray<double> r = xt::col(rs, 0);
-  xt::xarray<double> s = xt::col(rs, 1);
-  auto h1 = oiseau::utils::jacobi_p(i, 0.0, 0.0, r);
-  auto h2 = oiseau::utils::jacobi_p(j, 0.0, 0.0, s);
-  return h1 * h2;
-}
-
 xt::xarray<double> tensorp_3d(const xt::xarray<double>& rst, int i, int j, int k) {
   xt::xarray<double> r = xt::col(rst, 0);
   xt::xarray<double> s = xt::col(rst, 1);
@@ -76,21 +68,6 @@ xt::xarray<double> tensorp_3d(const xt::xarray<double>& rst, int i, int j, int k
   auto h3 = oiseau::utils::jacobi_p(k, 0.0, 0.0, t);  // P_k(t)
 
   return h1 * h2 * h3;
-}
-
-xt::xarray<double> grad_tensorp_2d(const xt::xarray<double>& rs, int i, int j) {
-  xt::xarray<double> r = xt::col(rs, 0);
-  xt::xarray<double> s = xt::col(rs, 1);
-
-  auto pi_r = oiseau::utils::jacobi_p(i, 0.0, 0.0, r);        // P_i(r)
-  auto dpi_r = oiseau::utils::grad_jacobi_p(i, 0.0, 0.0, r);  // dP_i/dr
-  auto pj_s = oiseau::utils::jacobi_p(j, 0.0, 0.0, s);        // P_j(s)
-  auto dpj_s = oiseau::utils::grad_jacobi_p(j, 0.0, 0.0, s);  // dP_j/ds
-
-  auto dphidr = dpi_r * pj_s;  // ∂φ/∂r
-  auto dphids = pi_r * dpj_s;  // ∂φ/∂s
-
-  return xt::stack(xt::xtuple(dphidr, dphids), 1);  // shape: [N, 2]
 }
 
 xt::xarray<double> grad_tensorp_3d(const xt::xarray<double>& rst, int i, int j, int k) {
@@ -111,58 +88,6 @@ xt::xarray<double> grad_tensorp_3d(const xt::xarray<double>& rst, int i, int j, 
   auto dphidt = Pi_r * Pj_s * dPk_t;
 
   return xt::stack(xt::xtuple(dphidr, dphids, dphidt), 1);  // shape: [N, 3]
-}
-
-xt::xarray<double> vandermonde_2d_tensor(unsigned n, const xt::xarray<double>& rs) {
-  std::array<size_t, 2> shape = {rs.shape()[0], (n + 1) * (n + 1)};
-  xt::xtensor<double, 2> output(shape);
-  int index = 0;
-  for (unsigned i = 0; i <= n; ++i) {
-    for (unsigned j = 0; j <= n; ++j, ++index) {
-      xt::col(output, index) = xt::col(output, index) = tensorp_2d(rs, i, j);
-    }
-  }
-  return output;
-}
-
-xt::xarray<double> grad_vandermonde_2d_tensor(unsigned n, const xt::xarray<double>& rs) {
-  std::array<size_t, 3> shape = {rs.shape()[0], (n + 1) * (n + 1), 2};
-  xt::xtensor<double, 3> output(shape);
-  int index = 0;
-  for (unsigned i = 0; i <= n; ++i) {
-    for (unsigned j = 0; j <= n; ++j, ++index) {
-      auto tmp = grad_tensorp_2d(rs, i, j);
-      xt::view(output, xt::all(), index, 0) = xt::col(tmp, 0);
-      xt::view(output, xt::all(), index, 1) = xt::col(tmp, 1);
-    }
-  }
-  return output;
-}
-
-xt::xarray<double> d_matrix_2d(const xt::xarray<double>& v, const xt::xarray<double>& gv) {
-  auto gvr = xt::view(gv, xt::all(), xt::all(), 0);
-  auto gvs = xt::view(gv, xt::all(), xt::all(), 1);
-  auto dr = xt::transpose(xt::linalg::solve(xt::transpose(v), xt::transpose(gvr)));
-  auto ds = xt::transpose(xt::linalg::solve(xt::transpose(v), xt::transpose(gvs)));
-  return xt::stack(xt::xtuple(dr, ds), 2);
-}
-
-xt::xarray<double> generate_quadrilateral_nodes(unsigned order) {
-  xt::xarray<double> r1d = jacobi_gl(order, 0.0, 0.0);
-  unsigned Np1 = order + 1;
-  unsigned Np_quad = Np1 * Np1;
-  std::vector<std::size_t> shape = {static_cast<std::size_t>(Np_quad), 2ul};
-  xt::xarray<double> rs_nodes = xt::zeros<double>(shape);
-
-  unsigned k = 0;
-  for (unsigned i = 0; i < Np1; ++i) {
-    for (unsigned j = 0; j < Np1; ++j) {
-      rs_nodes(k, 0) = r1d(j);
-      rs_nodes(k, 1) = r1d(i);
-      k++;
-    }
-  }
-  return rs_nodes;
 }
 
 xt::xarray<double> generate_hexahedron_nodes(unsigned order) {

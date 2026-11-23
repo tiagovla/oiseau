@@ -30,15 +30,7 @@ std::pair<xt::xarray<double>, xt::xarray<double>> jacobi_gq(unsigned n, double a
  */
 xt::xarray<double> jacobi_gl(unsigned n, double alpha, double beta);
 
-xt::xarray<double> d_matrix_2d(const xt::xarray<double>& v, const xt::xarray<double>& gv);
-xt::xarray<double> vandermonde_2d_tensor(unsigned n, const xt::xarray<double>& rs);
-xt::xarray<double> grad_vandermonde_2d_tensor(unsigned n, const xt::xarray<double>& rs);
-
-xt::xarray<double> tensorp_2d(const xt::xarray<double>& rs, int i, int j);
-xt::xarray<double> grad_tensorp_2d(const xt::xarray<double>& rs, int i, int j);
-
 xt::xarray<double> generate_tetrahedron_equidistant_nodes(unsigned n);
-xt::xarray<double> generate_quadrilateral_nodes(unsigned n);
 xt::xarray<double> generate_hexahedron_nodes(unsigned n);
 xt::xarray<double> eval_warp(int p, const xt::xarray<double>& xnodes,
                              const xt::xarray<double>& xout);
