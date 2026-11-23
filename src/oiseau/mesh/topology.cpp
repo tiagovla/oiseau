@@ -18,6 +18,40 @@
 
 using namespace oiseau::mesh;
 
+namespace {
+
+using FaceLocation = std::pair<std::size_t, std::size_t>;
+
+std::vector<std::size_t> canonical_face_key(std::span<const int> local_vertices,
+                                            std::span<const std::size_t> cell_vertices) {
+  std::vector<std::size_t> key;
+  key.reserve(local_vertices.size());
+  for (const int local_vertex : local_vertices) {
+    if (local_vertex < 0 || static_cast<std::size_t>(local_vertex) >= cell_vertices.size()) {
+      throw std::invalid_argument("Cell connectivity does not match its cell type");
+    }
+    key.push_back(cell_vertices[static_cast<std::size_t>(local_vertex)]);
+  }
+  std::ranges::sort(key);
+  return key;
+}
+
+void connect_faces(FaceLocation face, FaceLocation other,
+                   std::span<std::vector<std::size_t>> element_to_element,
+                   std::span<std::vector<std::size_t>> element_to_face) {
+  const auto [cell_index, face_index] = face;
+  const auto [other_cell, other_face] = other;
+  if (other_cell == cell_index || element_to_element[other_cell][other_face] != other_cell) {
+    throw std::invalid_argument("Non-manifold face is shared by more than two cells");
+  }
+  element_to_element[cell_index][face_index] = other_cell;
+  element_to_face[cell_index][face_index] = other_face;
+  element_to_element[other_cell][other_face] = cell_index;
+  element_to_face[other_cell][other_face] = face_index;
+}
+
+}  // namespace
+
 Topology::Topology() = default;
 Topology::~Topology() = default;
 
@@ -61,7 +95,7 @@ void Topology::calculate_connectivity() {
 
   // Each canonical face key records the first cell/local-face that uses it.
   // A second use creates the two-way adjacency; a third is non-manifold.
-  std::map<std::vector<std::size_t>, std::pair<std::size_t, std::size_t>> face_owner;
+  std::map<std::vector<std::size_t>, FaceLocation> face_owner;
   std::vector<std::vector<std::size_t>> element_to_element(m_conn.size());
   std::vector<std::vector<std::size_t>> element_to_face(m_conn.size());
 
@@ -77,29 +111,13 @@ void Topology::calculate_connectivity() {
     element_to_face[cell_index].resize(face_vertices.size());
 
     for (std::size_t face_index = 0; face_index < face_vertices.size(); ++face_index) {
-      std::vector<std::size_t> key;
-      key.reserve(face_vertices[face_index].size());
-      for (const int local_vertex : face_vertices[face_index]) {
-        if (local_vertex < 0 || static_cast<std::size_t>(local_vertex) >= cell_vertices.size()) {
-          throw std::invalid_argument("Cell connectivity does not match its cell type");
-        }
-        key.push_back(cell_vertices[static_cast<std::size_t>(local_vertex)]);
-      }
-      std::ranges::sort(key);
+      auto key = canonical_face_key(face_vertices[face_index], cell_vertices);
       element_to_face[cell_index][face_index] = face_index;
 
-      const auto [owner, inserted] =
-          face_owner.emplace(std::move(key), std::make_pair(cell_index, face_index));
-      if (!inserted) {
-        const auto [other_cell, other_face] = owner->second;
-        if (other_cell == cell_index || element_to_element[other_cell][other_face] != other_cell) {
-          throw std::invalid_argument("Non-manifold face is shared by more than two cells");
-        }
-        element_to_element[cell_index][face_index] = other_cell;
-        element_to_face[cell_index][face_index] = other_face;
-        element_to_element[other_cell][other_face] = cell_index;
-        element_to_face[other_cell][other_face] = face_index;
-      }
+      const FaceLocation face{cell_index, face_index};
+      const auto [owner, inserted] = face_owner.emplace(std::move(key), face);
+      if (inserted) continue;
+      connect_faces(face, owner->second, element_to_element, element_to_face);
     }
   }
 
