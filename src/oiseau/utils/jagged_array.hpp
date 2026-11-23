@@ -6,13 +6,15 @@
 
 #pragma once
 
-#include <algorithm>         // For std::copy, std::move, std::next
+#include <algorithm>  // For std::copy, std::move, std::next
+#include <cstddef>
 #include <initializer_list>  // For std::initializer_list
 #include <iostream>          // For std::ostream and operator<<
 #include <iterator>          // For std::iterator related tags
 #include <span>              // For std::span
 #include <stdexcept>         // For std::out_of_range
 #include <string>            // For std::to_string in error messages
+#include <type_traits>
 #include <vector>
 
 namespace oiseau::utils {
@@ -44,16 +46,10 @@ class JaggedArray {
     }
   }
 
-  static std::size_t get_total_elements_hint(
-      const std::initializer_list<std::initializer_list<T>>& il) {
-    std::size_t total = 0;
-    for (const auto& inner : il) total += inner.size();
-    return total;
-  }
-  static std::size_t get_total_elements_hint(const std::initializer_list<std::vector<T>>& il) {
-    std::size_t total = 0;
-    for (const auto& inner : il) total += inner.size();
-    return total;
+  template <typename Row>
+  static std::size_t get_total_elements_hint(std::initializer_list<Row> rows) {
+    return std::ranges::fold_left(
+        rows, std::size_t{0}, [](std::size_t total, const Row& row) { return total + row.size(); });
   }
 
  public:
@@ -236,13 +232,11 @@ class JaggedArray {
    public:
     using iterator_category = std::random_access_iterator_tag;
     using difference_type = std::ptrdiff_t;
-    using value_type =
-        typename std::conditional<IsConstIter, std::span<const T>, std::span<T>>::type;
+    using value_type = std::conditional_t<IsConstIter, std::span<const T>, std::span<T>>;
     using pointer = value_type*;
     using reference = value_type;
 
-    using ParentArrayPtr =
-        typename std::conditional<IsConstIter, const JaggedArray<T>*, JaggedArray<T>*>::type;
+    using ParentArrayPtr = std::conditional_t<IsConstIter, const JaggedArray<T>*, JaggedArray<T>*>;
 
    private:
     ParentArrayPtr m_parent_array;
