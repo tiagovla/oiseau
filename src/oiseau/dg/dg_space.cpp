@@ -25,7 +25,9 @@
 #include "oiseau/dg/nodal/ref_element.hpp"
 #include "oiseau/dg/ref_element_type.hpp"
 #include "oiseau/mesh/cell.hpp"
+#include "oiseau/mesh/geometry.hpp"
 #include "oiseau/mesh/mesh.hpp"
+#include "oiseau/mesh/topology.hpp"
 
 namespace oiseau::dg {
 namespace {
@@ -37,6 +39,21 @@ struct ActiveCell {
   mesh::CellType type = nullptr;
   unsigned order = 0;
 };
+
+int validated_mesh_dimension(const mesh::Topology& topology, const mesh::Geometry& geometry) {
+  if (topology.cell_types().size() != topology.conn().size()) {
+    throw std::invalid_argument("Mesh cell types and connectivity counts must match");
+  }
+  if (geometry.dim() == 0 || geometry.x().size() % geometry.dim() != 0) {
+    throw std::invalid_argument("Mesh coordinate data is inconsistent with its dimension");
+  }
+
+  const auto dimension = topology.dimension();
+  if (dimension < 1 || dimension > 3) {
+    throw std::invalid_argument("DGSpace supports meshes with dimensions 1 through 3");
+  }
+  return dimension;
+}
 
 std::vector<unsigned> uniform_orders(const mesh::Mesh& mesh, unsigned order) {
   const auto cell_types = mesh.topology().cell_types();
@@ -76,21 +93,9 @@ DGSpace::DGSpace(const mesh::Mesh& mesh, const std::vector<unsigned>& orders)
     : m_mesh(mesh), m_orders(orders) {
   const auto& topology = mesh.topology();
   const auto& geometry = mesh.geometry();
-  const auto cell_types = topology.cell_types();
+  const auto dimension = validated_mesh_dimension(topology, geometry);
   const auto connectivity = topology.conn();
-
-  if (cell_types.size() != connectivity.size()) {
-    throw std::invalid_argument("Mesh cell types and connectivity counts must match");
-  }
-  if (geometry.dim() == 0 || geometry.x().size() % geometry.dim() != 0) {
-    throw std::invalid_argument("Mesh coordinate data is inconsistent with its dimension");
-  }
-
-  const auto dimension = topology.dimension();
-  if (dimension < 1 || dimension > 3) {
-    throw std::invalid_argument("DGSpace supports meshes with dimensions 1 through 3");
-  }
-  const auto cells = active_cells(cell_types, orders, dimension);
+  const auto cells = active_cells(topology.cell_types(), orders, dimension);
 
   std::map<GroupKey, std::size_t> group_sizes;
   for (const auto& cell : cells) ++group_sizes[{cell.type->kind(), cell.order}];

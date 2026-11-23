@@ -146,6 +146,24 @@ TEST(test_dg_space, maps_hex_and_tet_vertices_in_three_dimensions) {
   expect_vertices(CellKind::Tetrahedron, expected_tet);
 }
 
+TEST(test_dg_space, rejects_invalid_mesh_structure) {
+  const auto interval = get_cell_type(CellKind::Interval);
+  const std::vector<unsigned> orders = {1};
+  const Mesh mismatched_topology{Topology({{0, 1}, {1, 0}}, {interval}), Geometry({0.0, 1.0}, 1)};
+  EXPECT_THROW(DGSpace(mismatched_topology, orders), std::invalid_argument);
+
+  const Mesh zero_coordinate_dimension{Topology({{0, 1}}, {interval}), Geometry({0.0, 1.0}, 0)};
+  EXPECT_THROW(DGSpace(zero_coordinate_dimension, orders), std::invalid_argument);
+
+  const Mesh incomplete_coordinates{Topology({{0, 1}}, {interval}),
+                                    Geometry({0.0, 0.0, 1.0, 0.0, 2.0}, 2)};
+  EXPECT_THROW(DGSpace(incomplete_coordinates, orders), std::invalid_argument);
+
+  const Mesh empty_mesh;
+  const std::vector<unsigned> empty_orders;
+  EXPECT_THROW(DGSpace(empty_mesh, empty_orders), std::invalid_argument);
+}
+
 TEST(test_dg_space, rejects_invalid_orders_cell_types_and_vertices) {
   const auto mesh = mixed_mesh();
   const std::vector<unsigned> missing = {2, 3};
