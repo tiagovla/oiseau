@@ -1414,9 +1414,9 @@ static const std::array<double, 225> cub2D_28_weights_data = {
 }  // namespace
 
 namespace oiseau::utils::integration {
-std::pair<xt::xarray<double>, xt::xarray<double>> cubature(int order) {
+std::pair<xt::xarray<double>, xt::xarray<double>> triangle_cubature(int order) {
   if (order <= 0) {
-    throw std::out_of_range("cubature: n must be a positive integer, but got " +
+    throw std::out_of_range("triangle_cubature: order must be a positive integer, but got " +
                             std::to_string(order));
   }
   switch (order) {

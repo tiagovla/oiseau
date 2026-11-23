@@ -30,7 +30,7 @@ TEST(IntegrationTest, GaussQuadratureIntegratesMonomials) {
 
 TEST(IntegrationTest, TriangleCubatureIntegratesMonomials) {
   constexpr int order = 40;
-  const auto [nodes, weights] = integration::cubature(order);
+  const auto [nodes, weights] = integration::triangle_cubature(order);
   const auto x = xt::col(nodes, 0);
   const auto y = xt::col(nodes, 1);
 
@@ -44,9 +44,9 @@ TEST(IntegrationTest, TriangleCubatureIntegratesMonomials) {
   }
 }
 
-TEST(IntegrationTest, CubatureRejectsNonPositiveOrders) {
-  EXPECT_THROW(integration::cubature(-1), std::out_of_range);
-  EXPECT_THROW(integration::cubature(0), std::out_of_range);
+TEST(IntegrationTest, TriangleCubatureRejectsNonPositiveOrders) {
+  EXPECT_THROW(integration::triangle_cubature(-1), std::out_of_range);
+  EXPECT_THROW(integration::triangle_cubature(0), std::out_of_range);
 }
 
 TEST(IntegrationTest, QuadratureRejectsNonPositiveOrders) {

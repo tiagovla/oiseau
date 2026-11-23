@@ -122,7 +122,7 @@ DGIntegration::QuadratureRule make_face_quadrature(mesh::CellKind face_kind, uns
   }
   const auto degree = static_cast<int>(2U * order + 1U);
   if (face_kind == CellKind::Triangle) {
-    auto [nodes, weights] = utils::integration::cubature(degree);
+    auto [nodes, weights] = utils::integration::triangle_cubature(degree);
     return {.nodes = std::move(nodes), .weights = std::move(weights)};
   }
 
