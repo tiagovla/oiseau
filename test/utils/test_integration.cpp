@@ -11,6 +11,7 @@
 #include <xtensor/core/xmath.hpp>
 #include <xtensor/views/xview.hpp>
 
+#include "oiseau/test_macros.hpp"
 #include "oiseau/utils/integration.hpp"
 
 namespace {
@@ -72,4 +73,30 @@ TEST(test_integration, test_cubature_zero_and_negative) {
 TEST(test_integration, test_quadrature_zero_and_negative) {
   EXPECT_THROW(oiseau::utils::integration::quadrature(-1), std::out_of_range);
   EXPECT_THROW(oiseau::utils::integration::quadrature(0), std::out_of_range);
+}
+
+TEST(test_integration, test_jacobi_gq) {
+  unsigned n = 3;
+  double alpha = 1.0, beta = 2.0;
+  auto [x, w] = oiseau::utils::integration::jacobi_gq(n, alpha, beta);
+  xt::xarray<double> x_expected = {-0.65077886, -0.15637043, 0.37348938, 0.79729627};
+  xt::xarray<double> w_expected = {0.08666291, 0.44123335, 0.59015336, 0.21528371};
+  EXPECT_FLOATS_NEARLY_EQ(x, x_expected, 0.0001);
+  EXPECT_FLOATS_NEARLY_EQ(w, w_expected, 0.0001);
+}
+
+TEST(test_integration, test_jacobi_gl_n1) {
+  unsigned n = 1;
+  double alpha = 0.0, beta = 0.0;
+  auto output = oiseau::utils::integration::jacobi_gl(n, alpha, beta);
+  xt::xarray<double> expected = {-1., 1.};
+  EXPECT_FLOATS_NEARLY_EQ(output, expected, 1e-10);
+}
+
+TEST(test_integration, test_jacobi_gl) {
+  unsigned n = 4;
+  double alpha = 1.0, beta = 2.0;
+  auto output = oiseau::utils::integration::jacobi_gl(n, alpha, beta);
+  xt::xarray<double> expected = {-1., -0.4611587, 0.10438533, 0.62950065, 1.};
+  EXPECT_FLOATS_NEARLY_EQ(output, expected, 0.0001);
 }
