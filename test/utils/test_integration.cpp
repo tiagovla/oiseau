@@ -21,7 +21,8 @@ namespace integration = oiseau::utils::integration;
 TEST(IntegrationTest, GaussQuadratureIntegratesMonomials) {
   constexpr int order = 50;
   const auto [nodes, weights] = integration::quadrature(order);
-  for (int degree = 0; degree < order; ++degree) {
+  EXPECT_EQ(nodes.size(), 26);
+  for (int degree = 0; degree <= order; ++degree) {
     const double expected = degree % 2 == 0 ? 2.0 / (degree + 1) : 0.0;
     const double integral = xt::sum(xt::pow(nodes, degree) * weights)();
     EXPECT_NEAR(integral, expected, 1e-14) << "Degree " << degree;
@@ -35,7 +36,7 @@ TEST(IntegrationTest, TriangleCubatureIntegratesMonomials) {
   const auto y = xt::col(nodes, 1);
 
   EXPECT_NEAR(xt::sum(weights)(), 2.0, 5e-14);
-  for (int degree = 1; degree < order; ++degree) {
+  for (int degree = 1; degree <= order; ++degree) {
     const double expected = degree % 2 == 0 ? 2.0 / (degree + 1) : -2.0 / (degree + 2);
     const double x_integral = xt::sum(xt::pow(x, degree) * weights)();
     const double y_integral = xt::sum(xt::pow(y, degree) * weights)();
