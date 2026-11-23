@@ -1505,12 +1505,13 @@ std::pair<xt::xarray<double>, xt::xarray<double>> triangle_cubature(int order) {
     return std::pair{xt::adapt(cub2D_28_nodes_data.data(), {225ul, 2ul}),
                      xt::adapt(cub2D_28_weights_data.data(), {225ul})};
   default:
-    // TODO(tiagovla): check order/number of nodes relationship
-    int cubNA = std::ceil((order + 1) / 2);
-    auto [cubA, cubWA] = jacobi_gq(cubNA - 1, 0, 0);
-    auto [cubB, cubWB] = jacobi_gq(cubNA - 1, 1, 0);
-    auto r0 = xt::reshape_view(xt::tile(cubA, {cubNA}), {cubNA, cubNA});
-    auto r1 = xt::transpose(xt::reshape_view(xt::tile(cubB, {cubNA}), {cubNA, cubNA}));
+    // The mapped Gauss rules must cover degree order in each coordinate.
+    const int nodes_per_axis = order / 2 + 1;
+    auto [cubA, cubWA] = jacobi_gq(nodes_per_axis - 1, 0, 0);
+    auto [cubB, cubWB] = jacobi_gq(nodes_per_axis - 1, 1, 0);
+    auto r0 = xt::reshape_view(xt::tile(cubA, {nodes_per_axis}), {nodes_per_axis, nodes_per_axis});
+    auto r1 = xt::transpose(
+        xt::reshape_view(xt::tile(cubB, {nodes_per_axis}), {nodes_per_axis, nodes_per_axis}));
     xt::xarray<double> cubR = xt::flatten(xt::eval((0.5 * ((1.0 + r0) * (1.0 - r1)) - 1.0)));
     xt::xarray<double> cubS = xt::flatten(xt::eval(r1));
     xt::xarray<double> nodes = xt::stack(xt::xtuple(cubR, cubS), 1);
@@ -1524,8 +1525,8 @@ std::pair<xt::xarray<double>, xt::xarray<double>> quadrature(int order) {
     throw std::out_of_range("quadrature: n must be a positive integer, but got " +
                             std::to_string(order));
   }
-  // TODO(tiagovla): check order/number of nodes relationship
-  int n = std::ceil((order + 1) / 2);
+  // An n-point Gauss-Legendre rule is exact through degree 2*n - 1.
+  const int n = order / 2 + 1;
 
   // Recurrence coefficients for Legendre polynomials
   xt::xarray<double> a = xt::zeros<double>({n});
