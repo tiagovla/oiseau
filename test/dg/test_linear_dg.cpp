@@ -110,4 +110,21 @@ TEST(test_linear_dg, rejects_callbacks_with_the_wrong_number_of_fields) {
   EXPECT_THROW(bad_flux.rhs(bad_flux.zero_state()), std::invalid_argument);
 }
 
+TEST(test_linear_dg, differentiates_a_linear_field_across_rotated_3d_cells) {
+  const auto tetrahedron = get_cell_type(CellKind::Tetrahedron);
+  Mesh mesh{Topology({{0, 1, 2, 3}, {2, 0, 1, 4}}, {tetrahedron, tetrahedron}),
+            Geometry({0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1}, 3)};
+  const Field u{"u"};
+  const EquationSystem equations({u}, {dt(u) == -dx(u) - 2.0 * dy(u) - 3.0 * dz(u)});
+  const LinearDG3D solver(mesh, {1, 2}, equations, [](const auto&) { return 4.0; });
+  const auto state =
+      solver.initial_state(u, [](double x, double y, double z) { return x + 2.0 * y + 3.0 * z; });
+
+  const auto rhs = solver.rhs(state);
+  ASSERT_EQ(rhs.groups.size(), 2);
+  for (const auto& group : rhs.groups) {
+    for (const auto value : group) EXPECT_NEAR(value, -14.0, 1e-11);
+  }
+}
+
 }  // namespace
