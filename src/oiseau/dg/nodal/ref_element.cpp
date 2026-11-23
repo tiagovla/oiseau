@@ -12,6 +12,9 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <utility>
+#include <xtensor-blas/xlinalg.hpp>
+#include <xtensor/core/xtensor_forward.hpp>
+#include <xtensor/misc/xmanipulation.hpp>
 
 #include "oiseau/dg/nodal/ref_hexahedron.hpp"
 #include "oiseau/dg/nodal/ref_line.hpp"
@@ -20,6 +23,15 @@
 #include "oiseau/dg/nodal/ref_triangle.hpp"
 
 namespace oiseau::dg::nodal {
+
+xt::xarray<double> RefElement::mass() const {
+  const auto inverse = inv_v();
+  return xt::linalg::dot(xt::transpose(inverse), inverse);
+}
+
+xt::xarray<double> RefElement::inv_mass() const { return xt::linalg::dot(m_v, xt::transpose(m_v)); }
+
+xt::xarray<double> RefElement::inv_v() const { return xt::linalg::inv(m_v); }
 
 std::shared_ptr<RefElement> get_ref_element(RefElementType type, unsigned order) {
   using Key = std::pair<RefElementType, unsigned>;

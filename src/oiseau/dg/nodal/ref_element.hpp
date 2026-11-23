@@ -25,6 +25,10 @@ class RefElement {
   inline const xt::xarray<double>& d() const { return m_d; }
   inline const xt::xarray<double>& r() const { return m_r; }
 
+  xt::xarray<double> mass() const;
+  xt::xarray<double> inv_mass() const;
+  xt::xarray<double> inv_v() const;
+
   inline unsigned order() const { return m_order; }
   inline unsigned number_of_nodes() const { return m_np; }
   inline unsigned number_of_face_nodes() const { return m_nfp; }
