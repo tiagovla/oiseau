@@ -281,8 +281,8 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
 
   for (std::size_t cell_index = 0; cell_index < cell_count; ++cell_index) {
     auto& cell_rule = m_cells[cell_index];
+    if (!cell_rule.has_group()) continue;
     const auto group_index = cell_rule.group_index;
-    if (group_index == DGConnectivity::no_neighbor) continue;
 
     const auto& reference = reference_operators[group_index];
     const auto& cell_geometry = geometry.cell(cell_index);
@@ -332,10 +332,11 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
       auto minus_permutation = identity_permutation;
       auto plus_permutation = identity_permutation;
       if (!connection.is_boundary()) {
-        neighbor_group = m_cells.at(connection.neighbor_cell).group_index;
-        if (neighbor_group == DGConnectivity::no_neighbor) {
+        const auto& neighbor = m_cells.at(connection.neighbor_cell);
+        if (!neighbor.has_group()) {
           throw std::invalid_argument("DGIntegration neighbor cell is absent from DGSpace");
         }
+        neighbor_group = neighbor.group_index;
         quadrature_order = std::max(quadrature_order, groups[neighbor_group].order);
         const auto permutation = face_permutation(connection.vertex_permutation, corners);
         // Both directions use one 3D face orientation, even for nonsymmetric cubature.

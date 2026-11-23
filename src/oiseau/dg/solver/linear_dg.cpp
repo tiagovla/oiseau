@@ -115,7 +115,7 @@ struct LinearDG<Dimension>::Impl {
     normal_flux_operators.reserve(integration.cells().size());
     for (const auto& cell_rule : integration.cells()) {
       auto& cell = normal_flux_operators.emplace_back();
-      if (cell_rule.group_index == DGConnectivity::no_neighbor) continue;
+      if (!cell_rule.has_group()) continue;
 
       cell.faces.reserve(cell_rule.faces.size());
       for (const auto& face_rule : cell_rule.faces) {
@@ -209,7 +209,7 @@ struct LinearDG<Dimension>::Impl {
     const auto cell_rules = integration.cells();
     for (std::size_t cell_index = 0; cell_index < cell_rules.size(); ++cell_index) {
       const auto& cell_rule = cell_rules[cell_index];
-      if (cell_rule.group_index == DGConnectivity::no_neighbor) continue;
+      if (!cell_rule.has_group()) continue;
       const auto& operators = normal_flux_operators[cell_index];
       const auto group = cell_rule.group_index;
       const auto row = cell_rule.group_cell_index;

@@ -138,6 +138,8 @@ class DGIntegration {
     /** @brief Padded row-major 3 by 3 inverse Jacobian @f$\partial(r,s,t)/\partial(x,y,z)@f$. */
     std::array<double, 9> inverse_jacobian{};
 
+    /** @return True if the cell belongs to a DGSpace element group. */
+    bool has_group() const { return group_index != DGConnectivity::no_neighbor; }
     /** @return Number of cell nodes, or zero for an inactive cell. */
     std::size_t node_count() const { return reference ? reference->mass.shape()[0] : 0; }
     /** @return Physical mass matrix, or an empty matrix for an inactive cell. */
