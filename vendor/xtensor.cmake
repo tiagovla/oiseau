@@ -19,7 +19,7 @@ FetchContent_Declare(
     GIT_TAG ${XTENSOR_VERSION}
     GIT_SHALLOW 1
     GIT_PROGRESS 1
-    FIND_PACKAGE_ARGS 0.26.0
+    FIND_PACKAGE_ARGS 0.27.0
 )
 
 # The installed xtensor-blas package can resolve its own BLAS and LAPACK libraries.
