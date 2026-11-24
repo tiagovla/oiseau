@@ -7,15 +7,15 @@
 set(MAKEINFO OFF)
 set(ENABLE_PRIVATE_API ON)
 
-find_package(GMSH)
+string(REPLACE "." "_" gmsh_tag_version "${GMSH_VERSION}")
 
 FetchContent_Declare(
     gmsh
     GIT_REPOSITORY https://gitlab.onelab.info/gmsh/gmsh
-    GIT_TAG ${GMSH_VERSION}
+    GIT_TAG gmsh_${gmsh_tag_version}
     GIT_SHALLOW 1
     GIT_PROGRESS 1
-    FIND_PACKAGE_ARGS $GMSH_VERSION
+    FIND_PACKAGE_ARGS ${GMSH_VERSION}
 )
 
 FetchContent_MakeAvailable(gmsh)
