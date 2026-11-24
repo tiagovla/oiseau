@@ -5,20 +5,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 # Use Go image to build the binary
-FROM golang:1.16 AS build
+FROM golang:1.27 AS build
 
-WORKDIR /build
-
-# Clone the addlicense repository
-RUN git clone https://github.com/google/addlicense.git
-
-WORKDIR /build/addlicense
-
-# Download dependencies
-RUN go mod download
-
-# Build the binary for Linux with no CGO
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/addlicense
+# Build the same addlicense release used by pre-commit.
+RUN CGO_ENABLED=0 GOOS=linux GOBIN=/app go install github.com/google/addlicense@v1.2.0
 
 # Minimal final image
 FROM scratch

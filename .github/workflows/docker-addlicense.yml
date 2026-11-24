@@ -8,6 +8,7 @@ on:
   push:
     branches: [master]
     paths:
+      - .github/docker/oiseau-addlicense/Dockerfile
       - .github/workflows/docker-addlicense.yml
   workflow_dispatch:
 jobs:
