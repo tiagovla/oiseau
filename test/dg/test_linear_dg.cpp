@@ -6,14 +6,27 @@
 
 #include <gtest/gtest.h>
 
+#include <cmath>
 #include <cstddef>
 #include <span>
 #include <stdexcept>
+#include <utility>
 #include <vector>
+#include <xtensor-blas/xlinalg.hpp>
 #include <xtensor/containers/xarray.hpp>
+#include <xtensor/views/xview.hpp>
 
+#include "oiseau/dg/equation.hpp"
+#include "oiseau/dg/field.hpp"
+#include "oiseau/dg/nodal/ref_element.hpp"
 #include "oiseau/dg/solver/linear_dg.hpp"
+#include "oiseau/mesh/cell.hpp"
+#include "oiseau/mesh/geometry.hpp"
 #include "oiseau/mesh/mesh.hpp"
+#include "oiseau/mesh/topology.hpp"
+#include "oiseau/time/rk4.hpp"
+#include "oiseau/time/run.hpp"
+#include "oiseau/utils/integration.hpp"
 
 namespace {
 
@@ -124,6 +137,71 @@ TEST(test_linear_dg, differentiates_a_linear_field_across_rotated_3d_cells) {
   ASSERT_EQ(rhs.groups.size(), 2);
   for (const auto& group : rhs.groups) {
     for (const auto value : group) EXPECT_NEAR(value, -14.0, 1e-11);
+  }
+}
+
+TEST(test_linear_dg, quadratic_advection_converges_at_third_order_in_space) {
+  constexpr unsigned order = 2;
+  constexpr double final_time = 0.125;
+  constexpr std::size_t steps = 256;
+  const Field u{"u"};
+  const EquationSystem equations({u}, {dt(u) == -dx(u)});
+  const auto pulse = [](double x) {
+    // The smooth pulse stays inside [0, 1], so the exact inflow is zero.
+    const double scaled = (x - 0.375) / 0.25;
+    if (std::abs(scaled) >= 1.0) return 0.0;
+    return std::exp(1.0 - 1.0 / (1.0 - scaled * scaled));
+  };
+
+  const auto [points, weights] = oiseau::utils::integration::quadrature(15);
+  const auto reference = nodal::get_ref_element(nodal::RefElementType::Line, order);
+  const auto interpolation = xt::linalg::dot(reference->vandermonde(points), reference->inv_v());
+  const auto l2_error = [&](std::size_t cell_count) {
+    const double h = 1.0 / static_cast<double>(cell_count);
+    std::vector<double> vertices(cell_count + 1);
+    std::vector<std::vector<std::size_t>> cells(cell_count);
+    for (std::size_t i = 0; i < cell_count; ++i) {
+      vertices[i] = static_cast<double>(i) * h;
+      cells[i] = {i, i + 1};
+    }
+    vertices.back() = 1.0;
+    const auto interval = get_cell_type(CellKind::Interval);
+    Mesh mesh{Topology(std::move(cells), std::vector<CellType>(cell_count, interval)),
+              Geometry(std::move(vertices), 1)};
+    const DGSpace space(mesh, order);
+    const LinearDG1D solver(
+        mesh, space, equations, [](const auto&) { return 1.0; },
+        [](const auto&, const auto&) { return std::vector<double>{0.0}; });
+    auto state = solver.initial_state(u, pulse);
+    oiseau::time::RK4 rk4;
+    oiseau::time::run(rk4, solver, state, 0.0, final_time / steps, steps);
+
+    const auto groups = space.element_groups();
+    const auto& cell_indices = groups.front().cell_indices;
+    const auto& values = state.groups.front();
+    double squared_error = 0.0;
+    for (std::size_t cell = 0; cell < cell_count; ++cell) {
+      const double left = static_cast<double>(cell_indices[cell]) * h;
+      const auto interpolated =
+          xt::linalg::dot(interpolation, xt::view(values, cell, xt::all(), 0));
+      for (std::size_t q = 0; q < weights.size(); ++q) {
+        const double x = left + 0.5 * h * (1.0 + points(q));
+        const double error = interpolated(q) - pulse(x - final_time);
+        squared_error += 0.5 * h * weights(q) * error * error;
+      }
+    }
+    return std::sqrt(squared_error);
+  };
+
+  // Use the same small RK4 step on every mesh to keep time error below spatial error.
+  double coarse_error = l2_error(32);
+  for (const std::size_t cell_count : {64, 128}) {
+    const double fine_error = l2_error(cell_count);
+    ASSERT_TRUE(std::isfinite(fine_error));
+    ASSERT_GT(fine_error, 0.0);
+    EXPECT_GE(std::log2(coarse_error / fine_error), 2.75)
+        << "at " << cell_count << " cells, L2 error " << coarse_error << " -> " << fine_error;
+    coarse_error = fine_error;
   }
 }
 
