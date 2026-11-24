@@ -77,12 +77,21 @@ void bind_nodal_elements(py::module_& m) {
           "v", [](const RefElement& ref) { return copy_array(ref.v()); }, py::rv_policy::reference,
           "Copy of the Vandermonde matrix at the reference nodes.")
       .def_prop_ro(
+          "inv_v", [](const RefElement& ref) { return copy_array(ref.inv_v()); },
+          py::rv_policy::reference, "Copy of the inverse Vandermonde matrix.")
+      .def_prop_ro(
           "gv", [](const RefElement& ref) { return copy_array(ref.gv()); },
           py::rv_policy::reference,
           "Copy of the gradient Vandermonde matrix at the reference nodes.")
       .def_prop_ro(
           "d", [](const RefElement& ref) { return copy_array(ref.d()); }, py::rv_policy::reference,
           "Copy of the nodal differentiation matrix.")
+      .def_prop_ro(
+          "mass", [](const RefElement& ref) { return copy_array(ref.mass()); },
+          py::rv_policy::reference, "Copy of the reference mass matrix.")
+      .def_prop_ro(
+          "inv_mass", [](const RefElement& ref) { return copy_array(ref.inv_mass()); },
+          py::rv_policy::reference, "Copy of the inverse reference mass matrix.")
       .def(
           "vandermonde",
           [](const RefElement& ref, const NumpyCoordinates& points) {
