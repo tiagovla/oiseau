@@ -4,6 +4,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+set(SPDLOG_FMT_EXTERNAL ON)
+
 FetchContent_Declare(
     spdlog
     GIT_REPOSITORY https://github.com/gabime/spdlog.git
