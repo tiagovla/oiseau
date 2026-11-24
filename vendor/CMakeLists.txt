@@ -9,7 +9,7 @@ include(FetchContent)
 # Library version pins
 set(BENCHMARK_VERSION v1.10.0)
 set(BLAZE_VERSION v3.8.2)
-set(BOOST_VERSION boost-1.88.0)
+set(BOOST_VERSION boost-1.92.0)
 set(EIGEN_VERSION 171bd08ca987987c3c50f0fa5dd8914bdd42dd3b)
 set(FMT_VERSION 12.2.1)
 set(GMSH_VERSION gmsh_4_13_1)
