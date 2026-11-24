@@ -58,12 +58,11 @@ struct ReferenceOperators {
 
 ReferenceOperators make_reference_operators(mesh::CellKind kind, unsigned order) {
   auto element = nodal::get_ref_element(ref_type_for(kind), order);
-  const auto& vandermonde = element->v();
-  auto inverse_vandermonde = xt::linalg::inv(vandermonde);
+  auto inverse_vandermonde = element->inv_v();
 
   auto volume = std::make_shared<DGIntegration::ReferenceRule>();
-  volume->mass = xt::linalg::dot(xt::transpose(inverse_vandermonde), inverse_vandermonde);
-  volume->inverse_mass = xt::linalg::dot(vandermonde, xt::transpose(vandermonde));
+  volume->mass = element->mass();
+  volume->inverse_mass = element->inv_mass();
   const auto& derivatives = element->d();
   const auto add_operators = [&](const auto& values, Matrix& derivative, Matrix& stiffness,
                                  Matrix& weak_derivative) {
