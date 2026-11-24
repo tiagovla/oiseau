@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-FROM node:20-slim
+FROM node:26-slim
 
 RUN npm install -g prettier@3.10.1
 
