@@ -16,6 +16,7 @@
 
 #include "oiseau/dg/dg_space.hpp"
 #include "oiseau/dg/equation.hpp"
+#include "oiseau/dg/field.hpp"
 #include "oiseau/dg/solver/state.hpp"
 #include "oiseau/mesh/mesh.hpp"
 

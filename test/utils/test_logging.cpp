@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <gtest/gtest.h>
+#include <spdlog/common.h>
 #include <spdlog/details/log_msg.h>
 #include <spdlog/logger.h>
 #include <spdlog/sinks/base_sink.h>

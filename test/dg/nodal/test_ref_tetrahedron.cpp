@@ -7,9 +7,12 @@
 #include <gtest/gtest.h>
 
 #include <xtensor-blas/xlinalg.hpp>
+#include <xtensor/containers/xarray.hpp>
 #include <xtensor/core/xmath.hpp>
+#include <xtensor/core/xtensor_forward.hpp>
 #include <xtensor/generators/xbuilder.hpp>
 #include <xtensor/misc/xmanipulation.hpp>
+#include <xtensor/views/xslice.hpp>
 #include <xtensor/views/xview.hpp>
 
 #include "oiseau/dg/nodal/ref_element.hpp"

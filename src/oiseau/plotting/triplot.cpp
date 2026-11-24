@@ -6,11 +6,14 @@
 
 #include "oiseau/plotting/triplot.hpp"
 
+#include <nanobind/nanobind.h>
+
 #include <cstddef>
 #include <limits>
 #include <vector>
 
 #include "oiseau/mesh/mesh.hpp"
+#include "oiseau/plotting/pyplot.hpp"
 
 namespace oiseau::plotting {
 

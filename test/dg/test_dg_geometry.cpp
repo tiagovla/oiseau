@@ -23,6 +23,7 @@
 #include "oiseau/dg/ref_element_type.hpp"
 #include "oiseau/io/gmsh.hpp"
 #include "oiseau/mesh/cell.hpp"
+#include "oiseau/mesh/geometry.hpp"
 #include "oiseau/mesh/mesh.hpp"
 
 namespace {

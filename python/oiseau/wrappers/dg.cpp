@@ -22,7 +22,12 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <xtensor/containers/xarray.hpp>
+#include <xtensor/core/xtensor_forward.hpp>
 
+#include "oiseau/dg/dg_space.hpp"
+#include "oiseau/dg/equation.hpp"
+#include "oiseau/dg/field.hpp"
 #include "oiseau/dg/nodal/element.hpp"
 #include "oiseau/dg/nodal/ref_element.hpp"
 #include "oiseau/dg/nodal/ref_hexahedron.hpp"
@@ -31,6 +36,8 @@
 #include "oiseau/dg/nodal/ref_tetrahedron.hpp"
 #include "oiseau/dg/nodal/ref_triangle.hpp"
 #include "oiseau/dg/solver/linear_dg.hpp"
+#include "oiseau/dg/solver/state.hpp"
+#include "oiseau/mesh/mesh.hpp"
 #include "oiseau/time/rk4.hpp"
 #include "oiseau/time/run.hpp"
 

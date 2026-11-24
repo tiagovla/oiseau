@@ -12,7 +12,10 @@
 #include <vector>
 
 #include "oiseau/dg/dg_connectivity.hpp"
+#include "oiseau/mesh/cell.hpp"
+#include "oiseau/mesh/geometry.hpp"
 #include "oiseau/mesh/mesh.hpp"
+#include "oiseau/mesh/topology.hpp"
 
 namespace {
 

@@ -4,7 +4,8 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include <benchmark/benchmark.h>
+#include <benchmark/registration.h>
+#include <benchmark/state.h>
 
 static void BM_SomeFunction(benchmark::State& state) {
   // Perform setup here

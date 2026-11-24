@@ -16,6 +16,7 @@
 #include <utility>
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/core/xexpression.hpp>
+#include <xtensor/core/xtensor_forward.hpp>
 
 namespace py = nanobind;
 using namespace py::literals;

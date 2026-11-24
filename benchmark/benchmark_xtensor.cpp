@@ -4,7 +4,9 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include <benchmark/benchmark.h>
+#include <benchmark/registration.h>
+#include <benchmark/state.h>
+#include <benchmark/utils.h>
 
 #include <cstddef>
 #include <random>

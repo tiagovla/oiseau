@@ -4,6 +4,8 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <nanobind/nanobind.h>
+
 #include <cstddef>
 #include <vector>
 #include <xtensor/containers/xbuffer_adaptor.hpp>

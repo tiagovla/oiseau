@@ -9,7 +9,9 @@
 #include <cmath>
 #include <cstddef>
 #include <xtensor-blas/xlinalg.hpp>
+#include <xtensor/containers/xarray.hpp>
 #include <xtensor/core/xmath.hpp>
+#include <xtensor/core/xtensor_forward.hpp>
 #include <xtensor/misc/xmanipulation.hpp>
 #include <xtensor/views/xview.hpp>
 

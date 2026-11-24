@@ -8,11 +8,13 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <span>
 #include <stdexcept>
 #include <utility>
 #include <vector>
 
 #include "oiseau/mesh/cell.hpp"
+#include "oiseau/mesh/mesh.hpp"
 #include "oiseau/mesh/topology.hpp"
 
 namespace oiseau::dg {

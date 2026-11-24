@@ -4,7 +4,11 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include <benchmark/benchmark.h>
+#include <benchmark/benchmark_api.h>
+#include <benchmark/registration.h>
+#include <benchmark/state.h>
+#include <benchmark/types.h>
+#include <benchmark/utils.h>
 
 // #undef WITH_OPENBLAS to disable openblas
 

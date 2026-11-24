@@ -6,6 +6,13 @@
 
 #include "oiseau/plotting/pyplot.hpp"
 
+#include <Python.h>
+#include <cpython/initconfig.h>
+#include <import.h>
+#include <nanobind/nanobind.h>
+#include <pylifecycle.h>
+#include <pythonrun.h>
+
 #include <stdexcept>
 
 NB_MODULE(_oiseau_plotting, module) { (void)module; }

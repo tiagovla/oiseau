@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <span>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include "oiseau/mesh/cell.hpp"
