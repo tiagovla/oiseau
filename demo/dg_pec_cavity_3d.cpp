@@ -10,7 +10,6 @@
 #include <iostream>
 #include <numbers>
 #include <oiseau.hpp>
-#include <vector>
 
 #include "oiseau/utils/logging.hpp"
 
@@ -48,15 +47,12 @@ int main(int argc, char** argv) {
   const solver::LinearDG3D cavity(
       mesh, space, equations, [](const auto&) { return 1.0; },
       // Keep the normal electric component and reflect the tangential components.
-      [](const auto& interior, const auto& normal) {
+      [](const auto& interior, const auto& normal, auto exterior) {
         const auto normal_e =
             interior[0] * normal[0] + interior[1] * normal[1] + interior[2] * normal[2];
-        return std::vector<double>{2.0 * normal_e * normal[0] - interior[0],
-                                   2.0 * normal_e * normal[1] - interior[1],
-                                   2.0 * normal_e * normal[2] - interior[2],
-                                   interior[3],
-                                   interior[4],
-                                   interior[5]};
+        for (std::size_t axis = 0; axis < normal.size(); ++axis) {
+          exterior[axis] = 2.0 * normal_e * normal[axis] - interior[axis];
+        }
       });
 
   const auto initial = cavity.initial_state(ez, [](double x, double y, double) {

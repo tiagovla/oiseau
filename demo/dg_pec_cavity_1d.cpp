@@ -10,7 +10,6 @@
 #include <iostream>
 #include <numbers>
 #include <oiseau.hpp>
-#include <vector>
 
 #include "oiseau/utils/logging.hpp"
 
@@ -28,9 +27,7 @@ int main(int argc, char** argv) {
   const solver::LinearDG<1> cavity(
       mesh, space, equations, [](const auto&) { return 1.0; },
       // Reflect the tangential electric field at both PEC endpoints.
-      [](const auto& interior, const auto&) {
-        return std::vector<double>{-interior[0], interior[1]};
-      });
+      [](const auto&, const auto&, auto exterior) { exterior[0] *= -1.0; });
 
   const auto initial =
       cavity.initial_state(ez, [](double x) { return std::sin(std::numbers::pi * x / 2.0); });

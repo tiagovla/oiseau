@@ -46,9 +46,7 @@ int main(int argc, char** argv) {
     }); //clang-format on
   const solver::LinearDG<2> cavity(
       mesh, space, equations, upwind,
-      [](const auto& interior, const auto&) {
-        return std::vector<double>{-interior[0], interior[1], interior[2]};
-      });
+      [](const auto&, const auto&, auto exterior) { exterior[0] *= -1.0; });
 
   const auto initial = cavity.initial_state(ez, [](double x, double y) {
     return std::sin(std::numbers::pi * x / 2.0) * std::sin(std::numbers::pi * y);
