@@ -100,9 +100,16 @@ TEST(test_linear_dg, passes_both_normal_fluxes_to_the_policy_and_lifts_its_corre
         EXPECT_NEAR(right_flux[1], 6.0 * normal[0], 1e-12);
         return std::vector<double>{left_flux[0] + 1.0, left_flux[1] - 2.0};
       };
-  const LinearDG1D solver(mesh, {1}, equations, flux, [](const auto& inside, const auto&) {
-    return std::vector<double>{inside[0] + 1.0, inside[1] - 2.0};
-  });
+  const double* boundary_buffer = nullptr;
+  const LinearDG1D solver(mesh, {1}, equations, flux,
+                          [&boundary_buffer](auto interior, const auto&, auto exterior) {
+                            if (!boundary_buffer) boundary_buffer = exterior.data();
+                            EXPECT_EQ(exterior.data(), boundary_buffer);
+                            EXPECT_DOUBLE_EQ(exterior[0], interior[0]);
+                            EXPECT_DOUBLE_EQ(exterior[1], interior[1]);
+                            exterior[0] += 1.0;
+                            exterior[1] -= 2.0;
+                          });
   auto state = solver.initial_state(u, [](double) { return 2.0; });
   solver.set_initial_condition(state, v, [](double) { return 3.0; });
 
@@ -114,16 +121,13 @@ TEST(test_linear_dg, passes_both_normal_fluxes_to_the_policy_and_lifts_its_corre
   }
 }
 
-TEST(test_linear_dg, rejects_callbacks_with_the_wrong_number_of_fields) {
+TEST(test_linear_dg, rejects_flux_with_the_wrong_number_of_fields) {
   auto mesh = interval_mesh();
   const Field u{"u"};
   const EquationSystem equations({u}, {dt(u) == -dx(u)});
   const auto empty_result = [](const auto&...) { return std::vector<double>{}; };
-  const LinearDG1D bad_boundary(
-      mesh, {1}, equations, [](const auto&) { return 1.0; }, empty_result);
   const LinearDG1D bad_flux(mesh, {1}, equations, LinearDG1D::NumericalFlux(empty_result));
 
-  EXPECT_THROW(bad_boundary.rhs(bad_boundary.zero_state()), std::invalid_argument);
   EXPECT_THROW(bad_flux.rhs(bad_flux.zero_state()), std::invalid_argument);
 }
 
@@ -175,7 +179,7 @@ TEST(test_linear_dg, quadratic_advection_converges_at_third_order_in_space) {
     const DGSpace space(mesh, order);
     const LinearDG1D solver(
         mesh, space, equations, [](const auto&) { return 1.0; },
-        [](const auto&, const auto&) { return std::vector<double>{0.0}; });
+        [](const auto&, const auto&, auto exterior) { exterior[0] = 0.0; });
     auto state = solver.initial_state(u, pulse);
     oiseau::time::RK4 rk4;
     oiseau::time::run(rk4, solver, state, 0.0, final_time / steps, steps);
