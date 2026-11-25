@@ -6,6 +6,7 @@
 
 #pragma once
 #include <cstddef>
+#include <initializer_list>
 #include <span>
 #include <vector>
 
@@ -14,6 +15,7 @@ class Geometry {
  public:
   Geometry();
   Geometry(std::vector<double>&& x, unsigned dim);
+  explicit Geometry(std::initializer_list<std::initializer_list<double>> points);
   Geometry(Geometry&&) = default;
   Geometry(const Geometry&) = default;
   Geometry& operator=(Geometry&&) = default;
