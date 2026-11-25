@@ -39,7 +39,10 @@ class LinearDG {
       std::conditional_t<Dimension == 1, std::function<double(double)>,
                          std::conditional_t<Dimension == 2, std::function<double(double, double)>,
                                             std::function<double(double, double, double)>>>;
-  using BoundaryState = std::function<std::vector<double>(std::span<const double>, const Normal&)>;
+  /// Receives the interior trace, outward normal, and writable exterior trace.
+  /// The exterior starts as a copy of the interior.
+  using BoundaryState =
+      std::function<void(std::span<const double>, const Normal&, std::span<double>)>;
   using WaveSpeed = std::function<double(const Normal&)>;
   /// Arguments are left/right traces, outward normal, then each side's physical normal flux.
   using NumericalFlux = std::function<std::vector<double>(

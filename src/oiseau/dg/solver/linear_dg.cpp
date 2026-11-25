@@ -355,16 +355,12 @@ struct LinearDG<Dimension>::Impl {
     const auto face_points = face.point_count();
     for (std::size_t q = 0; q < face_points; ++q) {
       std::ranges::fill(scratch.left, 0.0);
-      std::ranges::fill(scratch.right, 0.0);
       interpolate_trace(scratch.left, face.minus->trace.data() + q * node_count, cell);
       if (face.is_boundary()) {
-        scratch.right =
-            boundary_state ? boundary_state(scratch.left, operators.normal) : scratch.left;
-        if (scratch.right.size() != fields) {
-          throw std::invalid_argument(
-              "Boundary state must return one value for every equation field");
-        }
+        std::ranges::copy(scratch.left, scratch.right.begin());
+        if (boundary_state) boundary_state(scratch.left, operators.normal, scratch.right);
       } else {
+        std::ranges::fill(scratch.right, 0.0);
         interpolate_trace(scratch.right, face.plus->trace.data() + q * neighbor.node_count,
                           neighbor);
       }
