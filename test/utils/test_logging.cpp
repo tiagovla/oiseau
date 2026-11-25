@@ -32,8 +32,8 @@ class CollectingSink final : public spdlog::sinks::base_sink<std::mutex> {
 
  protected:
   void sink_it_(spdlog::details::log_msg const& message) override {
-    records_.push_back(
-        {message.level, std::string(message.payload.data(), message.payload.size())});
+    records_.push_back({.level = message.level,
+                        .message = std::string(message.payload.data(), message.payload.size())});
   }
 
   void flush_() override {}
@@ -81,7 +81,7 @@ TEST(test_utils_logging, set_verbosity_maps_levels) {
   }
 }
 
-TEST(test_utils_logging, init_sets_default_logger_and_info_level) {
+TEST(test_utils_logging, init_sets_default_logger_and_configured_level) {
   ScopedDefaultLogger scoped_default_logger;
   ScopedLevel scoped_level;
   char program_name[] = "oiseau_test_utils_logging";
@@ -92,7 +92,7 @@ TEST(test_utils_logging, init_sets_default_logger_and_info_level) {
   ASSERT_NE(spdlog::default_logger(), nullptr);
   EXPECT_EQ(spdlog::default_logger()->name(), "oiseau");
   EXPECT_EQ(spdlog::get("oiseau"), spdlog::default_logger());
-  EXPECT_EQ(spdlog::get_level(), spdlog::level::info);
+  EXPECT_EQ(spdlog::get_level(), static_cast<spdlog::level::level_enum>(OISEAU_DEFAULT_LOG_LEVEL));
 }
 
 TEST(test_utils_logging, logging_macros_forward_levels_and_formatted_messages) {
@@ -103,27 +103,34 @@ TEST(test_utils_logging, logging_macros_forward_levels_and_formatted_messages) {
   spdlog::set_default_logger(logger);
 
   LOG_TRACE("trace {}", 1);
-  LOG_DEBUG("debug {}", 2);
   LOG_INFO("info {}", 3);
   LOG_WARN("warning {}", 4);
   LOG_ERROR("error {}", 5);
   LOG_FATAL("fatal {}", 6);
+  int debug_argument_evaluations = 0;
+  LOG_DEBUG("debug {}", ++debug_argument_evaluations);
   int off_argument_evaluations = 0;
   LOG_OFF("off {}", ++off_argument_evaluations);
 
   auto const& records = sink->records();
+#ifdef NDEBUG
+  ASSERT_EQ(records.size(), 5);
+  EXPECT_EQ(debug_argument_evaluations, 0);
+#else
   ASSERT_EQ(records.size(), 6);
+  EXPECT_EQ(debug_argument_evaluations, 1);
+  EXPECT_EQ(records[5].level, spdlog::level::debug);
+  EXPECT_EQ(records[5].message, "debug 1");
+#endif
   EXPECT_EQ(records[0].level, spdlog::level::trace);
   EXPECT_EQ(records[0].message, "trace 1");
-  EXPECT_EQ(records[1].level, spdlog::level::debug);
-  EXPECT_EQ(records[1].message, "debug 2");
-  EXPECT_EQ(records[2].level, spdlog::level::info);
-  EXPECT_EQ(records[2].message, "info 3");
-  EXPECT_EQ(records[3].level, spdlog::level::warn);
-  EXPECT_EQ(records[3].message, "warning 4");
-  EXPECT_EQ(records[4].level, spdlog::level::err);
-  EXPECT_EQ(records[4].message, "error 5");
-  EXPECT_EQ(records[5].level, spdlog::level::critical);
-  EXPECT_EQ(records[5].message, "fatal 6");
+  EXPECT_EQ(records[1].level, spdlog::level::info);
+  EXPECT_EQ(records[1].message, "info 3");
+  EXPECT_EQ(records[2].level, spdlog::level::warn);
+  EXPECT_EQ(records[2].message, "warning 4");
+  EXPECT_EQ(records[3].level, spdlog::level::err);
+  EXPECT_EQ(records[3].message, "error 5");
+  EXPECT_EQ(records[4].level, spdlog::level::critical);
+  EXPECT_EQ(records[4].message, "fatal 6");
   EXPECT_EQ(off_argument_evaluations, 0);
 }

@@ -43,9 +43,13 @@ void init(int argc, char** argv);
 #define LOG_TRACE(...)                                                                       \
   spdlog::log(spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, spdlog::level::trace, \
               __VA_ARGS__)
+#ifndef NDEBUG
 #define LOG_DEBUG(...)                                                                       \
   spdlog::log(spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, spdlog::level::debug, \
               __VA_ARGS__)
+#else
+#define LOG_DEBUG(...) ((void)0)
+#endif
 #define LOG_INFO(...)                                                                       \
   spdlog::log(spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, spdlog::level::info, \
               __VA_ARGS__)

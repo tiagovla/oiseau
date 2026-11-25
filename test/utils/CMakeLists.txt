@@ -7,4 +7,7 @@
 add_test(oiseau_test_utils_math test_math.cpp)
 add_test(oiseau_test_utils_integration test_integration.cpp)
 add_test(oiseau_test_utils_logging test_logging.cpp)
+target_compile_definitions(
+    oiseau_test_utils_logging PRIVATE OISEAU_DEFAULT_LOG_LEVEL=SPDLOG_LEVEL_${OISEAU_LOG_LEVEL}
+)
 add_test(oiseau_test_jagged_array test_jagged_array.cpp)

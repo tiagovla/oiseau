@@ -96,6 +96,11 @@ if(OISEAU_PRECOMPILE_HEADERS)
     )
 endif()
 
+set_property(
+    SOURCE src/oiseau/utils/logging.cpp
+    APPEND
+    PROPERTY COMPILE_DEFINITIONS OISEAU_DEFAULT_LOG_LEVEL=SPDLOG_LEVEL_${OISEAU_LOG_LEVEL}
+)
 target_link_libraries(oiseau PRIVATE oiseau_deps)
 target_include_directories(
     oiseau PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

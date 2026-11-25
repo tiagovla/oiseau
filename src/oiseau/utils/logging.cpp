@@ -32,7 +32,7 @@ void init(int argc, char** argv) {
     default_logger = spdlog::stdout_color_mt("oiseau");
     spdlog::set_default_logger(default_logger);
   }
-  spdlog::set_level(spdlog::level::info);
+  spdlog::set_level(static_cast<spdlog::level::level_enum>(OISEAU_DEFAULT_LOG_LEVEL));
 }
 
 }  // namespace oiseau::logging
