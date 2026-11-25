@@ -6,6 +6,7 @@
 
 #pragma once
 #include <cstddef>
+#include <initializer_list>
 #include <span>
 #include <vector>
 
@@ -17,6 +18,8 @@ class Topology {
  public:
   Topology();
   Topology(std::vector<std::vector<std::size_t>>&& conn, std::vector<CellType>&& cell_types);
+  Topology(std::vector<std::vector<std::size_t>>&& conn,
+           std::initializer_list<CellKind> cell_kinds);
   Topology(Topology&&) = default;
   Topology(const Topology&) = default;
   Topology& operator=(Topology&&) = default;

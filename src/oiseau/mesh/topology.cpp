@@ -8,7 +8,9 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <initializer_list>
 #include <map>
+#include <ranges>
 #include <span>
 #include <stdexcept>
 #include <utility>
@@ -57,6 +59,12 @@ Topology::~Topology() = default;
 
 Topology::Topology(std::vector<std::vector<std::size_t>>&& conn, std::vector<CellType>&& cell_types)
     : m_conn(std::move(conn)), m_cell_types(std::move(cell_types)) {};
+
+Topology::Topology(std::vector<std::vector<std::size_t>>&& conn,
+                   std::initializer_list<CellKind> cell_kinds)
+    : m_conn(std::move(conn)) {
+  m_cell_types.append_range(cell_kinds | std::views::transform(get_cell_type));
+}
 
 std::span<CellType> Topology::cell_types() {
   m_dimension = -1;
