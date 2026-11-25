@@ -8,7 +8,6 @@ import numpy as np
 import pytest
 
 from oiseau.dg.nodal import (
-    Element,
     RefElement,
     RefElementType,
     RefHexahedron,
@@ -49,29 +48,10 @@ def test_reference_element_operators(element_class, kind, node_shape, face_nodes
         np.testing.assert_allclose(ref.d[:, :, 0] @ ref.v, ref.gv[:, :, 0], atol=1e-12)
 
 
-def test_nodal_element_owns_its_reference_and_coordinates():
-    ref = RefTriangle(order=1)
-    nodes = ref.r + 2.0
-    element = Element(ref, nodes)
-    expected = nodes.copy()
-
-    nodes.fill(0.0)
-    del ref
-
-    assert element.order == 1
-    assert isinstance(element.reference, RefTriangle)
-    result = element.nodes
-    np.testing.assert_array_equal(result, expected)
-    result.fill(1.0)
-    np.testing.assert_array_equal(element.nodes, expected)
-
-
-def test_nodal_elements_reject_invalid_inputs():
+def test_reference_elements_reject_invalid_inputs():
     with pytest.raises(ValueError):
         RefTriangle(order=0)
 
     ref = RefTriangle(order=1)
     with pytest.raises(ValueError, match="Points must have shape"):
         ref.vandermonde(np.zeros((3, 1)))
-    with pytest.raises(ValueError, match="per reference node"):
-        Element(ref, np.zeros((2, 2)))

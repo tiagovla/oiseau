@@ -7,7 +7,6 @@
 """Nodal Discontinuous Galerkin elements and reference operators."""
 
 from ..cpp.dg.nodal import (
-    Element,
     RefElement,
     RefElementType,
     RefHexahedron,
@@ -19,7 +18,6 @@ from ..cpp.dg.nodal import (
 )
 
 __all__ = [
-    "Element",
     "RefElement",
     "RefElementType",
     "RefHexahedron",

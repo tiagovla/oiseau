@@ -28,7 +28,6 @@
 #include "oiseau/dg/dg_space.hpp"
 #include "oiseau/dg/equation.hpp"
 #include "oiseau/dg/field.hpp"
-#include "oiseau/dg/nodal/element.hpp"
 #include "oiseau/dg/nodal/ref_element.hpp"
 #include "oiseau/dg/nodal/ref_hexahedron.hpp"
 #include "oiseau/dg/nodal/ref_line.hpp"
@@ -123,23 +122,6 @@ void bind_nodal_elements(py::module_& m) {
       .def(py::init<unsigned>(), py::arg("order"));
 
   m.def("get_ref_element", &get_ref_element, py::arg("type"), py::arg("order"));
-
-  py::class_<Element>(m, "Element")
-      .def(
-          "__init__",
-          [](Element* self, std::shared_ptr<RefElement> reference, const NumpyCoordinates& nodes) {
-            if ((nodes.ndim() != 1 && nodes.ndim() != 2) ||
-                nodes.shape(0) != reference->number_of_nodes()) {
-              throw py::value_error("Expected one set of coordinates per reference node");
-            }
-            new (self) Element(std::move(reference), copy_coordinates(nodes));
-          },
-          py::arg("reference"), py::arg("nodes"))
-      .def_prop_ro("reference", &Element::reference, py::rv_policy::reference_internal)
-      .def_prop_ro("order", &Element::order)
-      .def_prop_ro(
-          "nodes", [](const Element& element) { return copy_array(element.nodes()); },
-          py::rv_policy::reference, "Copy of the physical node coordinates.");
 }
 }  // namespace
 
