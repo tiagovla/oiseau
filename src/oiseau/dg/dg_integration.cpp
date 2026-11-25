@@ -31,7 +31,7 @@
 #include "oiseau/dg/dg_geometry.hpp"
 #include "oiseau/dg/dg_space.hpp"
 #include "oiseau/dg/nodal/ref_element.hpp"
-#include "oiseau/dg/ref_element_type.hpp"
+#include "oiseau/dg/nodal/ref_element_type.hpp"
 #include "oiseau/mesh/cell.hpp"
 #include "oiseau/mesh/mesh.hpp"
 #include "oiseau/mesh/topology.hpp"
