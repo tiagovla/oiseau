@@ -19,14 +19,19 @@ int main(int argc, char** argv) {
   using namespace oiseau::dg;
   using namespace oiseau::mesh;
 
-  Mesh mesh{Topology({{0, 1, 2, 3, 4, 5, 6, 7}}, {CellKind::Hexahedron}), Geometry({{0, 0, 0},
-                                                                                    {1, 0, 0},
-                                                                                    {1, 1, 0},
-                                                                                    {0, 1, 0},
-                                                                                    {0, 0, 1},
-                                                                                    {1, 0, 1},
-                                                                                    {1, 1, 1},
-                                                                                    {0, 1, 1}})};
+  Mesh mesh{
+      Topology({{0, 1, 2, 3, 4, 5, 6, 7}}, {CellKind::Hexahedron}),
+      Geometry({
+          {0, 0, 0},
+          {1, 0, 0},
+          {1, 1, 0},
+          {0, 1, 0},
+          {0, 0, 1},
+          {1, 0, 1},
+          {1, 1, 1},
+          {0, 1, 1},
+      }),
+  };
   const DGSpace space(mesh, 4);
 
   const Field ex{"Ex"}, ey{"Ey"}, ez{"Ez"}, hx{"Hx"}, hy{"Hy"}, hz{"Hz"};
