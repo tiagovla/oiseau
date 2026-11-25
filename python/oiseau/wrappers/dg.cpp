@@ -19,6 +19,7 @@
 #include <memory>
 #include <new>
 #include <span>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -186,8 +187,15 @@ void dg(py::module_& m) {
             LinearDG2D::BoundaryState ghost_state;
             if (boundary) {
               ghost_state = [boundary = std::move(boundary)](std::span<const double> interior,
-                                                             const LinearDG2D::Normal& normal) {
-                return boundary(std::vector<double>(interior.begin(), interior.end()), normal);
+                                                             const LinearDG2D::Normal& normal,
+                                                             std::span<double> exterior) {
+                const auto values =
+                    boundary(std::vector<double>(interior.begin(), interior.end()), normal);
+                if (values.size() != exterior.size()) {
+                  throw std::invalid_argument(
+                      "Boundary state must return one value for every equation field");
+                }
+                std::ranges::copy(values, exterior.begin());
               };
             }
             new (self) LinearDG2D(
