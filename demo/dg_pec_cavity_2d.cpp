@@ -10,9 +10,20 @@
 #include <iostream>
 #include <numbers>
 #include <oiseau.hpp>
+#include <span>
 #include <vector>
 
 #include "oiseau/utils/logging.hpp"
+
+std::vector<double> upwind(std::span<const double> interior, std::span<const double> exterior,
+                           const oiseau::dg::solver::LinearDG<2>::Normal& normal,
+                           std::span<const double> f_minus, std::span<const double> f_plus) {
+  const auto [nx, ny] = normal;
+  const double jump_ez = exterior[0] - interior[0];
+  const double jump_ht = ny * (exterior[1] - interior[1]) - nx * (exterior[2] - interior[2]);
+  return {0.5 * (f_minus[0] + f_plus[0] - jump_ez), 0.5 * (f_minus[1] + f_plus[1] - ny * jump_ht),
+          0.5 * (f_minus[2] + f_plus[2] + nx * jump_ht)};
+}
 
 int main(int argc, char** argv) {
   oiseau::logging::init(argc, argv);
@@ -34,8 +45,7 @@ int main(int argc, char** argv) {
         dt(hy) == dx(ez),
     }); //clang-format on
   const solver::LinearDG<2> cavity(
-      mesh, space, equations, [](const auto&) { return 1.0; },
-      // Ez is tangential to every wall. Its odd reflection enforces the PEC condition.
+      mesh, space, equations, upwind,
       [](const auto& interior, const auto&) {
         return std::vector<double>{-interior[0], interior[1], interior[2]};
       });
