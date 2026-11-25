@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <ostream>
@@ -13,6 +14,10 @@
 
 #include "oiseau/time/integrator.hpp"
 #include "oiseau/time/progress_bar.hpp"
+
+#ifndef NDEBUG
+#include "oiseau/utils/logging.hpp"
+#endif
 
 namespace oiseau::time {
 
@@ -28,6 +33,12 @@ double run(Integrator& integrator, System& system, State& state, double initial_
     throw std::invalid_argument("Time step must be finite and positive");
   }
 
+#ifndef NDEBUG
+  LOG_DEBUG("Starting time integration at t={} with dt={} for {} steps", initial_time, time_step,
+            step_count);
+  const auto start = std::chrono::steady_clock::now();
+#endif
+
   ProgressBar bar(progress, step_count);
   bar.update(0);
   auto time = initial_time;
@@ -36,6 +47,11 @@ double run(Integrator& integrator, System& system, State& state, double initial_
     time += time_step;
     bar.update(step + 1);
   }
+
+#ifndef NDEBUG
+  const std::chrono::duration<double> elapsed = std::chrono::steady_clock::now() - start;
+  LOG_DEBUG("Finished time integration at t={} (wall time {:.3f} s)", time, elapsed.count());
+#endif
   return time;
 }
 

@@ -27,6 +27,7 @@
 #include "oiseau/dg/field.hpp"
 #include "oiseau/mesh/mesh.hpp"
 #include "oiseau/mesh/topology.hpp"
+#include "oiseau/utils/logging.hpp"
 
 namespace oiseau::dg::solver {
 template <std::size_t Dimension>
@@ -123,6 +124,7 @@ struct LinearDG<Dimension>::Impl {
   void initialize_flux_matrices() {
     validate_flux_policy();
     const auto fields = equations.fields();
+    LOG_DEBUG("Assembling {}D linear DG flux matrices for {} fields", Dimension, fields.size());
     for (auto& matrix : flux_matrices) {
       matrix.assign(fields.size(), std::vector<double>(fields.size(), 0.0));
     }
@@ -151,6 +153,7 @@ struct LinearDG<Dimension>::Impl {
 
   void initialize_normal_flux_operators() {
     const auto fields = equations.fields().size();
+    LOG_DEBUG("Precomputing DG normal flux operators");
     normal_flux_operators.reserve(integration.cells().size());
     for (const auto& cell_rule : integration.cells()) {
       auto& cell = normal_flux_operators.emplace_back();
@@ -225,6 +228,8 @@ struct LinearDG<Dimension>::Impl {
     validate_state(state);
     const auto field_index = equations.field_index(field);
     const auto groups = space->element_groups();
+    LOG_DEBUG("Sampling initial condition for DG field {} across {} groups", field_index,
+              groups.size());
     for (std::size_t group_index = 0; group_index < groups.size(); ++group_index) {
       const auto& nodes = groups[group_index].nodes;
       for (std::size_t cell = 0; cell < nodes.shape()[0]; ++cell) {

@@ -36,6 +36,7 @@
 #include "oiseau/mesh/mesh.hpp"
 #include "oiseau/mesh/topology.hpp"
 #include "oiseau/utils/integration.hpp"
+#include "oiseau/utils/logging.hpp"
 
 namespace oiseau::dg {
 namespace detail {
@@ -395,6 +396,7 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
   const auto& topology = mesh.topology();
   const auto cell_count = topology.n_cells();
   const auto dimension = topology.dimension();
+  LOG_DEBUG("Precomputing DG volume and face integration rules for {} groups", groups.size());
   m_cells.resize(cell_count);
   const auto reference_operators = make_group_operators(topology, groups, dimension - 1, m_cells);
 

@@ -101,7 +101,11 @@ set_property(
     APPEND
     PROPERTY COMPILE_DEFINITIONS OISEAU_DEFAULT_LOG_LEVEL=SPDLOG_LEVEL_${OISEAU_LOG_LEVEL}
 )
-target_link_libraries(oiseau PRIVATE oiseau_deps)
+target_link_libraries(
+    oiseau
+    PRIVATE oiseau_deps
+    PUBLIC spdlog::spdlog
+)
 target_include_directories(
     oiseau PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                   $<BUILD_INTERFACE:${OISEAU_PUBLIC_INCLUDE_DIR}> $<INSTALL_INTERFACE:include>

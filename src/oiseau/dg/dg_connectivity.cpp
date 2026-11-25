@@ -16,6 +16,7 @@
 #include "oiseau/mesh/cell.hpp"
 #include "oiseau/mesh/mesh.hpp"
 #include "oiseau/mesh/topology.hpp"
+#include "oiseau/utils/logging.hpp"
 
 namespace oiseau::dg {
 namespace {
@@ -80,6 +81,8 @@ DGConnectivity::DGConnectivity(mesh::Mesh& mesh) : m_mesh(mesh) {
   if (dimension < 1 || dimension > 3) {
     throw std::invalid_argument("DGConnectivity supports meshes with dimensions 1 through 3");
   }
+  LOG_DEBUG("Building DG face connectivity for a {}D mesh with {} cells", dimension,
+            topology.n_cells());
   topology.calculate_connectivity();
 
   const auto cell_types = std::as_const(topology).cell_types();

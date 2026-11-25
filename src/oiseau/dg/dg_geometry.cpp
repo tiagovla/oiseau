@@ -32,6 +32,7 @@
 #include "oiseau/mesh/geometry.hpp"
 #include "oiseau/mesh/mesh.hpp"
 #include "oiseau/mesh/topology.hpp"
+#include "oiseau/utils/logging.hpp"
 #include "xtensor/containers/xadapt.hpp"
 
 namespace oiseau::dg {
@@ -386,6 +387,7 @@ DGGeometry::DGGeometry(const mesh::Mesh& mesh) : m_mesh(mesh) {
   const auto cell_types = topology.cell_types();
   const auto connectivity = topology.conn();
 
+  LOG_DEBUG("Computing DG geometry for a {}D mesh with {} cells", dimension, topology.n_cells());
   m_cells.resize(topology.n_cells());
   std::unordered_map<mesh::CellType, ReferenceCellGeometry> reference_geometry;
   for (std::size_t cell_index = 0; cell_index < cell_types.size(); ++cell_index) {

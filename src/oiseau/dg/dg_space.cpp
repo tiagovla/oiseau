@@ -28,6 +28,7 @@
 #include "oiseau/mesh/geometry.hpp"
 #include "oiseau/mesh/mesh.hpp"
 #include "oiseau/mesh/topology.hpp"
+#include "oiseau/utils/logging.hpp"
 
 namespace oiseau::dg {
 namespace {
@@ -99,6 +100,8 @@ DGSpace::DGSpace(const mesh::Mesh& mesh, const std::vector<unsigned>& orders)
 
   std::map<GroupKey, std::size_t> group_sizes;
   for (const auto& cell : cells) ++group_sizes[{cell.type->kind(), cell.order}];
+  LOG_DEBUG("Building {}D DG space for {} cells in {} groups", dimension, cells.size(),
+            group_sizes.size());
 
   std::map<GroupKey, std::size_t> group_indices;
   for (const auto& [key, count] : group_sizes) {

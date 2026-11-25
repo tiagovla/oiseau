@@ -12,7 +12,10 @@
 #include <oiseau.hpp>
 #include <vector>
 
-int main() {
+#include "oiseau/utils/logging.hpp"
+
+int main(int argc, char** argv) {
+  oiseau::logging::init(argc, argv);
   using namespace oiseau::dg;
   using namespace oiseau::mesh;
 
