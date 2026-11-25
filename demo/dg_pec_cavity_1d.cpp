@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
   using namespace oiseau::mesh;
 
   Mesh mesh{Topology({{0, 1}, {1, 2}}, {CellKind::Interval, CellKind::Interval}),
-            Geometry({0, 1, 2}, 1)};
+            Geometry({{0}, {1}, {2}})};
   const DGSpace space(mesh, {3, 4});
 
   const Field ez{"Ez"}, hy{"Hy"};

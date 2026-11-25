@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
 
   Mesh mesh{Topology({{0, 1, 4, 3}, {1, 2, 4}, {2, 5, 4}},
                      {CellKind::Quadrilateral, CellKind::Triangle, CellKind::Triangle}),
-            Geometry({0, 0, 1, 0, 2, 0, 0, 1, 1, 1, 2, 1}, 2)};
+            Geometry({{0, 0}, {1, 0}, {2, 0}, {0, 1}, {1, 1}, {2, 1}})};
   const DGSpace space(mesh, 4);
 
   // TM Maxwell equations in vacuum with normalized permittivity and permeability.
