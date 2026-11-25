@@ -19,9 +19,8 @@ int main(int argc, char** argv) {
   using namespace oiseau::dg;
   using namespace oiseau::mesh;
 
-  const auto quad = get_cell_type(CellKind::Quadrilateral);
-  const auto triangle = get_cell_type(CellKind::Triangle);
-  Mesh mesh{Topology({{0, 1, 4, 3}, {1, 2, 4}, {2, 5, 4}}, {quad, triangle, triangle}),
+  Mesh mesh{Topology({{0, 1, 4, 3}, {1, 2, 4}, {2, 5, 4}},
+                     {CellKind::Quadrilateral, CellKind::Triangle, CellKind::Triangle}),
             Geometry({0, 0, 1, 0, 2, 0, 0, 1, 1, 1, 2, 1}, 2)};
   const DGSpace space(mesh, 4);
 

@@ -19,8 +19,7 @@ int main(int argc, char** argv) {
   using namespace oiseau::dg;
   using namespace oiseau::mesh;
 
-  const auto hex = get_cell_type(CellKind::Hexahedron);
-  Mesh mesh{Topology({{0, 1, 2, 3, 4, 5, 6, 7}}, {hex}),
+  Mesh mesh{Topology({{0, 1, 2, 3, 4, 5, 6, 7}}, {CellKind::Hexahedron}),
             Geometry({0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1}, 3)};
   const DGSpace space(mesh, 4);
 

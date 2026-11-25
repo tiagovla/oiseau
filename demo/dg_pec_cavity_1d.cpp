@@ -19,8 +19,8 @@ int main(int argc, char** argv) {
   using namespace oiseau::dg;
   using namespace oiseau::mesh;
 
-  const auto interval = get_cell_type(CellKind::Interval);
-  Mesh mesh{Topology({{0, 1}, {1, 2}}, {interval, interval}), Geometry({0, 1, 2}, 1)};
+  Mesh mesh{Topology({{0, 1}, {1, 2}}, {CellKind::Interval, CellKind::Interval}),
+            Geometry({0, 1, 2}, 1)};
   const DGSpace space(mesh, {3, 4});
 
   const Field ez{"Ez"}, hy{"Hy"};
