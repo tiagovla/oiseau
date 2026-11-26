@@ -103,7 +103,7 @@ TEST(test_utils_logging, logging_macros_forward_levels_and_formatted_messages) {
   spdlog::set_default_logger(logger);
 
   LOG_TRACE("trace {}", 1);
-  LOG_INFO("info {}", 3);
+  LOG_INFO("info {}", xt::xarray<int>{1, 2});
   LOG_WARN("warning {}", 4);
   LOG_ERROR("error {}", 5);
   LOG_FATAL("fatal {}", 6);
@@ -125,7 +125,7 @@ TEST(test_utils_logging, logging_macros_forward_levels_and_formatted_messages) {
   EXPECT_EQ(records[0].level, spdlog::level::trace);
   EXPECT_EQ(records[0].message, "trace 1");
   EXPECT_EQ(records[1].level, spdlog::level::info);
-  EXPECT_EQ(records[1].message, "info 3");
+  EXPECT_EQ(records[1].message, "info {1, 2}");
   EXPECT_EQ(records[2].level, spdlog::level::warn);
   EXPECT_EQ(records[2].message, "warning 4");
   EXPECT_EQ(records[3].level, spdlog::level::err);

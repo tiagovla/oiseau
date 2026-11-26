@@ -6,18 +6,16 @@
 
 #pragma once
 
-#include <fmt/format.h>
 #include <spdlog/cfg/argv.h>
 #include <spdlog/common.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+#include <format>
 #include <sstream>
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/core/xtensor_forward.hpp>
 #include <xtensor/io/xio.hpp>
-
-#include "fmt/base.h"
 
 #undef SPDLOG_TRACE
 #undef SPDLOG_DEBUG
@@ -69,13 +67,13 @@ void init(int argc, char** argv);
 }  // namespace oiseau::logging
 
 template <typename T>
-class fmt::formatter<xt::xarray<T>> {
- public:
-  static constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
+struct std::formatter<xt::xarray<T>> {
+  constexpr auto parse(std::format_parse_context& ctx) { return ctx.begin(); }
+
   template <typename Context>
-  static constexpr auto format(xt::xarray<T> const& arr, Context& ctx) {
+  auto format(xt::xarray<T> const& arr, Context& ctx) const {
     std::stringstream ss;
     ss << arr;
-    return format_to(ctx.out(), "{}", ss.str());
+    return std::format_to(ctx.out(), "{}", ss.str());
   }
 };

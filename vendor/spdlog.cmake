@@ -30,7 +30,8 @@ set(OISEAU_LOG_LEVEL
     PARENT_SCOPE
 )
 
-set(SPDLOG_FMT_EXTERNAL ON)
+set(SPDLOG_FMT_EXTERNAL OFF)
+set(SPDLOG_USE_STD_FORMAT ON)
 
 FetchContent_Declare(
     spdlog

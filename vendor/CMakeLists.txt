@@ -11,10 +11,8 @@ set(BENCHMARK_VERSION v1.10.0)
 set(BLAZE_VERSION v3.8.2)
 set(BOOST_VERSION boost-1.92.0)
 set(EIGEN_VERSION 5.0.1)
-set(FMT_VERSION 12.2.1)
 set(GMSH_VERSION 4.15.2)
 set(GOOGLETEST_VERSION v1.18.0)
-# Pin the upstream fix for fmt 12.2 format strings until the next spdlog release.
 set(SPDLOG_VERSION d5af52d903ed69f96c7350155e94aeff248b31eb)
 set(XTENSOR-BLAS_VERSION 0.23.0)
 set(XTENSOR_VERSION 0.27.2)
@@ -43,7 +41,6 @@ add_library(oiseau_deps INTERFACE)
 
 # Core dependencies
 include(xtensor.cmake)
-include(fmt.cmake)
 include(spdlog.cmake)
 
-target_link_libraries(oiseau_deps INTERFACE xtensor_stack fmt::fmt spdlog::spdlog)
+target_link_libraries(oiseau_deps INTERFACE xtensor_stack spdlog::spdlog)
