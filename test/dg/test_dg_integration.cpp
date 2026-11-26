@@ -280,9 +280,7 @@ TEST_P(DGIntegrationTest, reference_operators_are_shared_and_own_their_lifetime)
     bool reversed = GetParam();
     auto mesh = mixed_mesh(reversed);
     const DGSpace space(mesh, 3);
-    const DGConnectivity connectivity(mesh);
-    const DGGeometry geometry(mesh);
-    return DGIntegration(mesh, space, connectivity, geometry);
+    return DGIntegration(mesh, space);
   }();
   const auto copy = integration;
   EXPECT_EQ(integration.cell(1).reference, integration.cell(2).reference);

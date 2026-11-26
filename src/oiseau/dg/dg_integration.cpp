@@ -411,6 +411,9 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
   }
 }
 
+DGIntegration::DGIntegration(mesh::Mesh& mesh, const DGSpace& space)
+    : DGIntegration(mesh, space, DGConnectivity(mesh), DGGeometry(mesh)) {}
+
 DGIntegration::Matrix DGIntegration::CellRule::mass() const {
   if (!reference) return {};
   return volume_jacobian * reference->mass;

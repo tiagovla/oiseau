@@ -181,6 +181,15 @@ class DGIntegration {
                 const DGGeometry& geometry);
 
   /**
+   * @brief Builds integration rules for the cells in a DG space.
+   * @param mesh Source mesh whose face adjacency is computed.
+   * @param space DG cell groups and polynomial orders.
+   * @throws std::invalid_argument If the inputs refer to different meshes, a neighboring cell
+   * is missing from the space, or a polynomial order is too large for face quadrature.
+   */
+  DGIntegration(mesh::Mesh& mesh, const DGSpace& space);
+
+  /**
    * @return Rules in mesh cell order. Cells outside the DGSpace have empty matrices.
    */
   std::span<const CellRule> cells() const { return m_cells; }
