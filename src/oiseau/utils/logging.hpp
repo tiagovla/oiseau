@@ -68,10 +68,10 @@ void init(int argc, char** argv);
 
 template <typename T>
 struct std::formatter<xt::xarray<T>> {
-  constexpr auto parse(std::format_parse_context& ctx) { return ctx.begin(); }
+  static constexpr auto parse(std::format_parse_context& ctx) { return ctx.begin(); }
 
   template <typename Context>
-  auto format(xt::xarray<T> const& arr, Context& ctx) const {
+  static auto format(xt::xarray<T> const& arr, Context& ctx) {
     std::stringstream ss;
     ss << arr;
     return std::format_to(ctx.out(), "{}", ss.str());
