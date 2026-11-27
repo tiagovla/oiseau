@@ -19,7 +19,7 @@
 
 namespace {
 
-using oiseau::dg::DGConnectivity;
+using oiseau::dg::Connectivity;
 using oiseau::mesh::CellKind;
 using oiseau::mesh::Geometry;
 using oiseau::mesh::get_cell_type;
@@ -43,7 +43,7 @@ Mesh mixed_mesh(std::vector<std::size_t> triangle_vertices) {
 
 TEST(test_dg_connectivity, mixed_cells_store_both_directions_of_a_reversed_shared_edge) {
   auto mesh = mixed_mesh({2, 4, 1});
-  const DGConnectivity connectivity(mesh);
+  const Connectivity connectivity(mesh);
 
   const auto quad_faces = connectivity.faces(0);
   const auto triangle_faces = connectivity.faces(2);
@@ -66,7 +66,7 @@ TEST(test_dg_connectivity, mixed_cells_store_both_directions_of_a_reversed_share
 
 TEST(test_dg_connectivity, aligned_shared_edges_keep_the_vertex_order) {
   auto mesh = mixed_mesh({4, 1, 2});
-  const DGConnectivity connectivity(mesh);
+  const Connectivity connectivity(mesh);
 
   // The quad's face 1 and the triangle's face 0 both list vertices {1, 2}.
   const auto quad_faces = connectivity.faces(0);
@@ -84,21 +84,21 @@ TEST(test_dg_connectivity, aligned_shared_edges_keep_the_vertex_order) {
 
 TEST(test_dg_connectivity, a_boundary_face_has_a_record_and_the_mesh_edge_has_an_empty_span) {
   auto mesh = mixed_mesh({2, 4, 1});
-  const DGConnectivity connectivity(mesh);
+  const Connectivity connectivity(mesh);
 
   const auto quad_faces = connectivity.faces(0);
   ASSERT_EQ(quad_faces.size(), 4);
   const auto& bottom_face = quad_faces[0];
   EXPECT_TRUE(bottom_face.is_boundary());
-  EXPECT_EQ(bottom_face.neighbor_cell, DGConnectivity::no_neighbor);
-  EXPECT_EQ(bottom_face.neighbor_face, DGConnectivity::no_neighbor);
+  EXPECT_EQ(bottom_face.neighbor_cell, Connectivity::no_neighbor);
+  EXPECT_EQ(bottom_face.neighbor_face, Connectivity::no_neighbor);
   EXPECT_TRUE(bottom_face.vertex_permutation.empty());
   EXPECT_TRUE(connectivity.faces(1).empty());
 }
 
 TEST(test_dg_connectivity, face_lookup_rejects_an_out_of_range_cell_index) {
   auto mesh = mixed_mesh({2, 4, 1});
-  const DGConnectivity connectivity(mesh);
+  const Connectivity connectivity(mesh);
 
   EXPECT_THROW(connectivity.faces(3), std::out_of_range);
 }
@@ -107,7 +107,7 @@ TEST(test_dg_connectivity, intervals_share_an_endpoint_and_ignore_point_tags) {
   const auto interval = get_cell_type(CellKind::Interval);
   const auto point = get_cell_type(CellKind::Point);
   Mesh mesh{Topology({{0, 1}, {0}, {2, 1}}, {interval, point, interval}), Geometry({0, 2, 5}, 1)};
-  const DGConnectivity connectivity(mesh);
+  const Connectivity connectivity(mesh);
 
   EXPECT_TRUE(connectivity.faces(1).empty());
   for (const std::size_t cell : {0, 2}) {
@@ -123,7 +123,7 @@ TEST(test_dg_connectivity, intervals_share_an_endpoint_and_ignore_point_tags) {
 TEST(test_dg_connectivity, rejects_a_zero_dimensional_mesh) {
   Mesh mesh{Topology({{0}}, {get_cell_type(CellKind::Point)}), Geometry({0}, 1)};
 
-  EXPECT_THROW(DGConnectivity{mesh}, std::invalid_argument);
+  EXPECT_THROW(Connectivity{mesh}, std::invalid_argument);
 }
 
 TEST(test_dg_connectivity, rejects_an_edge_shared_by_three_cells) {
@@ -132,7 +132,7 @@ TEST(test_dg_connectivity, rejects_an_edge_shared_by_three_cells) {
   Mesh mesh{Topology({{0, 1, 2}, {1, 0, 3}, {0, 1, 4}}, {triangle, triangle, triangle}),
             Geometry({0, 0, 2, 0, 0, 1, 0, -1, 2, 1}, 2)};
 
-  EXPECT_THROW(DGConnectivity{mesh}, std::invalid_argument);
+  EXPECT_THROW(Connectivity{mesh}, std::invalid_argument);
 }
 
 TEST(test_mesh_topology, rejects_two_faces_of_the_same_cell_with_the_same_vertices) {
@@ -164,7 +164,7 @@ TEST(test_dg_connectivity, tetrahedra_store_reciprocal_face_vertex_permutations)
   // The tetrahedra share vertices 0, 1, and 2 on z = 0. Cell 1 is a boundary tag.
   Mesh mesh{Topology({{0, 1, 2, 3}, {0, 1, 3}, {1, 2, 0, 4}}, {tetrahedron, triangle, tetrahedron}),
             Geometry({0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1}, 3)};
-  const DGConnectivity connectivity(mesh);
+  const Connectivity connectivity(mesh);
 
   const auto first = connectivity.faces(0);
   const auto second = connectivity.faces(2);
@@ -188,7 +188,7 @@ TEST(test_dg_connectivity, hexahedra_store_reciprocal_face_vertex_permutations) 
       Geometry({0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1,
                 1, 1, 1, 0, 1, 1, 0, 0, 2, 1, 0, 2, 1, 1, 2, 0, 1, 2},
                3)};
-  const DGConnectivity connectivity(mesh);
+  const Connectivity connectivity(mesh);
 
   const auto first = connectivity.faces(0);
   const auto second = connectivity.faces(1);

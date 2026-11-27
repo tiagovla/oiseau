@@ -41,7 +41,7 @@
 namespace oiseau::dg {
 namespace detail {
 
-using Matrix = DGIntegration::Matrix;
+using Matrix = Integration::Matrix;
 using Point = std::array<double, 3>;
 
 constexpr FacePermutation identity_permutation{0, 1, 2, 3};
@@ -51,7 +51,7 @@ constexpr std::array canonical_face_measures{1.0, 2.0, 2.0, 4.0};
 
 struct ReferenceOperators {
   std::shared_ptr<nodal::RefElement> element;
-  std::shared_ptr<const DGIntegration::ReferenceRule> volume;
+  std::shared_ptr<const Integration::ReferenceRule> volume;
   Matrix inverse_vandermonde;
   std::vector<Point> vertices;
   std::vector<std::vector<int>> faces;
@@ -61,7 +61,7 @@ ReferenceOperators make_reference_operators(mesh::CellKind kind, unsigned order)
   auto element = nodal::get_ref_element(ref_type_for(kind), order);
   auto inverse_vandermonde = element->inv_v();
 
-  auto volume = std::make_shared<DGIntegration::ReferenceRule>();
+  auto volume = std::make_shared<Integration::ReferenceRule>();
   volume->mass = element->mass();
   volume->inverse_mass = element->inv_mass();
   const auto& derivatives = element->d();
@@ -112,7 +112,7 @@ std::vector<Point> reference_vertex_coordinates(mesh::CellType type,
   return output;
 }
 
-DGIntegration::QuadratureRule make_face_quadrature(mesh::CellKind face_kind, unsigned order) {
+Integration::QuadratureRule make_face_quadrature(mesh::CellKind face_kind, unsigned order) {
   using mesh::CellKind;
   if (face_kind == CellKind::Point) {
     return {.nodes = Matrix::from_shape({1, 0}), .weights = Matrix{1.0}};
@@ -131,7 +131,7 @@ DGIntegration::QuadratureRule make_face_quadrature(mesh::CellKind face_kind, uns
     return {.nodes = std::move(nodes), .weights = std::move(weights)};
   }
   if (face_kind != CellKind::Quadrilateral) {
-    throw std::logic_error("DGIntegration does not support this face shape");
+    throw std::logic_error("Integration does not support this face shape");
   }
 
   const auto count = nodes.size();
@@ -161,7 +161,7 @@ std::array<double, 4> corner_weights(std::size_t corners, const Matrix& nodes, s
 
 Matrix face_points(std::span<const Point> cell_vertices, std::span<const int> face_vertices,
                    std::size_t dimension, const FacePermutation& permutation,
-                   const DGIntegration::QuadratureRule& quadrature) {
+                   const Integration::QuadratureRule& quadrature) {
   if (face_vertices.size() == 1) return Matrix{cell_vertices[face_vertices.front()][0]};
   Matrix points = xt::zeros<double>({quadrature.weights.size(), dimension});
   for (std::size_t q = 0; q < quadrature.weights.size(); ++q) {
@@ -179,7 +179,7 @@ Matrix face_points(std::span<const Point> cell_vertices, std::span<const int> fa
 FacePermutation face_permutation(std::span<const std::size_t> neighbor_positions,
                                  std::size_t corners) {
   if (neighbor_positions.size() != corners) {
-    throw std::logic_error("DGIntegration face permutation has the wrong size");
+    throw std::logic_error("Integration face permutation has the wrong size");
   }
 
   FacePermutation permutation = identity_permutation;
@@ -187,7 +187,7 @@ FacePermutation face_permutation(std::span<const std::size_t> neighbor_positions
   for (std::size_t i = 0; i < corners; ++i) {
     const auto position = neighbor_positions[i];
     if (position >= corners || seen[position]) {
-      throw std::logic_error("DGIntegration face permutation is invalid");
+      throw std::logic_error("Integration face permutation is invalid");
     }
     permutation[i] = position;
     seen[position] = true;
@@ -200,7 +200,7 @@ Matrix interpolation_on_points(const ReferenceOperators& operators, const Matrix
   return xt::linalg::dot(vandermonde, operators.inverse_vandermonde);
 }
 
-Matrix physical_stiffness(const DGIntegration::CellRule& cell, std::size_t d) {
+Matrix physical_stiffness(const Integration::CellRule& cell, std::size_t d) {
   if (!cell.reference) return {};
   const auto& reference = *cell.reference;
   const auto has_y = reference.stiffness_s.dimension() == 2;
@@ -221,9 +221,9 @@ using namespace detail;
 namespace {
 
 std::vector<ReferenceOperators> make_group_operators(const mesh::Topology& topology,
-                                                     std::span<const DGSpace::ElementGroup> groups,
+                                                     std::span<const Space::ElementGroup> groups,
                                                      int face_dimension,
-                                                     std::span<DGIntegration::CellRule> cells) {
+                                                     std::span<Integration::CellRule> cells) {
   const auto cell_types = topology.cell_types();
   const auto connectivity = topology.conn();
   std::vector<ReferenceOperators> reference_operators;
@@ -245,7 +245,7 @@ std::vector<ReferenceOperators> make_group_operators(const mesh::Topology& topol
   return reference_operators;
 }
 
-void set_weak_derivative(std::vector<double>& derivative, const DGIntegration::CellRule& cell,
+void set_weak_derivative(std::vector<double>& derivative, const Integration::CellRule& cell,
                          std::size_t dimension, std::size_t d) {
   const auto nodes = cell.node_count();
   const auto& reference = *cell.reference;
@@ -267,9 +267,9 @@ void set_weak_derivative(std::vector<double>& derivative, const DGIntegration::C
   }
 }
 
-void set_volume_rule(DGIntegration::CellRule& cell,
-                     const std::shared_ptr<const DGIntegration::ReferenceRule>& reference,
-                     const DGGeometry::CellGeometry& geometry) {
+void set_volume_rule(Integration::CellRule& cell,
+                     const std::shared_ptr<const Integration::ReferenceRule>& reference,
+                     const Geometry::CellGeometry& geometry) {
   cell.reference = reference;
   cell.volume_jacobian = std::abs(geometry.determinant);
   cell.inverse_jacobian = geometry.inverse_jacobian;
@@ -289,18 +289,18 @@ FacePermutation inverse_face_permutation(const FacePermutation& permutation, std
 }
 
 class FaceRuleBuilder {
-  using QuadratureRule = DGIntegration::QuadratureRule;
-  using ReferenceFaceRule = DGIntegration::ReferenceFaceRule;
+  using QuadratureRule = Integration::QuadratureRule;
+  using ReferenceFaceRule = Integration::ReferenceFaceRule;
   using FaceKey = std::tuple<std::size_t, std::size_t, unsigned, FacePermutation>;
 
  public:
-  FaceRuleBuilder(std::span<const DGSpace::ElementGroup> groups,
+  FaceRuleBuilder(std::span<const Space::ElementGroup> groups,
                   std::span<const ReferenceOperators> references, std::size_t dimension)
       : m_groups(groups), m_references(references), m_dimension(dimension) {}
 
-  void add_cell_faces(std::vector<DGIntegration::CellRule>& cells, std::size_t cell_index,
-                      std::span<const DGConnectivity::FaceConnection> face_connections,
-                      const DGGeometry::CellGeometry& geometry) {
+  void add_cell_faces(std::vector<Integration::CellRule>& cells, std::size_t cell_index,
+                      std::span<const Connectivity::FaceConnection> face_connections,
+                      const Geometry::CellGeometry& geometry) {
     auto& cell_rule = cells[cell_index];
     const auto group_index = cell_rule.group_index;
     const auto& local_faces = m_references[group_index].faces;
@@ -320,7 +320,7 @@ class FaceRuleBuilder {
       if (!connection.is_boundary()) {
         const auto& neighbor = cells.at(connection.neighbor_cell);
         if (!neighbor.has_group()) {
-          throw std::invalid_argument("DGIntegration neighbor cell is absent from DGSpace");
+          throw std::invalid_argument("Integration neighbor cell is absent from Space");
         }
         neighbor_group = neighbor.group_index;
         quadrature_order = std::max(quadrature_order, m_groups[neighbor_group].order);
@@ -376,7 +376,7 @@ class FaceRuleBuilder {
     return rule;
   }
 
-  std::span<const DGSpace::ElementGroup> m_groups;
+  std::span<const Space::ElementGroup> m_groups;
   std::span<const ReferenceOperators> m_references;
   std::size_t m_dimension;
   std::map<std::pair<mesh::CellKind, unsigned>, std::shared_ptr<const QuadratureRule>>
@@ -386,10 +386,10 @@ class FaceRuleBuilder {
 
 }  // namespace
 
-DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
-                             const DGConnectivity& connectivity, const DGGeometry& geometry) {
+Integration::Integration(const mesh::Mesh& mesh, const Space& space,
+                         const Connectivity& connectivity, const Geometry& geometry) {
   if (&space.mesh() != &mesh || &connectivity.mesh() != &mesh || &geometry.mesh() != &mesh) {
-    throw std::invalid_argument("DGIntegration inputs must refer to the same mesh");
+    throw std::invalid_argument("Integration inputs must refer to the same mesh");
   }
 
   const auto groups = space.element_groups();
@@ -411,32 +411,32 @@ DGIntegration::DGIntegration(const mesh::Mesh& mesh, const DGSpace& space,
   }
 }
 
-DGIntegration::DGIntegration(mesh::Mesh& mesh, const DGSpace& space)
-    : DGIntegration(mesh, space, DGConnectivity(mesh), DGGeometry(mesh)) {}
+Integration::Integration(mesh::Mesh& mesh, const Space& space)
+    : Integration(mesh, space, Connectivity(mesh), Geometry(mesh)) {}
 
-DGIntegration::Matrix DGIntegration::CellRule::mass() const {
+Integration::Matrix Integration::CellRule::mass() const {
   if (!reference) return {};
   return volume_jacobian * reference->mass;
 }
 
-DGIntegration::Matrix DGIntegration::CellRule::inverse_mass() const {
+Integration::Matrix Integration::CellRule::inverse_mass() const {
   if (!reference) return {};
   return reference->inverse_mass / volume_jacobian;
 }
 
-DGIntegration::Matrix DGIntegration::CellRule::stiffness_x() const {
+Integration::Matrix Integration::CellRule::stiffness_x() const {
   return physical_stiffness(*this, 0);
 }
 
-DGIntegration::Matrix DGIntegration::CellRule::stiffness_y() const {
+Integration::Matrix Integration::CellRule::stiffness_y() const {
   return physical_stiffness(*this, 1);
 }
 
-DGIntegration::Matrix DGIntegration::CellRule::stiffness_z() const {
+Integration::Matrix Integration::CellRule::stiffness_z() const {
   return physical_stiffness(*this, 2);
 }
 
-const DGIntegration::CellRule& DGIntegration::cell(std::size_t mesh_cell_index) const {
+const Integration::CellRule& Integration::cell(std::size_t mesh_cell_index) const {
   return m_cells.at(mesh_cell_index);
 }
 

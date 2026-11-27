@@ -17,12 +17,12 @@ namespace oiseau::dg::detail {
 
 using FacePermutation = std::array<std::size_t, 4>;
 
-DGIntegration::QuadratureRule make_face_quadrature(mesh::CellKind face_kind, unsigned order);
-std::array<double, 4> corner_weights(std::size_t corners, const DGIntegration::Matrix& nodes,
+Integration::QuadratureRule make_face_quadrature(mesh::CellKind face_kind, unsigned order);
+std::array<double, 4> corner_weights(std::size_t corners, const Integration::Matrix& nodes,
                                      std::size_t q);
-DGIntegration::Matrix face_points(std::span<const std::array<double, 3>> cell_vertices,
-                                  std::span<const int> face_vertices, std::size_t dimension,
-                                  const FacePermutation& permutation,
-                                  const DGIntegration::QuadratureRule& quadrature);
+Integration::Matrix face_points(std::span<const std::array<double, 3>> cell_vertices,
+                                std::span<const int> face_vertices, std::size_t dimension,
+                                const FacePermutation& permutation,
+                                const Integration::QuadratureRule& quadrature);
 
 }  // namespace oiseau::dg::detail

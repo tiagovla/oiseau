@@ -13,18 +13,18 @@
 
 namespace oiseau::dg::solver {
 
-/// Nodal values for an equation system, grouped by DGSpace element group.
+/// Nodal values for an equation system, grouped by Space element group.
 ///
 /// Each array has shape [group cells, group nodes, number of fields]. The
 /// component order matches `EquationSystem::fields()`. Arrays use contiguous
 /// row-major storage so the solver can evaluate cell-local operators directly.
-struct DGState {
+struct State {
   std::vector<xt::xarray<double>> groups;
 };
 
 /// Updates target = target_scale * target + source_scale * source.
 /// Target and source may be the same state.
-inline void scale_add_in_place(DGState& target, double target_scale, const DGState& source,
+inline void scale_add_in_place(State& target, double target_scale, const State& source,
                                double source_scale) {
   for (std::size_t group = 0; group < target.groups.size(); ++group) {
     auto* values = target.groups[group].data();
@@ -37,7 +37,7 @@ inline void scale_add_in_place(DGState& target, double target_scale, const DGSta
   }
 }
 
-inline DGState add_scaled(const DGState& base, const DGState& increment, double scale) {
+inline State add_scaled(const State& base, const State& increment, double scale) {
   auto result = base;
   for (std::size_t group = 0; group < result.groups.size(); ++group) {
     auto* values = result.groups[group].data();

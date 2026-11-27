@@ -33,7 +33,7 @@ class LinearDG {
   static_assert(Dimension >= 1 && Dimension <= 3);
 
  public:
-  using State = DGState;
+  using State = solver::State;
   using Normal = std::array<double, Dimension>;
   using InitialCondition =
       std::conditional_t<Dimension == 1, std::function<double(double)>,
@@ -56,10 +56,10 @@ class LinearDG {
   LinearDG(mesh::Mesh& mesh, const std::vector<unsigned>& orders, EquationSystem equations,
            NumericalFlux numerical_flux, BoundaryState boundary_state = {});
   /// Existing-space variant using the built-in Rusanov flux.
-  LinearDG(mesh::Mesh& mesh, const DGSpace& space, EquationSystem equations, WaveSpeed wave_speed,
+  LinearDG(mesh::Mesh& mesh, const Space& space, EquationSystem equations, WaveSpeed wave_speed,
            BoundaryState boundary_state = {});
   /// Existing-space variant using the supplied numerical flux policy.
-  LinearDG(mesh::Mesh& mesh, const DGSpace& space, EquationSystem equations,
+  LinearDG(mesh::Mesh& mesh, const Space& space, EquationSystem equations,
            NumericalFlux numerical_flux, BoundaryState boundary_state = {});
   ~LinearDG();
 
@@ -68,7 +68,7 @@ class LinearDG {
   LinearDG(LinearDG&&) noexcept;
   LinearDG& operator=(LinearDG&&) noexcept;
 
-  const DGSpace& space() const;
+  const Space& space() const;
   const EquationSystem& equations() const;
   /// Builds the local Lax-Friedrichs (Rusanov) numerical flux policy.
   static NumericalFlux rusanov(WaveSpeed wave_speed);

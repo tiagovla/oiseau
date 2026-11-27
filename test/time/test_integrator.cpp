@@ -67,7 +67,7 @@ struct RecordingSystem {
 };
 
 struct DgDecaySystem {
-  static oiseau::dg::solver::DGState rhs(const oiseau::dg::solver::DGState& state) {
+  static oiseau::dg::solver::State rhs(const oiseau::dg::solver::State& state) {
     auto derivative = state;
     derivative.groups[0](0) = -state.groups[0](0);
     return derivative;
@@ -98,8 +98,8 @@ struct StateSystem {
 
 static_assert(oiseau::time::AddScaledState<ScalarState>);
 static_assert(oiseau::time::ScaleAddInPlaceState<ScalarState>);
-static_assert(oiseau::time::AddScaledState<oiseau::dg::solver::DGState>);
-static_assert(oiseau::time::ScaleAddInPlaceState<oiseau::dg::solver::DGState>);
+static_assert(oiseau::time::AddScaledState<oiseau::dg::solver::State>);
+static_assert(oiseau::time::ScaleAddInPlaceState<oiseau::dg::solver::State>);
 static_assert(!oiseau::time::AddScaledState<double>);
 static_assert(!oiseau::time::ScaleAddInPlaceState<double>);
 static_assert(!oiseau::time::AddScaledState<WrongStateOperations>);
@@ -251,7 +251,7 @@ TEST(test_time_integrator, run_rejects_nonfinite_start_time_and_invalid_time_ste
 }
 
 TEST(test_time_integrator, rk4_integrates_dg_state) {
-  oiseau::dg::solver::DGState state;
+  oiseau::dg::solver::State state;
   auto values = xt::xarray<double>::from_shape({1});
   values(0) = 1.0;
   state.groups.push_back(std::move(values));
@@ -266,7 +266,7 @@ TEST(test_time_integrator, rk4_integrates_dg_state) {
 
 TEST(test_time_integrator, lsrk54_integrates_dg_state) {
   DgDecaySystem system;
-  oiseau::dg::solver::DGState state;
+  oiseau::dg::solver::State state;
   auto values = xt::xarray<double>::from_shape({1});
   values(0) = 1.0;
   state.groups.push_back(std::move(values));

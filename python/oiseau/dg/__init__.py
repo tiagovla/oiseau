@@ -7,13 +7,13 @@
 """Discontinuous Galerkin spaces, equations, and time stepping."""
 
 from ..cpp.dg import (
-    DGSpace,
-    DGState,
     Equation,
     EquationSystem,
     Field,
     LinearDG2D,
     LinearExpression,
+    Space,
+    State,
     dt,
     dx,
     dy,
@@ -21,13 +21,13 @@ from ..cpp.dg import (
 )
 
 __all__ = [
-    "DGSpace",
-    "DGState",
     "Equation",
     "EquationSystem",
     "Field",
     "LinearDG2D",
     "LinearExpression",
+    "Space",
+    "State",
     "dt",
     "dx",
     "dy",

@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
 
   Mesh mesh{
       Topology({{0, 1, 2, 3, 4, 5, 6, 7}}, {CellKind::Hexahedron}),
-      Geometry({
+      oiseau::mesh::Geometry({
           {0, 0, 0},
           {1, 0, 0},
           {1, 1, 0},
@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
           {0, 1, 1},
       }),
   };
-  const DGSpace space(mesh, 4);
+  const Space space(mesh, 4);
 
   const Field ex{"Ex"}, ey{"Ey"}, ez{"Ez"}, hx{"Hx"}, hy{"Hy"}, hz{"Hz"};
 

@@ -75,11 +75,11 @@ std::vector<std::size_t> vertex_permutation(const std::vector<std::size_t>& loca
 
 }  // namespace
 
-DGConnectivity::DGConnectivity(mesh::Mesh& mesh) : m_mesh(mesh) {
+Connectivity::Connectivity(mesh::Mesh& mesh) : m_mesh(mesh) {
   auto& topology = mesh.topology();
   const auto dimension = topology.dimension();
   if (dimension < 1 || dimension > 3) {
-    throw std::invalid_argument("DGConnectivity supports meshes with dimensions 1 through 3");
+    throw std::invalid_argument("Connectivity supports meshes with dimensions 1 through 3");
   }
   LOG_DEBUG("Building DG face connectivity for a {}D mesh with {} cells", dimension,
             topology.n_cells());
@@ -123,7 +123,7 @@ DGConnectivity::DGConnectivity(mesh::Mesh& mesh) : m_mesh(mesh) {
   }
 }
 
-std::span<const DGConnectivity::FaceConnection> DGConnectivity::faces(
+std::span<const Connectivity::FaceConnection> Connectivity::faces(
     std::size_t mesh_cell_index) const {
   if (mesh_cell_index >= m_faces.size()) throw std::out_of_range("Mesh cell index is invalid");
   return m_faces[mesh_cell_index];

@@ -51,7 +51,7 @@ int validated_mesh_dimension(const mesh::Topology& topology, const mesh::Geometr
 
   const auto dimension = topology.dimension();
   if (dimension < 1 || dimension > 3) {
-    throw std::invalid_argument("DGSpace supports meshes with dimensions 1 through 3");
+    throw std::invalid_argument("Space supports meshes with dimensions 1 through 3");
   }
   return dimension;
 }
@@ -90,7 +90,7 @@ std::vector<ActiveCell> active_cells(std::span<const mesh::CellType> cell_types,
 
 }  // namespace
 
-DGSpace::DGSpace(const mesh::Mesh& mesh, const std::vector<unsigned>& orders)
+Space::Space(const mesh::Mesh& mesh, const std::vector<unsigned>& orders)
     : m_mesh(mesh), m_orders(orders) {
   const auto& topology = mesh.topology();
   const auto& geometry = mesh.geometry();
@@ -147,20 +147,17 @@ DGSpace::DGSpace(const mesh::Mesh& mesh, const std::vector<unsigned>& orders)
   }
 }
 
-DGSpace::DGSpace(const mesh::Mesh& mesh, unsigned order)
-    : DGSpace(mesh, uniform_orders(mesh, order)) {}
+Space::Space(const mesh::Mesh& mesh, unsigned order) : Space(mesh, uniform_orders(mesh, order)) {}
 
-std::span<const DGSpace::ElementGroup> DGSpace::element_groups() const {
-  return {m_element_groups};
-}
+std::span<const Space::ElementGroup> Space::element_groups() const { return {m_element_groups}; }
 
-const DGSpace::ElementGroup* DGSpace::element_group(mesh::CellKind kind, unsigned order) const {
+const Space::ElementGroup* Space::element_group(mesh::CellKind kind, unsigned order) const {
   const auto group = std::ranges::find_if(m_element_groups, [kind, order](const auto& candidate) {
     return candidate.kind == kind && candidate.order == order;
   });
   return group == m_element_groups.end() ? nullptr : &*group;
 }
 
-std::span<const unsigned> DGSpace::orders() const { return {m_orders}; }
+std::span<const unsigned> Space::orders() const { return {m_orders}; }
 
 }  // namespace oiseau::dg

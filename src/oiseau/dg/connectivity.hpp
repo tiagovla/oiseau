@@ -22,7 +22,7 @@ namespace oiseau::dg {
  * sides of the interface. Connections follow the cell type's local face order
  * and are indexed by the original mesh cell index.
  */
-class DGConnectivity {
+class Connectivity {
  public:
   /** @brief Sentinel for missing neighbor cell and face indices. */
   static constexpr std::size_t no_neighbor = std::numeric_limits<std::size_t>::max();
@@ -55,7 +55,7 @@ class DGConnectivity {
    * @throws std::runtime_error If the topology's adjacency counts differ from the cell's face
    * count.
    */
-  explicit DGConnectivity(mesh::Mesh& mesh);
+  explicit Connectivity(mesh::Mesh& mesh);
 
   /** @return A const reference to the source mesh. */
   const mesh::Mesh& mesh() const { return m_mesh; }

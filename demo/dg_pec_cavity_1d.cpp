@@ -19,8 +19,8 @@ int main(int argc, char** argv) {
   using namespace oiseau::mesh;
 
   Mesh mesh{Topology({{0, 1}, {1, 2}}, {CellKind::Interval, CellKind::Interval}),
-            Geometry({{0}, {1}, {2}})};
-  const DGSpace space(mesh, {3, 4});
+            oiseau::mesh::Geometry({{0}, {1}, {2}})};
+  const Space space(mesh, {3, 4});
 
   const Field ez{"Ez"}, hy{"Hy"};
   const EquationSystem equations({ez, hy}, {dt(ez) == dx(hy), dt(hy) == dx(ez)});

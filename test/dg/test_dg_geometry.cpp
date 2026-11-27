@@ -191,7 +191,7 @@ $Elements
 2 3 2
 $EndElements)";
   const auto mesh = oiseau::io::gmsh_read_from_string(mesh_text);
-  const oiseau::dg::DGGeometry geometry(mesh);
+  const oiseau::dg::Geometry geometry(mesh);
 
   for (std::size_t cell_index = 0; cell_index < 2; ++cell_index) {
     SCOPED_TRACE(cell_index);
@@ -238,7 +238,7 @@ $Elements
 1 1 2 3
 $EndElements)";
   const auto mesh = oiseau::io::gmsh_read_from_string(mesh_text);
-  const oiseau::dg::DGGeometry geometry(mesh);
+  const oiseau::dg::Geometry geometry(mesh);
 
   ASSERT_TRUE(geometry.has_cell(0));
   const auto& cell = geometry.cell(0);
@@ -297,7 +297,7 @@ $Elements
 1 1 2 3 4
 2 5 6 7 8
 $EndElements)");
-  const oiseau::dg::DGGeometry geometry(mesh);
+  const oiseau::dg::Geometry geometry(mesh);
   const auto& rectangle = geometry.cell(0);
   const auto& skew = geometry.cell(1);
 
@@ -320,16 +320,16 @@ $EndElements)");
 }
 
 TEST(test_dg_geometry, rejects_degenerate_and_non_affine_cells) {
-  using oiseau::dg::DGGeometry;
+  using oiseau::dg::Geometry;
   using namespace oiseau::mesh;
 
   const Mesh degenerate{Topology({{0, 1, 2}}, {get_cell_type(CellKind::Triangle)}),
-                        Geometry({0.0, 0.0, 1.0, 0.0, 2.0, 0.0}, 2)};
-  EXPECT_THROW(DGGeometry{degenerate}, std::invalid_argument);
+                        oiseau::mesh::Geometry({0.0, 0.0, 1.0, 0.0, 2.0, 0.0}, 2)};
+  EXPECT_THROW(Geometry{degenerate}, std::invalid_argument);
 
   const Mesh non_affine{Topology({{0, 1, 2, 3}}, {get_cell_type(CellKind::Quadrilateral)}),
-                        Geometry({0.0, 0.0, 2.0, 0.0, 1.0, 1.0, 0.0, 1.0}, 2)};
-  EXPECT_THROW(DGGeometry{non_affine}, std::invalid_argument);
+                        oiseau::mesh::Geometry({0.0, 0.0, 2.0, 0.0, 1.0, 1.0, 0.0, 1.0}, 2)};
+  EXPECT_THROW(Geometry{non_affine}, std::invalid_argument);
 }
 
 TEST(test_dg_geometry, one_tetrahedron_has_outward_face_normals) {
@@ -354,7 +354,7 @@ $Elements
 1 1 2 3 4
 $EndElements)";
   const auto mesh = oiseau::io::gmsh_read_from_string(mesh_text);
-  const oiseau::dg::DGGeometry geometry(mesh);
+  const oiseau::dg::Geometry geometry(mesh);
 
   ASSERT_TRUE(geometry.has_cell(0));
   const auto& cell = geometry.cell(0);

@@ -21,7 +21,7 @@ namespace oiseau::dg {
  * Geometry entries are indexed by source mesh cell. Lower-dimensional cells
  * have no entry.
  */
-class DGGeometry {
+class Geometry {
  public:
   /** @brief Geometric data for one cell face. */
   struct FaceGeometry {
@@ -72,7 +72,7 @@ class DGGeometry {
    * are invalid, or if a cell mapping is non-affine.
    * @throws std::out_of_range If a cell references a missing mesh vertex.
    */
-  explicit DGGeometry(const mesh::Mesh& mesh);
+  explicit Geometry(const mesh::Mesh& mesh);
 
   /** @brief Returns the source mesh. */
   const mesh::Mesh& mesh() const { return m_mesh; }

@@ -23,10 +23,10 @@ namespace oiseau::dg {
 
 /**
  * @brief Precomputed volume and face integration operators for affine 1D, 2D, and 3D DG cells.
- * @details The rules follow the supplied DGSpace cell groups and can be reused by
+ * @details The rules follow the supplied Space cell groups and can be reused by
  * different equation systems on the same space.
  */
-class DGIntegration {
+class Integration {
  public:
   /** @brief Array type for integration operators and quadrature data. */
   using Matrix = xt::xarray<double>;
@@ -88,8 +88,8 @@ class DGIntegration {
   struct FaceRule {
     /** @brief Outward unit normal, padded to three coordinates. */
     std::array<double, 3> outward_normal{};
-    /** @brief Mesh index of the neighbor cell, or DGConnectivity::no_neighbor on a boundary. */
-    std::size_t neighbor_cell = DGConnectivity::no_neighbor;
+    /** @brief Mesh index of the neighbor cell, or Connectivity::no_neighbor on a boundary. */
+    std::size_t neighbor_cell = Connectivity::no_neighbor;
     /** @brief Reference face rule for the local cell. */
     std::shared_ptr<const ReferenceFaceRule> minus;
     /**
@@ -122,14 +122,14 @@ class DGIntegration {
     }
 
     /** @return True if the face has no neighbor cell. */
-    bool is_boundary() const { return neighbor_cell == DGConnectivity::no_neighbor; }
+    bool is_boundary() const { return neighbor_cell == Connectivity::no_neighbor; }
   };
 
   /** @brief Volume and face integration data for one mesh cell. */
   struct CellRule {
-    /** @brief Index of the DGSpace group, or DGConnectivity::no_neighbor for an inactive cell. */
-    std::size_t group_index = DGConnectivity::no_neighbor;
-    /** @brief Index of this cell within its DGSpace group. */
+    /** @brief Index of the Space group, or Connectivity::no_neighbor for an inactive cell. */
+    std::size_t group_index = Connectivity::no_neighbor;
+    /** @brief Index of this cell within its Space group. */
     std::size_t group_cell_index = 0;
     /** @brief Shared reference volume operators, or @c nullptr for an inactive cell. */
     std::shared_ptr<const ReferenceRule> reference;
@@ -138,8 +138,8 @@ class DGIntegration {
     /** @brief Padded row-major 3 by 3 inverse Jacobian @f$\partial(r,s,t)/\partial(x,y,z)@f$. */
     std::array<double, 9> inverse_jacobian{};
 
-    /** @return True if the cell belongs to a DGSpace element group. */
-    bool has_group() const { return group_index != DGConnectivity::no_neighbor; }
+    /** @return True if the cell belongs to a Space element group. */
+    bool has_group() const { return group_index != Connectivity::no_neighbor; }
     /** @return Number of cell nodes, or zero for an inactive cell. */
     std::size_t node_count() const { return reference ? reference->mass.shape()[0] : 0; }
     /** @return Physical mass matrix, or an empty matrix for an inactive cell. */
@@ -177,8 +177,8 @@ class DGIntegration {
    * @throws std::invalid_argument If the inputs refer to different meshes, a neighboring cell
    * is missing from the space, or a polynomial order is too large for face quadrature.
    */
-  DGIntegration(const mesh::Mesh& mesh, const DGSpace& space, const DGConnectivity& connectivity,
-                const DGGeometry& geometry);
+  Integration(const mesh::Mesh& mesh, const Space& space, const Connectivity& connectivity,
+              const Geometry& geometry);
 
   /**
    * @brief Builds integration rules for the cells in a DG space.
@@ -187,16 +187,16 @@ class DGIntegration {
    * @throws std::invalid_argument If the inputs refer to different meshes, a neighboring cell
    * is missing from the space, or a polynomial order is too large for face quadrature.
    */
-  DGIntegration(mesh::Mesh& mesh, const DGSpace& space);
+  Integration(mesh::Mesh& mesh, const Space& space);
 
   /**
-   * @return Rules in mesh cell order. Cells outside the DGSpace have empty matrices.
+   * @return Rules in mesh cell order. Cells outside the Space have empty matrices.
    */
   std::span<const CellRule> cells() const { return m_cells; }
   /**
    * @brief Returns the integration rule for a mesh cell.
    * @param mesh_cell_index Index in the source mesh.
-   * @return The cell rule, with empty matrices for a cell outside the DGSpace.
+   * @return The cell rule, with empty matrices for a cell outside the Space.
    * @throws std::out_of_range If the mesh cell index is invalid.
    */
   const CellRule& cell(std::size_t mesh_cell_index) const;

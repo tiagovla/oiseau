@@ -58,11 +58,11 @@ struct LinearDG<Dimension>::Impl {
 
   using ReferenceFlux = std::array<std::vector<double>, Dimension>;
 
-  std::shared_ptr<DGSpace> owned_space;
-  const DGSpace* space = nullptr;
-  DGConnectivity connectivity;
-  DGGeometry geometry;
-  DGIntegration integration;
+  std::shared_ptr<Space> owned_space;
+  const Space* space = nullptr;
+  Connectivity connectivity;
+  Geometry geometry;
+  Integration integration;
   EquationSystem equations;
   NumericalFlux numerical_flux;
   BoundaryState boundary_state;
@@ -71,7 +71,7 @@ struct LinearDG<Dimension>::Impl {
 
   Impl(mesh::Mesh& mesh, const std::vector<unsigned>& orders, EquationSystem input_equations,
        NumericalFlux input_numerical_flux, BoundaryState input_boundary_state)
-      : owned_space(std::make_shared<DGSpace>(check_mesh_dimension(mesh), orders)),
+      : owned_space(std::make_shared<Space>(check_mesh_dimension(mesh), orders)),
         space(owned_space.get()),
         connectivity(mesh),
         geometry(mesh),
@@ -83,7 +83,7 @@ struct LinearDG<Dimension>::Impl {
     initialize_normal_flux_operators();
   }
 
-  Impl(mesh::Mesh& mesh, const DGSpace& input_space, EquationSystem input_equations,
+  Impl(mesh::Mesh& mesh, const Space& input_space, EquationSystem input_equations,
        NumericalFlux input_numerical_flux, BoundaryState input_boundary_state)
       : space(&input_space),
         connectivity(check_mesh_dimension(mesh)),
@@ -176,14 +176,14 @@ struct LinearDG<Dimension>::Impl {
     const auto wrong_cell_stride =
         shape[0] > 1 && std::cmp_not_equal(strides[0], shape[1] * shape[2]);
     if (wrong_field_stride || wrong_node_stride || wrong_cell_stride) {
-      throw std::invalid_argument("DGState arrays must use contiguous row-major storage");
+      throw std::invalid_argument("State arrays must use contiguous row-major storage");
     }
   }
 
   void validate_state(const State& state) const {
     const auto groups = space->element_groups();
     if (state.groups.size() != groups.size()) {
-      throw std::invalid_argument("DGState group count does not match DGSpace");
+      throw std::invalid_argument("State group count does not match Space");
     }
     for (std::size_t group_index = 0; group_index < groups.size(); ++group_index) {
       const auto& values = state.groups[group_index];
@@ -191,7 +191,7 @@ struct LinearDG<Dimension>::Impl {
       if (values.dimension() != 3 || values.shape()[0] != nodes.shape()[0] ||
           values.shape()[1] != nodes.shape()[1] || values.shape()[2] != equations.fields().size()) {
         throw std::invalid_argument(
-            "DGState arrays must have shape [group cells, group nodes, number of fields]");
+            "State arrays must have shape [group cells, group nodes, number of fields]");
       }
       validate_state_strides(values);
     }
@@ -247,7 +247,7 @@ struct LinearDG<Dimension>::Impl {
     return state;
   }
 
-  static NodalValues nodal_values(const State& state, const DGIntegration::CellRule& cell,
+  static NodalValues nodal_values(const State& state, const Integration::CellRule& cell,
                                   std::size_t fields) {
     const auto& group = state.groups[cell.group_index];
     const auto node_count = group.shape()[1];
@@ -286,7 +286,7 @@ struct LinearDG<Dimension>::Impl {
     return value;
   }
 
-  void set_volume_derivative(const DGIntegration::CellRule& cell, NodalValues values,
+  void set_volume_derivative(const Integration::CellRule& cell, NodalValues values,
                              std::size_t fields, double* derivative,
                              ReferenceFlux& reference_flux) const {
     const auto node_count = values.node_count;
@@ -347,7 +347,7 @@ struct LinearDG<Dimension>::Impl {
     return correction;
   }
 
-  void add_face_derivative(const DGIntegration::FaceRule& face, const FaceFluxOperators& operators,
+  void add_face_derivative(const Integration::FaceRule& face, const FaceFluxOperators& operators,
                            NodalValues cell, NodalValues neighbor, double* derivative,
                            FaceScratch& scratch) const {
     const auto fields = scratch.left.size();
@@ -419,13 +419,13 @@ LinearDG<Dimension>::LinearDG(mesh::Mesh& mesh, const std::vector<unsigned>& ord
                                     std::move(boundary_state))) {}
 
 template <std::size_t Dimension>
-LinearDG<Dimension>::LinearDG(mesh::Mesh& mesh, const DGSpace& space, EquationSystem equations,
+LinearDG<Dimension>::LinearDG(mesh::Mesh& mesh, const Space& space, EquationSystem equations,
                               WaveSpeed wave_speed, BoundaryState boundary_state)
     : LinearDG(mesh, space, std::move(equations), rusanov(std::move(wave_speed)),
                std::move(boundary_state)) {}
 
 template <std::size_t Dimension>
-LinearDG<Dimension>::LinearDG(mesh::Mesh& mesh, const DGSpace& space, EquationSystem equations,
+LinearDG<Dimension>::LinearDG(mesh::Mesh& mesh, const Space& space, EquationSystem equations,
                               NumericalFlux numerical_flux, BoundaryState boundary_state)
     : m_impl(std::make_unique<Impl>(mesh, space, std::move(equations), std::move(numerical_flux),
                                     std::move(boundary_state))) {}
@@ -440,7 +440,7 @@ template <std::size_t Dimension>
 LinearDG<Dimension>& LinearDG<Dimension>::operator=(LinearDG&&) noexcept = default;
 
 template <std::size_t Dimension>
-const DGSpace& LinearDG<Dimension>::space() const {
+const Space& LinearDG<Dimension>::space() const {
   return *m_impl->space;
 }
 

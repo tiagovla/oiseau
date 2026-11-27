@@ -21,7 +21,7 @@ namespace oiseau::dg {
  * @brief Stores discontinuous Galerkin nodes grouped by cell kind and order.
  * @details The mesh is referenced, not copied, and must outlive this space.
  */
-class DGSpace {
+class Space {
  public:
   /** @brief Stores cells that share a cell kind and polynomial order. */
   struct ElementGroup {
@@ -38,7 +38,7 @@ class DGSpace {
     xt::xarray<double> nodes;
   };
 
-  DGSpace(const DGSpace& V) = delete;
+  Space(const Space& V) = delete;
   /**
    * @brief Builds groups using one order per top-dimensional mesh cell.
    * @param mesh Source mesh. It must outlive this space.
@@ -48,7 +48,7 @@ class DGSpace {
    * geometry, or cell kinds are invalid.
    * @throws std::out_of_range If a cell references a missing mesh vertex.
    */
-  DGSpace(const mesh::Mesh& mesh, const std::vector<unsigned>& orders);
+  Space(const mesh::Mesh& mesh, const std::vector<unsigned>& orders);
   /**
    * @brief Builds groups using one order for every top-dimensional cell.
    * @param mesh Source mesh. It must outlive this space.
@@ -56,11 +56,11 @@ class DGSpace {
    * @throws std::invalid_argument If the order is zero or the mesh is invalid.
    * @throws std::out_of_range If a cell references a missing mesh vertex.
    */
-  DGSpace(const mesh::Mesh& mesh, unsigned order);
-  DGSpace(DGSpace&& V) = default;
-  ~DGSpace() = default;
-  DGSpace& operator=(const DGSpace& V) = delete;
-  DGSpace& operator=(DGSpace&& V) = delete;
+  Space(const mesh::Mesh& mesh, unsigned order);
+  Space(Space&& V) = default;
+  ~Space() = default;
+  Space& operator=(const Space& V) = delete;
+  Space& operator=(Space&& V) = delete;
 
   /** @brief Returns the source mesh. */
   const mesh::Mesh& mesh() const { return m_mesh; }

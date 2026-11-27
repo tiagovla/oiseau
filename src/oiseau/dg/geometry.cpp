@@ -134,7 +134,7 @@ Point physical_vertex(const mesh::Geometry& geometry, std::size_t vertex, std::s
     const auto value = coordinates[vertex * geometry.dim() + coordinate];
     if (!std::isfinite(value)) throw std::invalid_argument("Mesh coordinates must be finite");
     if (value != 0.0) {
-      throw std::invalid_argument("DGGeometry supports coordinates in the mesh dimensions only");
+      throw std::invalid_argument("Geometry supports coordinates in the mesh dimensions only");
     }
   }
   return point;
@@ -305,7 +305,7 @@ std::size_t validated_mesh_dimension(const mesh::Topology& topology,
                                      const mesh::Geometry& geometry) {
   const auto dimension = static_cast<std::size_t>(topology.dimension());
   if (dimension < 1 || dimension > 3) {
-    throw std::invalid_argument("DGGeometry supports meshes with dimensions 1 through 3");
+    throw std::invalid_argument("Geometry supports meshes with dimensions 1 through 3");
   }
   if (geometry.dim() < dimension || geometry.x().size() % geometry.dim() != 0) {
     throw std::invalid_argument("Mesh coordinate data is inconsistent with its dimension");
@@ -316,10 +316,10 @@ std::size_t validated_mesh_dimension(const mesh::Topology& topology,
   return dimension;
 }
 
-DGGeometry::CellGeometry make_cell_geometry(const mesh::Geometry& geometry,
-                                            const std::vector<std::size_t>& mesh_vertices,
-                                            const ReferenceCellGeometry& reference,
-                                            std::size_t dimension, std::size_t cell_index) {
+Geometry::CellGeometry make_cell_geometry(const mesh::Geometry& geometry,
+                                          const std::vector<std::size_t>& mesh_vertices,
+                                          const ReferenceCellGeometry& reference,
+                                          std::size_t dimension, std::size_t cell_index) {
   if (mesh_vertices.size() != reference.points.size()) {
     throw std::invalid_argument("Cell connectivity does not match its cell type");
   }
@@ -345,11 +345,11 @@ DGGeometry::CellGeometry make_cell_geometry(const mesh::Geometry& geometry,
     const auto expected = xt::linalg::dot(jacobian, reference_offset);
     const auto actual = physical_nodes[vertex_index] - physical_nodes[anchor];
     if (xt::linalg::norm(expected - actual, 2) > tolerance) {
-      throw std::invalid_argument("DGGeometry requires affine cell mappings");
+      throw std::invalid_argument("Geometry requires affine cell mappings");
     }
   }
 
-  std::vector<DGGeometry::FaceGeometry> faces;
+  std::vector<Geometry::FaceGeometry> faces;
   faces.reserve(reference.faces.size());
   const auto cell_centroid = centroid(physical_nodes);
   for (const auto& reference_face : reference.faces) {
@@ -380,7 +380,7 @@ DGGeometry::CellGeometry make_cell_geometry(const mesh::Geometry& geometry,
 
 }  // namespace
 
-DGGeometry::DGGeometry(const mesh::Mesh& mesh) : m_mesh(mesh) {
+Geometry::Geometry(const mesh::Mesh& mesh) : m_mesh(mesh) {
   const auto& topology = mesh.topology();
   const auto& geometry = mesh.geometry();
   const auto dimension = validated_mesh_dimension(topology, geometry);
@@ -405,11 +405,11 @@ DGGeometry::DGGeometry(const mesh::Mesh& mesh) : m_mesh(mesh) {
   }
 }
 
-bool DGGeometry::has_cell(std::size_t mesh_cell_index) const {
+bool Geometry::has_cell(std::size_t mesh_cell_index) const {
   return mesh_cell_index < m_cells.size() && m_cells[mesh_cell_index].has_value();
 }
 
-const DGGeometry::CellGeometry& DGGeometry::cell(std::size_t mesh_cell_index) const {
+const Geometry::CellGeometry& Geometry::cell(std::size_t mesh_cell_index) const {
   if (!has_cell(mesh_cell_index)) {
     throw std::out_of_range("No DG geometry is available for this mesh cell");
   }

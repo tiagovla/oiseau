@@ -11,7 +11,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import Normalize
 
-from oiseau.dg import DGSpace, EquationSystem, Field, LinearDG2D, dt, dx, dy, run_rk4
+from oiseau.dg import EquationSystem, Field, LinearDG2D, Space, dt, dx, dy, run_rk4
 from oiseau.mesh import CellKind, Mesh
 
 
@@ -42,7 +42,7 @@ def main(output=None):
         [[0, 1, 4, 3], [1, 2, 4], [2, 5, 4]],
         [CellKind.Quadrilateral, CellKind.Triangle, CellKind.Triangle],
     )
-    space = DGSpace(mesh, order=[4, 6, 6])
+    space = Space(mesh, order=[4, 6, 6])
 
     ez, hx, hy = Field("Ez"), Field("Hx"), Field("Hy")
     equations = EquationSystem(

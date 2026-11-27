@@ -128,8 +128,8 @@ void bind_nodal_elements(py::module_& m) {
 
 void dg(py::module_& m) {
   using namespace oiseau::dg;
-  using solver::DGState;
   using solver::LinearDG2D;
+  using solver::State;
   using BoundaryCallback =
       std::function<std::vector<double>(const std::vector<double>&, const LinearDG2D::Normal&)>;
 
@@ -154,7 +154,7 @@ void dg(py::module_& m) {
            py::arg("equations"))
       .def("field_index", &EquationSystem::field_index, py::arg("field"));
 
-  py::class_<DGSpace>(m, "DGSpace")
+  py::class_<Space>(m, "Space")
       .def(py::init<const mesh::Mesh&, unsigned>(), py::arg("mesh"), py::arg("order"),
            py::keep_alive<1, 2>())
       .def(py::init<const mesh::Mesh&, const std::vector<unsigned>&>(), py::arg("mesh"),
@@ -162,17 +162,17 @@ void dg(py::module_& m) {
            "Assign one positive polynomial order per top-dimensional cell in mesh order.")
       .def_prop_ro(
           "group_nodes",
-          [](const DGSpace& space) {
+          [](const Space& space) {
             py::list nodes;
             for (const auto& group : space.element_groups()) nodes.append(copy_array(group.nodes));
             return nodes;
           },
           "Copies of node coordinates with shape (cells, nodes, dimension), in state group order.");
 
-  py::class_<DGState>(m, "DGState")
+  py::class_<State>(m, "State")
       .def_prop_ro(
           "groups",
-          [](const DGState& state) {
+          [](const State& state) {
             py::list groups;
             for (const auto& group : state.groups) groups.append(copy_array(group));
             return groups;
@@ -182,7 +182,7 @@ void dg(py::module_& m) {
   py::class_<LinearDG2D>(m, "LinearDG2D")
       .def(
           "__init__",
-          [](LinearDG2D* self, mesh::Mesh& mesh, const DGSpace& space, EquationSystem equations,
+          [](LinearDG2D* self, mesh::Mesh& mesh, const Space& space, EquationSystem equations,
              double wave_speed, BoundaryCallback boundary) {
             LinearDG2D::BoundaryState ghost_state;
             if (boundary) {
@@ -209,7 +209,7 @@ void dg(py::module_& m) {
 
   m.def(
       "run_rk4",
-      [](const LinearDG2D& solver, DGState state, double initial_time, double time_step,
+      [](const LinearDG2D& solver, State state, double initial_time, double time_step,
          std::size_t steps) {
         time::RK4 integrator;
         time::run(integrator, solver, state, initial_time, time_step, steps);

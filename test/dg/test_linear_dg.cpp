@@ -39,7 +39,8 @@ using namespace oiseau::dg::solver;
 using namespace oiseau::mesh;
 
 Mesh interval_mesh() {
-  return {Topology({{0, 1}}, {get_cell_type(CellKind::Interval)}), Geometry({0, 2}, 1)};
+  return {Topology({{0, 1}}, {get_cell_type(CellKind::Interval)}),
+          oiseau::mesh::Geometry({0, 2}, 1)};
 }
 
 TEST(test_linear_dg, validates_spatial_directions_and_flux_policy) {
@@ -61,7 +62,7 @@ TEST(test_linear_dg, validates_state_shape_and_strides_before_sampling_or_comput
   const EquationSystem equations({u, v}, {dt(u) == -dx(v), dt(v) == -dx(u)});
   const LinearDG1D solver(mesh, {1}, equations, [](const auto&) { return 1.0; });
 
-  EXPECT_THROW(solver.rhs(DGState{}), std::invalid_argument);
+  EXPECT_THROW(solver.rhs(State{}), std::invalid_argument);
   auto state = solver.zero_state();
   state.groups[0].reshape({2, 2});
   EXPECT_THROW(solver.rhs(state), std::invalid_argument);
@@ -134,7 +135,7 @@ TEST(test_linear_dg, rejects_flux_with_the_wrong_number_of_fields) {
 TEST(test_linear_dg, differentiates_a_linear_field_across_rotated_3d_cells) {
   const auto tetrahedron = get_cell_type(CellKind::Tetrahedron);
   Mesh mesh{Topology({{0, 1, 2, 3}, {2, 0, 1, 4}}, {tetrahedron, tetrahedron}),
-            Geometry({0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1}, 3)};
+            oiseau::mesh::Geometry({0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1}, 3)};
   const Field u{"u"};
   const EquationSystem equations({u}, {dt(u) == -dx(u) - 2.0 * dy(u) - 3.0 * dz(u)});
   const LinearDG3D solver(mesh, {1, 2}, equations, [](const auto&) { return 4.0; });
@@ -175,8 +176,8 @@ TEST(test_linear_dg, quadratic_advection_converges_at_third_order_in_space) {
     vertices.back() = 1.0;
     const auto interval = get_cell_type(CellKind::Interval);
     Mesh mesh{Topology(std::move(cells), std::vector<CellType>(cell_count, interval)),
-              Geometry(std::move(vertices), 1)};
-    const DGSpace space(mesh, order);
+              oiseau::mesh::Geometry(std::move(vertices), 1)};
+    const Space space(mesh, order);
     const LinearDG1D solver(
         mesh, space, equations, [](const auto&) { return 1.0; },
         [](const auto&, const auto&, auto exterior) { exterior[0] = 0.0; });

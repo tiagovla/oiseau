@@ -19,7 +19,7 @@
 
 namespace {
 
-using oiseau::dg::DGSpace;
+using oiseau::dg::Space;
 using oiseau::mesh::CellKind;
 using oiseau::mesh::Geometry;
 using oiseau::mesh::get_cell_type;
@@ -80,7 +80,7 @@ Mesh volume_mesh() {
 
 TEST(test_dg_space, uniform_order_broadcasts_and_maps_order_two_line_nodes) {
   const auto mesh = line_mesh();
-  const DGSpace space(mesh, 2);
+  const Space space(mesh, 2);
 
   ASSERT_EQ(space.orders().size(), 2);
   EXPECT_EQ(space.orders()[0], 2);
@@ -102,7 +102,7 @@ TEST(test_dg_space, uniform_order_broadcasts_and_maps_order_two_line_nodes) {
 
 TEST(test_dg_space, groups_by_kind_and_order_and_skips_interleaved_boundary) {
   const auto mesh = mixed_mesh();
-  const DGSpace space(mesh, {2, 3, 2});
+  const Space space(mesh, {2, 3, 2});
 
   ASSERT_EQ(space.orders().size(), 3);
   EXPECT_EQ(space.orders()[0], 2);
@@ -128,7 +128,7 @@ TEST(test_dg_space, groups_by_kind_and_order_and_skips_interleaved_boundary) {
 
 TEST(test_dg_space, maps_hex_and_tet_vertices_in_three_dimensions) {
   const auto mesh = volume_mesh();
-  const DGSpace space(mesh, 1);
+  const Space space(mesh, 1);
 
   ASSERT_EQ(space.element_groups().size(), 2);
   const auto expect_vertices = [&space](CellKind kind, const auto& expected) {
@@ -153,18 +153,18 @@ TEST(test_dg_space, rejects_invalid_mesh_structure) {
   const auto interval = get_cell_type(CellKind::Interval);
   const std::vector<unsigned> orders = {1};
   const Mesh mismatched_topology{Topology({{0, 1}, {1, 0}}, {interval}), Geometry({0.0, 1.0}, 1)};
-  EXPECT_THROW(DGSpace(mismatched_topology, orders), std::invalid_argument);
+  EXPECT_THROW(Space(mismatched_topology, orders), std::invalid_argument);
 
   const Mesh zero_coordinate_dimension{Topology({{0, 1}}, {interval}), Geometry({0.0, 1.0}, 0)};
-  EXPECT_THROW(DGSpace(zero_coordinate_dimension, orders), std::invalid_argument);
+  EXPECT_THROW(Space(zero_coordinate_dimension, orders), std::invalid_argument);
 
   const Mesh incomplete_coordinates{Topology({{0, 1}}, {interval}),
                                     Geometry({0.0, 0.0, 1.0, 0.0, 2.0}, 2)};
-  EXPECT_THROW(DGSpace(incomplete_coordinates, orders), std::invalid_argument);
+  EXPECT_THROW(Space(incomplete_coordinates, orders), std::invalid_argument);
 
   const Mesh empty_mesh;
   const std::vector<unsigned> empty_orders;
-  EXPECT_THROW(DGSpace(empty_mesh, empty_orders), std::invalid_argument);
+  EXPECT_THROW(Space(empty_mesh, empty_orders), std::invalid_argument);
 }
 
 TEST(test_dg_space, rejects_invalid_orders_cell_types_and_vertices) {
@@ -172,16 +172,16 @@ TEST(test_dg_space, rejects_invalid_orders_cell_types_and_vertices) {
   const std::vector<unsigned> missing = {2, 3};
   const std::vector<unsigned> includes_boundary = {2, 3, 2, 1};
   const std::vector<unsigned> zero_on_later_cell = {2, 0, 2};
-  EXPECT_THROW(DGSpace(mesh, missing), std::invalid_argument);
-  EXPECT_THROW(DGSpace(mesh, includes_boundary), std::invalid_argument);
-  EXPECT_THROW(DGSpace(mesh, zero_on_later_cell), std::invalid_argument);
+  EXPECT_THROW(Space(mesh, missing), std::invalid_argument);
+  EXPECT_THROW(Space(mesh, includes_boundary), std::invalid_argument);
+  EXPECT_THROW(Space(mesh, zero_on_later_cell), std::invalid_argument);
 
   const UnsupportedCell unsupported_cell;
   const Mesh unsupported_mesh{Topology({{0, 1}}, {&unsupported_cell}), Geometry({0.0, 1.0}, 1)};
-  EXPECT_THROW(DGSpace(unsupported_mesh, 1), std::invalid_argument);
+  EXPECT_THROW(Space(unsupported_mesh, 1), std::invalid_argument);
 
   // Connectivity references vertex 1, but geometry contains only vertex 0.
   const Mesh invalid_vertex{Topology({{0, 1}}, {get_cell_type(CellKind::Interval)}),
                             Geometry({0.0}, 1)};
-  EXPECT_THROW(DGSpace(invalid_vertex, 1), std::out_of_range);
+  EXPECT_THROW(Space(invalid_vertex, 1), std::out_of_range);
 }
