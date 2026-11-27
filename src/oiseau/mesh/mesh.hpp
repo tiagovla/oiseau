@@ -6,9 +6,14 @@
 
 #pragma once
 
+#include <cstddef>
+#include <map>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "oiseau/mesh/geometry.hpp"
+#include "oiseau/mesh/region.hpp"
 #include "oiseau/mesh/topology.hpp"
 
 namespace oiseau::mesh {
@@ -30,9 +35,14 @@ class Mesh {
   Geometry& geometry();
   const Geometry& geometry() const;
 
+  // Merge top-dimensional cell indices into a named region, assigning a tag on first use.
+  void add_region(std::string name, std::vector<std::size_t> cells);
+  const Region& region(const std::string& name) const;
+
  private:
   Topology _topology;
   Geometry _geometry;
+  std::map<std::string, Region> _regions;
 };
 
 }  // namespace oiseau::mesh
