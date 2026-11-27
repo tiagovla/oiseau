@@ -14,10 +14,10 @@
 #include <type_traits>
 #include <vector>
 
-#include "oiseau/dg/dg_space.hpp"
 #include "oiseau/dg/equation.hpp"
 #include "oiseau/dg/field.hpp"
 #include "oiseau/dg/solver/state.hpp"
+#include "oiseau/dg/space.hpp"
 #include "oiseau/mesh/mesh.hpp"
 
 namespace oiseau::dg::solver {

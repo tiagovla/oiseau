@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "oiseau/dg/dg_geometry.hpp"
+#include "oiseau/dg/geometry.hpp"
 
 #include <algorithm>
 #include <array>

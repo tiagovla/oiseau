@@ -14,9 +14,9 @@
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/core/xtensor_forward.hpp>
 
-#include "oiseau/dg/dg_connectivity.hpp"
-#include "oiseau/dg/dg_geometry.hpp"
-#include "oiseau/dg/dg_space.hpp"
+#include "oiseau/dg/connectivity.hpp"
+#include "oiseau/dg/geometry.hpp"
+#include "oiseau/dg/space.hpp"
 #include "oiseau/mesh/mesh.hpp"
 
 namespace oiseau::dg {

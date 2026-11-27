@@ -10,7 +10,7 @@
 #include <cstddef>
 #include <span>
 
-#include "oiseau/dg/dg_integration.hpp"
+#include "oiseau/dg/integration.hpp"
 #include "oiseau/mesh/cell.hpp"
 
 namespace oiseau::dg::detail {

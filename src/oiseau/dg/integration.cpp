@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "oiseau/dg/dg_integration.hpp"
+#include "oiseau/dg/integration.hpp"
 
 #include <algorithm>
 #include <array>
@@ -25,13 +25,13 @@
 #include <xtensor/views/xslice.hpp>
 #include <xtensor/views/xview.hpp>
 
+#include "oiseau/dg/connectivity.hpp"
 #include "oiseau/dg/detail/cell_mapping.hpp"
 #include "oiseau/dg/detail/integration.hpp"
-#include "oiseau/dg/dg_connectivity.hpp"
-#include "oiseau/dg/dg_geometry.hpp"
-#include "oiseau/dg/dg_space.hpp"
+#include "oiseau/dg/geometry.hpp"
 #include "oiseau/dg/nodal/ref_element.hpp"
 #include "oiseau/dg/nodal/ref_element_type.hpp"
+#include "oiseau/dg/space.hpp"
 #include "oiseau/mesh/cell.hpp"
 #include "oiseau/mesh/mesh.hpp"
 #include "oiseau/mesh/topology.hpp"

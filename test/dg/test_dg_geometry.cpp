@@ -18,7 +18,7 @@
 #include <xtensor/generators/xbuilder.hpp>
 
 #include "oiseau/dg/detail/geometry.hpp"
-#include "oiseau/dg/dg_geometry.hpp"
+#include "oiseau/dg/geometry.hpp"
 #include "oiseau/dg/nodal/ref_element.hpp"
 #include "oiseau/dg/nodal/ref_element_type.hpp"
 #include "oiseau/io/gmsh.hpp"

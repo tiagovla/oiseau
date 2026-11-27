@@ -24,14 +24,14 @@
 #include <xtensor/views/xslice.hpp>
 #include <xtensor/views/xview.hpp>
 
+#include "oiseau/dg/connectivity.hpp"
 #include "oiseau/dg/detail/integration.hpp"
-#include "oiseau/dg/dg_connectivity.hpp"
-#include "oiseau/dg/dg_geometry.hpp"
-#include "oiseau/dg/dg_integration.hpp"
-#include "oiseau/dg/dg_space.hpp"
 #include "oiseau/dg/equation.hpp"
 #include "oiseau/dg/field.hpp"
+#include "oiseau/dg/geometry.hpp"
+#include "oiseau/dg/integration.hpp"
 #include "oiseau/dg/solver/linear_dg.hpp"
+#include "oiseau/dg/space.hpp"
 #include "oiseau/mesh/cell.hpp"
 #include "oiseau/mesh/geometry.hpp"
 #include "oiseau/mesh/mesh.hpp"

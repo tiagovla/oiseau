@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "oiseau/dg/dg_connectivity.hpp"
+#include "oiseau/dg/connectivity.hpp"
 
 #include <algorithm>
 #include <cstddef>

@@ -19,12 +19,12 @@
 #include <xtensor/core/xtensor_forward.hpp>
 #include <xtensor/generators/xbuilder.hpp>
 
-#include "oiseau/dg/dg_connectivity.hpp"
-#include "oiseau/dg/dg_geometry.hpp"
-#include "oiseau/dg/dg_integration.hpp"
-#include "oiseau/dg/dg_space.hpp"
+#include "oiseau/dg/connectivity.hpp"
 #include "oiseau/dg/equation.hpp"
 #include "oiseau/dg/field.hpp"
+#include "oiseau/dg/geometry.hpp"
+#include "oiseau/dg/integration.hpp"
+#include "oiseau/dg/space.hpp"
 #include "oiseau/mesh/mesh.hpp"
 #include "oiseau/mesh/topology.hpp"
 #include "oiseau/utils/logging.hpp"

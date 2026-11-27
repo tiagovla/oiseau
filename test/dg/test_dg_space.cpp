@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include "oiseau/dg/dg_space.hpp"
+#include "oiseau/dg/space.hpp"
 #include "oiseau/mesh/cell.hpp"
 #include "oiseau/mesh/geometry.hpp"
 #include "oiseau/mesh/mesh.hpp"
