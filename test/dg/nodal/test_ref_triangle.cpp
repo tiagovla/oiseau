@@ -24,21 +24,21 @@ namespace {
 
 TEST(test_ref_triangle, get_order) {
   for (unsigned order = 1; order <= 5; ++order) {
-    auto ref = oiseau::dg::nodal::RefTriangle(order);
+    auto ref = dg::nodal::RefTriangle(order);
     EXPECT_EQ(ref.order(), order);
   }
 }
 
 TEST(test_ref_triangle, get_number_of_nodes) {
   for (unsigned order = 1; order <= 5; ++order) {
-    auto ref = oiseau::dg::nodal::RefTriangle(order);
+    auto ref = dg::nodal::RefTriangle(order);
     unsigned n = (order + 1) * (order + 2) / 2;
     EXPECT_EQ(ref.number_of_nodes(), n);
   }
 }
 
 TEST(test_ref_triangle, order_two_nodes_are_equidistant) {
-  const oiseau::dg::nodal::RefTriangle ref(2);
+  const dg::nodal::RefTriangle ref(2);
   const xt::xarray<double> expected = {{-1.0, -1.0}, {0.0, -1.0}, {1.0, -1.0},
                                        {-1.0, 0.0},  {0.0, 0.0},  {-1.0, 1.0}};
   EXPECT_FLOATS_NEARLY_EQ(ref.r(), expected, 1e-12);
@@ -46,7 +46,7 @@ TEST(test_ref_triangle, order_two_nodes_are_equidistant) {
 
 TEST(test_ref_triangle, warp_factor) {
   xt::xarray<double> r = {0.1, 0.5, 0.9};
-  xt::xarray<double> output = oiseau::dg::nodal::detail::warp_factor(3, r);
+  xt::xarray<double> output = dg::nodal::detail::warp_factor(3, r);
   xt::xarray<double> expected = {0.038, 0.192, 0.346};
   EXPECT_FLOATS_NEARLY_EQ(output, expected, 0.01);
 }
@@ -54,15 +54,15 @@ TEST(test_ref_triangle, warp_factor) {
 TEST(test_ref_triangle, basis_function) {
   xt::xarray<double> ab = {{1, 2, 3, 4, 5}, {1, 2, 3, 4, 5}};
   ab = xt::transpose(ab);
-  xt::xarray<double> output = oiseau::dg::nodal::RefTriangle::basis_function(ab, 1, 2);
+  xt::xarray<double> output = dg::nodal::RefTriangle::basis_function(ab, 1, 2);
   xt::xarray<double> expected{0, -74.097064, -448.25662, -1502.7619, -3772.2142};
   EXPECT_FLOATS_NEARLY_EQ(output, expected, 0.01);
 }
 
 TEST(test_ref_triangle, grad_basis_function) {
-  const oiseau::dg::nodal::RefTriangle ref(3);
-  const auto ab = oiseau::dg::nodal::detail::rs_to_ab(ref.r());
-  const auto output = oiseau::dg::nodal::RefTriangle::grad_basis_function(ab, 1, 1);
+  const dg::nodal::RefTriangle ref(3);
+  const auto ab = dg::nodal::detail::rs_to_ab(ref.r());
+  const auto output = dg::nodal::RefTriangle::grad_basis_function(ab, 1, 1);
   xt::xarray<double> expected = {
       {-2.1213, -2.1213, -2.1213, -2.1213, 0.8103, 1.4142, 0.8103, 5.5537, 5.5537, 8.4853},
       {-6.3640, -3.4324, 1.3110, 4.2426, -3.4324, 0.7071, 4.2426, 1.3110, 4.2426, 4.2426}};
@@ -72,7 +72,7 @@ TEST(test_ref_triangle, grad_basis_function) {
 
 TEST(test_ref_triangle, warped_equilateral_nodes) {
   unsigned order = 3;
-  auto output = oiseau::dg::nodal::detail::generate_triangle_nodes(order);
+  auto output = dg::nodal::detail::generate_triangle_nodes(order);
   xt::xarray<double> expected = {
       {-1.0000, -0.4472, 0.4472, 1.0000, -0.7236, -0.0000, 0.7236, -0.2764, 0.2764, 0},
       {-0.5774, -0.5774, -0.5774, -0.5774, -0.0986, -0.0000, -0.0986, 0.6760, 0.6760, 1.1547}};
@@ -83,7 +83,7 @@ TEST(test_ref_triangle, warped_equilateral_nodes) {
 TEST(test_ref_triangle, equilateral_xy_to_rs) {
   xt::xarray<double> xy = {{1, 2, 3}, {2, 3, 4}};
   xy = xt::transpose(xy);
-  auto output = oiseau::dg::nodal::detail::equilateral_xy_to_rs(xy);
+  auto output = dg::nodal::detail::equilateral_xy_to_rs(xy);
   xt::xarray<double> expected = {{-0.4880, 1.9761}, {-0.0654, 3.1308}, {0.3573, 4.2855}};
   EXPECT_FLOATS_NEARLY_EQ(output, expected, 0.01);
 }
@@ -93,7 +93,7 @@ TEST(test_ref_triangle, rs_to_ab) {
       {-1.0000, -0.4472, 0.4472, 1.0000, -1.0000, -0.3333, 0.4472, -1.0000, -0.4472, -1.0000},
       {-1.0000, -1.0000, -1.0000, -1.0000, -0.4472, -0.3333, -0.4472, 0.4472, 0.4472, 1.0000}};
   rs = xt::transpose(rs);
-  auto output = oiseau::dg::nodal::detail::rs_to_ab(rs);
+  auto output = dg::nodal::detail::rs_to_ab(rs);
   xt::xarray<double> expected = {
       {-1.0000, -0.4472, 0.4472, 1.0000, -1.0000, -0.0000, 1.0000, -1.0000, 1.0000, -1.0000},
       {-1.0000, -1.0000, -1.0000, -1.0000, -0.4472, -0.3333, -0.4472, 0.4472, 0.4472, 1.0000}};
@@ -102,7 +102,7 @@ TEST(test_ref_triangle, rs_to_ab) {
 
   const double edge_distance = 1.0 / (1 << 24);
   const xt::xarray<double> near_apex = {{-1.0 + edge_distance / 4, 1.0 - edge_distance}};
-  const auto collapsed = oiseau::dg::nodal::detail::rs_to_ab(near_apex);
+  const auto collapsed = dg::nodal::detail::rs_to_ab(near_apex);
   EXPECT_DOUBLE_EQ(collapsed(0, 0), -1.0);
   EXPECT_DOUBLE_EQ(collapsed(0, 1), near_apex(0, 1));
 }
@@ -110,9 +110,9 @@ TEST(test_ref_triangle, rs_to_ab) {
 TEST(test_ref_triangle, vandermonde_interpolation) {
   for (unsigned order = 3; order <= 5; ++order) {
     // Coarse and fine reference elements
-    auto coarse_triangle = oiseau::dg::nodal::RefTriangle(order);
-    const oiseau::dg::nodal::RefElement& coarse_ref = coarse_triangle;
-    auto fine_ref = oiseau::dg::nodal::RefTriangle(order + 2);
+    auto coarse_triangle = dg::nodal::RefTriangle(order);
+    const dg::nodal::RefElement& coarse_ref = coarse_triangle;
+    auto fine_ref = dg::nodal::RefTriangle(order + 2);
 
     // Vandermonde matrices at coarse and fine nodes
     auto V_coarse = coarse_ref.v();
@@ -138,7 +138,7 @@ TEST(test_ref_triangle, vandermonde_interpolation) {
 }
 
 TEST(test_ref_triangle, vandermonde_values) {
-  const oiseau::dg::nodal::RefTriangle ref(3);
+  const dg::nodal::RefTriangle ref(3);
   const auto& output = ref.v();
   xt::xarray<double> expected = {
       {0.7071, -1.0000, 1.2247, -1.4142, -1.7321, 2.1213, -2.4495, 2.7386, -3.1623, -3.7417},
@@ -156,7 +156,7 @@ TEST(test_ref_triangle, vandermonde_values) {
 }
 
 TEST(test_ref_triangle, vandermonde_gradient_values) {
-  const oiseau::dg::nodal::RefTriangle ref(3);
+  const dg::nodal::RefTriangle ref(3);
   const auto& output = ref.gv();
   xt::xarray<double> expected_r = {
       {0, 0, 0, 0, 1.7321, -2.1213, 2.4495, -8.2158, 9.4868, 22.4499},
@@ -191,7 +191,7 @@ TEST(test_ref_triangle, vandermonde_gradient_values) {
 }
 
 TEST(test_ref_triangle, differentiation_matrix_values) {
-  const oiseau::dg::nodal::RefTriangle ref(3);
+  const dg::nodal::RefTriangle ref(3);
   const auto& output = ref.d();
   xt::xarray<double> expected_r = {
       {-3.0000, 4.0451, -1.5451, 0.5000, 0.0000, 0.0000, 0.0000, -0.0000, -0.0000, 0.0000},

@@ -19,7 +19,7 @@ TEST(test_io, gmsh_parser_mesh_format_handler) {
       R"(4.1 0 8
 $EndMeshFormat)";
   std::stringstream test_stream(str);
-  auto s = oiseau::io::detail::mesh_format_handler(test_stream);
+  auto s = io::detail::mesh_format_handler(test_stream);
   EXPECT_EQ(s.version, 4.1);
   EXPECT_EQ(s.data_size, 8);
   EXPECT_EQ(s.is_binary, 0);
@@ -32,7 +32,7 @@ TEST(test_io, gmsh_parser_physical_names_handler) {
 $EndPhysicalNames
 )";
   std::stringstream test_stream(str);
-  auto s = oiseau::io::detail::physical_names_handler(test_stream);
+  auto s = io::detail::physical_names_handler(test_stream);
   EXPECT_EQ(s.num_physical_names, 2);
   EXPECT_EQ(s.dimensions[0], 1);
   EXPECT_EQ(s.physical_tags[0], 11);
@@ -51,7 +51,7 @@ TEST(test_io, gmsh_parser_entities_handler) {
 3 1 1 0 0
 )";
   std::stringstream test_stream(str);
-  auto s = oiseau::io::detail::entities_handler(test_stream, false);
+  auto s = io::detail::entities_handler(test_stream, false);
   EXPECT_EQ(s.blocks[0][0].tag, 1);
 }
 
@@ -65,7 +65,7 @@ TEST(test_io, gmsh_parser_nodes_handler) {
 2
 1 -1 0)";
   std::stringstream test_stream(str);
-  auto s = oiseau::io::detail::nodes_handler(test_stream, false);
+  auto s = io::detail::nodes_handler(test_stream, false);
   EXPECT_EQ(s.num_entity_blocks, 2);
   EXPECT_EQ(s.max_node_tag, 2);
   EXPECT_EQ(s.min_node_tag, 1);

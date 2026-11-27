@@ -24,14 +24,14 @@ namespace {
 
 TEST(test_ref_line, get_order) {
   for (unsigned order = 1; order <= 5; ++order) {
-    auto ref = oiseau::dg::nodal::RefLine(order);
+    auto ref = dg::nodal::RefLine(order);
     EXPECT_EQ(ref.order(), order);
   }
 }
 
 TEST(test_ref_line, get_number_of_nodes) {
   for (unsigned order = 1; order <= 5; ++order) {
-    auto ref = oiseau::dg::nodal::RefLine(order);
+    auto ref = dg::nodal::RefLine(order);
     EXPECT_EQ(ref.number_of_nodes(), order + 1);
   }
 }
@@ -39,7 +39,7 @@ TEST(test_ref_line, get_number_of_nodes) {
 TEST(test_ref_line, differentiation_matrix_differentiates_polynomials) {
   for (unsigned order = 1; order <= 10; ++order) {
     SCOPED_TRACE(order);
-    const oiseau::dg::nodal::RefLine ref(order);
+    const dg::nodal::RefLine ref(order);
     const auto& derivative = ref.d();
     ASSERT_EQ(derivative.dimension(), 2);
     ASSERT_EQ(derivative.shape()[0], order + 1);
@@ -60,9 +60,9 @@ TEST(test_ref_line, differentiation_matrix_differentiates_polynomials) {
 TEST(test_ref_line, vandermonde_interpolation) {
   for (unsigned order = 3; order <= 5; ++order) {
     // Coarse and fine reference elements
-    const oiseau::dg::nodal::RefLine coarse_element(order);
-    const oiseau::dg::nodal::RefElement& coarse_ref = coarse_element;
-    auto fine_ref = oiseau::dg::nodal::RefLine(order + 2);
+    const dg::nodal::RefLine coarse_element(order);
+    const dg::nodal::RefElement& coarse_ref = coarse_element;
+    auto fine_ref = dg::nodal::RefLine(order + 2);
 
     // Vandermonde matrices at coarse and fine nodes
     auto V_coarse = coarse_ref.v();
@@ -88,8 +88,8 @@ TEST(test_ref_line, vandermonde_interpolation) {
 TEST(test_ref_line, vandermonde_values) {
   unsigned n = 4;
   xt::xarray<double> r = {0.1, 0.3, 0.7, 0.9};
-  const oiseau::dg::nodal::RefLine ref(n);
-  const oiseau::dg::nodal::RefElement& element = ref;
+  const dg::nodal::RefLine ref(n);
+  const dg::nodal::RefElement& element = ref;
   const auto output = element.vandermonde(r);
   xt::xarray<double> expected = {{0.70710678, 0.12247449, -0.76685233, -0.27594723, 0.71687369},
                                  {0.70710678, 0.36742346, -0.57711567, -0.71559198, 0.1547238},
@@ -107,7 +107,7 @@ TEST(test_ref_line, basis_gradient_values) {
                                  {0., 1.22474487, 4.26907484, 8.55904127, 12.74383196}};
   for (unsigned degree = 0; degree <= n; ++degree) {
     SCOPED_TRACE(degree);
-    const auto output = oiseau::dg::nodal::RefLine::grad_basis_function(r, degree);
+    const auto output = dg::nodal::RefLine::grad_basis_function(r, degree);
     const xt::xarray<double> expected_column = xt::col(expected, degree);
     EXPECT_FLOATS_NEARLY_EQ(output, expected_column, 0.0001);
   }
@@ -116,7 +116,7 @@ TEST(test_ref_line, basis_gradient_values) {
 TEST(test_ref_line, differentiation_matrix_reproduces_basis_gradients) {
   for (unsigned order = 2; order < 10; ++order) {
     SCOPED_TRACE(order);
-    const oiseau::dg::nodal::RefLine ref(order);
+    const dg::nodal::RefLine ref(order);
     const xt::xarray<double> differentiated = xt::linalg::dot(ref.d(), ref.v());
     EXPECT_FLOATS_NEARLY_EQ(differentiated, ref.gv(), 1e-10);
   }

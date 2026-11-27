@@ -15,7 +15,7 @@
 namespace oiseau {
 namespace {
 
-using oiseau::mesh::Geometry;
+using mesh::Geometry;
 
 TEST(test_mesh_geometry, infers_dimension_and_stores_points_in_order) {
   Geometry plane{{1, 2}, {3, 4}};

@@ -40,11 +40,8 @@
 namespace oiseau {
 namespace {
 
-using namespace oiseau::dg;
-using oiseau::mesh::CellKind;
-
 TEST(DGFaceQuadratureTest, point_has_one_weight_and_no_coordinates) {
-  const auto [nodes, weights] = detail::make_face_quadrature(CellKind::Point, 2);
+  const auto [nodes, weights] = dg::detail::make_face_quadrature(mesh::CellKind::Point, 2);
   ASSERT_EQ(nodes.dimension(), 2);
   EXPECT_EQ(nodes.shape()[0], 1);
   EXPECT_EQ(nodes.shape()[1], 0);
@@ -53,7 +50,7 @@ TEST(DGFaceQuadratureTest, point_has_one_weight_and_no_coordinates) {
 }
 
 TEST(DGFaceQuadratureTest, line_integrates_fourth_degree_moment) {
-  const auto [nodes, weights] = detail::make_face_quadrature(CellKind::Interval, 2);
+  const auto [nodes, weights] = dg::detail::make_face_quadrature(mesh::CellKind::Interval, 2);
   ASSERT_EQ(nodes.dimension(), 1);
   ASSERT_EQ(nodes.size(), weights.size());
   EXPECT_NEAR(xt::sum(weights)(), 2.0, 1e-12);
@@ -61,7 +58,7 @@ TEST(DGFaceQuadratureTest, line_integrates_fourth_degree_moment) {
 }
 
 TEST(DGFaceQuadratureTest, triangle_integrates_mixed_fifth_degree_moment) {
-  const auto [nodes, weights] = detail::make_face_quadrature(CellKind::Triangle, 2);
+  const auto [nodes, weights] = dg::detail::make_face_quadrature(mesh::CellKind::Triangle, 2);
   ASSERT_EQ(nodes.dimension(), 2);
   ASSERT_EQ(nodes.shape()[0], weights.size());
   ASSERT_EQ(nodes.shape()[1], 2);
@@ -73,7 +70,7 @@ TEST(DGFaceQuadratureTest, triangle_integrates_mixed_fifth_degree_moment) {
 }
 
 TEST(DGFaceQuadratureTest, square_integrates_tensor_product_moment) {
-  const auto [nodes, weights] = detail::make_face_quadrature(CellKind::Quadrilateral, 2);
+  const auto [nodes, weights] = dg::detail::make_face_quadrature(mesh::CellKind::Quadrilateral, 2);
   ASSERT_EQ(nodes.dimension(), 2);
   ASSERT_EQ(nodes.shape()[0], weights.size());
   ASSERT_EQ(nodes.shape()[1], 2);
@@ -84,9 +81,9 @@ TEST(DGFaceQuadratureTest, square_integrates_tensor_product_moment) {
 }
 
 TEST(DGFaceQuadratureTest, rejects_invalid_shape_and_order) {
-  EXPECT_THROW(detail::make_face_quadrature(CellKind::Tetrahedron, 2), std::logic_error);
+  EXPECT_THROW(dg::detail::make_face_quadrature(mesh::CellKind::Tetrahedron, 2), std::logic_error);
   const auto oversized_order = std::numeric_limits<unsigned>::max();
-  EXPECT_THROW(detail::make_face_quadrature(CellKind::Interval, oversized_order),
+  EXPECT_THROW(dg::detail::make_face_quadrature(mesh::CellKind::Interval, oversized_order),
                std::invalid_argument);
 }
 
@@ -94,16 +91,16 @@ TEST(DGFaceQuadratureTest, corner_weights_map_a_point_on_an_oriented_edge) {
   const std::array cell_vertices = {std::array{-1.0, -1.0, 0.0}, std::array{1.0, -1.0, 0.0},
                                     std::array{-1.0, 1.0, 0.0}};
   const std::array face_vertices{1, 2};
-  const Integration::QuadratureRule quadrature{.nodes = {0.5}, .weights = {1.0}};
+  const dg::Integration::QuadratureRule quadrature{.nodes = {0.5}, .weights = {1.0}};
 
-  EXPECT_EQ(detail::corner_weights(face_vertices.size(), quadrature.nodes, 0),
+  EXPECT_EQ(dg::detail::corner_weights(face_vertices.size(), quadrature.nodes, 0),
             (std::array{0.25, 0.75, 0.0, 0.0}));
   const auto points =
-      detail::face_points(cell_vertices, face_vertices, 2, {0, 1, 2, 3}, quadrature);
+      dg::detail::face_points(cell_vertices, face_vertices, 2, {0, 1, 2, 3}, quadrature);
   const auto reversed =
-      detail::face_points(cell_vertices, face_vertices, 2, {1, 0, 2, 3}, quadrature);
-  EXPECT_EQ(points, (Integration::Matrix{{-0.5, 0.5}}));
-  EXPECT_EQ(reversed, (Integration::Matrix{{0.5, -0.5}}));
+      dg::detail::face_points(cell_vertices, face_vertices, 2, {1, 0, 2, 3}, quadrature);
+  EXPECT_EQ(points, (dg::Integration::Matrix{{-0.5, 0.5}}));
+  EXPECT_EQ(reversed, (dg::Integration::Matrix{{0.5, -0.5}}));
 }
 
 // One quadrilateral and two triangles, followed by a boundary edge.
@@ -127,16 +124,15 @@ TEST(DGFaceQuadratureTest, corner_weights_map_a_point_on_an_oriented_edge) {
 //
 // Vertex orders are (3, 2, 1, 0), (2, 4, 1), and (4, 5, 2).
 
-oiseau::mesh::Mesh mixed_mesh(bool reversed) {
-  using namespace oiseau::mesh;
+mesh::Mesh mixed_mesh(bool reversed) {
   std::vector<std::vector<std::size_t>> cells = {{0, 1, 2, 3}, {1, 4, 2}, {4, 5, 2}, {0, 1}};
   if (reversed) {
     // Leave the second triangle positive to exercise both face permutations.
     std::ranges::reverse(cells[0]);
     std::ranges::reverse(cells[1]);
   }
-  const auto quad = get_cell_type(CellKind::Quadrilateral);
-  const auto triangle = get_cell_type(CellKind::Triangle);
+  const auto quad = mesh::get_cell_type(mesh::CellKind::Quadrilateral);
+  const auto triangle = mesh::get_cell_type(mesh::CellKind::Triangle);
   std::vector<double> coordinates;
   // Affine transformation: x' = 1 + 2x + 0.5y, y' = -2 + 0.25x + 1.5y.
   for (const auto& point :
@@ -144,8 +140,9 @@ oiseau::mesh::Mesh mixed_mesh(bool reversed) {
     coordinates.push_back(1.0 + 2.0 * point[0] + 0.5 * point[1]);
     coordinates.push_back(-2.0 + 0.25 * point[0] + 1.5 * point[1]);
   }
-  return {Topology(std::move(cells), {quad, triangle, triangle, get_cell_type(CellKind::Interval)}),
-          oiseau::mesh::Geometry(std::move(coordinates), 2)};
+  return {mesh::Topology(std::move(cells),
+                         {quad, triangle, triangle, mesh::get_cell_type(mesh::CellKind::Interval)}),
+          mesh::Geometry(std::move(coordinates), 2)};
 }
 
 class DGIntegrationTest : public ::testing::TestWithParam<bool> {};
@@ -153,14 +150,14 @@ class DGIntegrationTest : public ::testing::TestWithParam<bool> {};
 TEST_P(DGIntegrationTest, mass_and_stiffness_satisfy_physical_integral_identities) {
   bool reversed = GetParam();
   auto mesh = mixed_mesh(reversed);
-  const Space space(mesh, {2, 3, 4});
-  const Connectivity connectivity(mesh);
-  const Geometry geometry(mesh);
-  const Integration integration(mesh, space, connectivity, geometry);
+  const dg::Space space(mesh, {2, 3, 4});
+  const dg::Connectivity connectivity(mesh);
+  const dg::Geometry geometry(mesh);
+  const dg::Integration integration(mesh, space, connectivity, geometry);
 
   constexpr double tolerance = 1e-11;
-  const auto expect_matrix_near = [](const char* name, const Integration::Matrix& actual,
-                                     const Integration::Matrix& expected) {
+  const auto expect_matrix_near = [](const char* name, const dg::Integration::Matrix& actual,
+                                     const dg::Integration::Matrix& expected) {
     SCOPED_TRACE(name);
     ASSERT_EQ(actual.shape(), expected.shape());
     for (const auto& index : xt::argwhere(!xt::isclose(actual, expected, 0.0, tolerance))) {
@@ -188,8 +185,8 @@ TEST_P(DGIntegrationTest, mass_and_stiffness_satisfy_physical_integral_identitie
     expect_matrix_near("mass times inverse mass", xt::linalg::dot(mass, inverse_mass),
                        xt::eye<double>(nodes));
 
-    Integration::Matrix boundary_x = xt::zeros<double>({nodes, nodes});
-    Integration::Matrix boundary_y = xt::zeros<double>({nodes, nodes});
+    dg::Integration::Matrix boundary_x = xt::zeros<double>({nodes, nodes});
+    dg::Integration::Matrix boundary_y = xt::zeros<double>({nodes, nodes});
     for (const auto& face : cell.faces) {
       const auto& trace = face.minus->trace;
       auto weights = xt::empty<double>({face.point_count()});
@@ -209,10 +206,10 @@ TEST_P(DGIntegrationTest, mass_and_stiffness_satisfy_physical_integral_identitie
 TEST_P(DGIntegrationTest, unequal_orders_trace_the_same_polynomial_at_shared_face_points) {
   bool reversed = GetParam();
   auto mesh = mixed_mesh(reversed);
-  const Space space(mesh, {2, 3, 4});
-  const Connectivity connectivity(mesh);
-  const Geometry geometry(mesh);
-  const Integration integration(mesh, space, connectivity, geometry);
+  const dg::Space space(mesh, {2, 3, 4});
+  const dg::Connectivity connectivity(mesh);
+  const dg::Geometry geometry(mesh);
+  const dg::Integration integration(mesh, space, connectivity, geometry);
   const auto groups = space.element_groups();
   std::size_t interior_sides = 0;
   for (std::size_t cell_index = 0; cell_index < 3; ++cell_index) {
@@ -253,9 +250,9 @@ TEST_P(DGIntegrationTest, unequal_orders_trace_the_same_polynomial_at_shared_fac
 TEST_P(DGIntegrationTest, linear_solver_preserves_constants_and_differentiates_quadratics) {
   bool reversed = GetParam();
   auto mesh = mixed_mesh(reversed);
-  const Field u{"u"};
-  const EquationSystem equations({u}, {dt(u) == -dx(u) - 0.5 * dy(u)});
-  const solver::LinearDG2D solver(mesh, {2, 3, 4}, equations, [](const auto& normal) {
+  const dg::Field u{"u"};
+  const dg::EquationSystem equations({u}, {dg::dt(u) == -dg::dx(u) - 0.5 * dg::dy(u)});
+  const dg::solver::LinearDG2D solver(mesh, {2, 3, 4}, equations, [](const auto& normal) {
     return std::abs(normal[0] + 0.5 * normal[1]);
   });
   for (const bool constant : {true, false}) {
@@ -280,8 +277,8 @@ TEST_P(DGIntegrationTest, reference_operators_are_shared_and_own_their_lifetime)
   const auto integration = [] {
     bool reversed = GetParam();
     auto mesh = mixed_mesh(reversed);
-    const Space space(mesh, 3);
-    return Integration(mesh, space);
+    const dg::Space space(mesh, 3);
+    return dg::Integration(mesh, space);
   }();
   const auto copy = integration;
   EXPECT_EQ(integration.cell(1).reference, integration.cell(2).reference);
@@ -296,10 +293,10 @@ TEST_P(DGIntegrationTest, reference_operators_are_shared_and_own_their_lifetime)
 TEST_P(DGIntegrationTest, face_rules_share_reference_data_and_apply_cell_scaling) {
   bool reversed = GetParam();
   auto mesh = mixed_mesh(reversed);
-  const Space space(mesh, 3);
-  const Connectivity connectivity(mesh);
-  const Geometry geometry(mesh);
-  const Integration integration(mesh, space, connectivity, geometry);
+  const dg::Space space(mesh, 3);
+  const dg::Connectivity connectivity(mesh);
+  const dg::Geometry geometry(mesh);
+  const dg::Integration integration(mesh, space, connectivity, geometry);
   const auto quadrature = integration.cell(0).faces[0].minus->quadrature;
   for (std::size_t face = 0; face < 3; ++face) {
     EXPECT_EQ(integration.cell(1).faces[face].minus, integration.cell(2).faces[face].minus);
@@ -355,26 +352,25 @@ TEST_P(DGIntegrationTest, face_rules_share_reference_data_and_apply_cell_scaling
 TEST(DGIntegrationInputTest, rejects_inputs_from_different_meshes) {
   auto mesh = mixed_mesh(false);
   auto other_mesh = mesh;
-  const Space space(mesh, 1);
-  const Connectivity connectivity(mesh);
-  const Geometry geometry(mesh);
-  const Space other_space(other_mesh, 1);
-  const Connectivity other_connectivity(other_mesh);
-  const Geometry other_geometry(other_mesh);
+  const dg::Space space(mesh, 1);
+  const dg::Connectivity connectivity(mesh);
+  const dg::Geometry geometry(mesh);
+  const dg::Space other_space(other_mesh, 1);
+  const dg::Connectivity other_connectivity(other_mesh);
+  const dg::Geometry other_geometry(other_mesh);
 
-  EXPECT_THROW(Integration(mesh, other_space, connectivity, geometry), std::invalid_argument);
-  EXPECT_THROW(Integration(mesh, space, other_connectivity, geometry), std::invalid_argument);
-  EXPECT_THROW(Integration(mesh, space, connectivity, other_geometry), std::invalid_argument);
+  EXPECT_THROW(dg::Integration(mesh, other_space, connectivity, geometry), std::invalid_argument);
+  EXPECT_THROW(dg::Integration(mesh, space, other_connectivity, geometry), std::invalid_argument);
+  EXPECT_THROW(dg::Integration(mesh, space, connectivity, other_geometry), std::invalid_argument);
 }
 
 TEST(DGIntegrationDimensionTest, interval_has_only_x_volume_operators) {
-  using namespace oiseau::mesh;
-  const auto interval = get_cell_type(CellKind::Interval);
-  Mesh mesh{Topology({{0, 1}}, {interval}), oiseau::mesh::Geometry({0.0, 2.0}, 1)};
-  const Space space(mesh, 1);
-  const Connectivity connectivity(mesh);
-  const oiseau::dg::Geometry geometry(mesh);
-  const Integration integration(mesh, space, connectivity, geometry);
+  const auto interval = mesh::get_cell_type(mesh::CellKind::Interval);
+  mesh::Mesh mesh{mesh::Topology({{0, 1}}, {interval}), mesh::Geometry({0.0, 2.0}, 1)};
+  const dg::Space space(mesh, 1);
+  const dg::Connectivity connectivity(mesh);
+  const dg::Geometry geometry(mesh);
+  const dg::Integration integration(mesh, space, connectivity, geometry);
   const auto& cell = integration.cell(0);
 
   EXPECT_EQ(cell.weak_derivative_x.size(), 4);
@@ -387,14 +383,13 @@ TEST(DGIntegrationDimensionTest, interval_has_only_x_volume_operators) {
 }
 
 TEST(DGIntegrationDimensionTest, rotated_tetrahedral_interface_shares_both_oriented_rules) {
-  using namespace oiseau::mesh;
-  const auto tetrahedron = get_cell_type(CellKind::Tetrahedron);
-  Mesh mesh{Topology({{0, 1, 2, 3}, {2, 0, 1, 4}}, {tetrahedron, tetrahedron}),
-            oiseau::mesh::Geometry({0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1}, 3)};
-  const Space space(mesh, {1, 2});
-  const Connectivity connectivity(mesh);
-  const oiseau::dg::Geometry geometry(mesh);
-  const Integration integration(mesh, space, connectivity, geometry);
+  const auto tetrahedron = mesh::get_cell_type(mesh::CellKind::Tetrahedron);
+  mesh::Mesh mesh{mesh::Topology({{0, 1, 2, 3}, {2, 0, 1, 4}}, {tetrahedron, tetrahedron}),
+                  mesh::Geometry({0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1}, 3)};
+  const dg::Space space(mesh, {1, 2});
+  const dg::Connectivity connectivity(mesh);
+  const dg::Geometry geometry(mesh);
+  const dg::Integration integration(mesh, space, connectivity, geometry);
 
   constexpr std::size_t shared_face = 3;
   const auto& connection = connectivity.faces(0)[shared_face];

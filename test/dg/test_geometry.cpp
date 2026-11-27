@@ -29,27 +29,27 @@
 namespace oiseau {
 namespace {
 
-oiseau::dg::detail::Point make_point(std::initializer_list<double> values) {
-  oiseau::dg::detail::Point point = xt::zeros<double>({values.size()});
+dg::detail::Point make_point(std::initializer_list<double> values) {
+  dg::detail::Point point = xt::zeros<double>({values.size()});
   std::ranges::copy(values, point.begin());
   return point;
 }
 
 TEST(test_dg_geometry, padded_matrix) {
-  const oiseau::dg::detail::Matrix matrix = {{2.0, 1.0}, {1.0, 3.0}};
+  const dg::detail::Matrix matrix = {{2.0, 1.0}, {1.0, 3.0}};
   const std::array<double, 9> expected = {2.0, 1.0, 0.0, 1.0, 3.0, 0.0, 0.0, 0.0, 0.0};
-  EXPECT_EQ(oiseau::dg::detail::padded_matrix(matrix, 2), expected);
+  EXPECT_EQ(dg::detail::padded_matrix(matrix, 2), expected);
 }
 
 TEST(test_dg_geometry, point_array) {
-  EXPECT_EQ(oiseau::dg::detail::point_array(make_point({3.0, 4.0})),
+  EXPECT_EQ(dg::detail::point_array(make_point({3.0, 4.0})),
             (std::array<double, 3>{3.0, 4.0, 0.0}));
 }
 
 TEST(test_dg_geometry, ref_type_for) {
-  using oiseau::dg::detail::ref_type_for;
-  using oiseau::dg::nodal::RefElementType;
-  using oiseau::mesh::CellKind;
+  using dg::detail::ref_type_for;
+  using dg::nodal::RefElementType;
+  using mesh::CellKind;
   EXPECT_EQ(ref_type_for(CellKind::Interval), RefElementType::Line);
   EXPECT_EQ(ref_type_for(CellKind::Triangle), RefElementType::Triangle);
   EXPECT_EQ(ref_type_for(CellKind::Quadrilateral), RefElementType::Quadrilateral);
@@ -59,64 +59,63 @@ TEST(test_dg_geometry, ref_type_for) {
 }
 
 TEST(test_dg_geometry, is_degenerate) {
-  using oiseau::dg::detail::is_degenerate;
-  const oiseau::dg::detail::Matrix matrix = {{2.0, 1.0}, {1.0, 3.0}};
-  const oiseau::dg::detail::Matrix singular = {{0.0, 0.0}, {0.0, 1.0}};
+  using dg::detail::is_degenerate;
+  const dg::detail::Matrix matrix = {{2.0, 1.0}, {1.0, 3.0}};
+  const dg::detail::Matrix singular = {{0.0, 0.0}, {0.0, 1.0}};
   EXPECT_FALSE(is_degenerate(matrix, 5.0));
   EXPECT_TRUE(is_degenerate(singular, 0.0));
   EXPECT_TRUE(is_degenerate(matrix, std::numeric_limits<double>::infinity()));
 }
 
 TEST(test_dg_geometry, affine_tolerance) {
-  const std::vector<oiseau::dg::detail::Point> points = {
-      make_point({0.0, 0.0}), make_point({1.0, 0.0}), make_point({0.0, 1.0})};
-  const auto tolerance = oiseau::dg::detail::affine_tolerance(points, 2);
+  const std::vector<dg::detail::Point> points = {make_point({0.0, 0.0}), make_point({1.0, 0.0}),
+                                                 make_point({0.0, 1.0})};
+  const auto tolerance = dg::detail::affine_tolerance(points, 2);
   EXPECT_GT(tolerance, 0.0);
   EXPECT_TRUE(std::isfinite(tolerance));
 }
 
 TEST(test_dg_geometry, physical_vertex) {
-  using oiseau::dg::detail::physical_vertex;
-  const oiseau::mesh::Geometry geometry(std::vector<double>{1.0, 2.0, 0.0, 3.0, 4.0, 0.0}, 3);
+  using dg::detail::physical_vertex;
+  const mesh::Geometry geometry(std::vector<double>{1.0, 2.0, 0.0, 3.0, 4.0, 0.0}, 3);
   const auto vertex = physical_vertex(geometry, 1, 2);
   EXPECT_DOUBLE_EQ(vertex(0), 3.0);
   EXPECT_DOUBLE_EQ(vertex(1), 4.0);
   EXPECT_THROW(physical_vertex(geometry, 2, 2), std::out_of_range);
-  const oiseau::mesh::Geometry off_plane(std::vector<double>{0.0, 0.0, 1.0}, 3);
+  const mesh::Geometry off_plane(std::vector<double>{0.0, 0.0, 1.0}, 3);
   EXPECT_THROW(physical_vertex(off_plane, 0, 2), std::invalid_argument);
-  const oiseau::mesh::Geometry nonfinite(
-      std::vector<double>{std::numeric_limits<double>::infinity(), 0.0}, 2);
+  const mesh::Geometry nonfinite(std::vector<double>{std::numeric_limits<double>::infinity(), 0.0},
+                                 2);
   EXPECT_THROW(physical_vertex(nonfinite, 0, 2), std::invalid_argument);
 }
 
 TEST(test_dg_geometry, independent_vertices) {
-  using namespace oiseau::dg::detail;
-  const std::vector<Point> line = {make_point({0.0, 0.0}), make_point({1.0, 3.0}),
-                                   make_point({-2.0, 0.0}), make_point({2.0, 0.0})};
-  EXPECT_EQ(independent_vertices(line, 1), (std::array<std::size_t, 4>{0, 2, 1, 1}));
+  const std::vector<dg::detail::Point> line = {make_point({0.0, 0.0}), make_point({1.0, 3.0}),
+                                               make_point({-2.0, 0.0}), make_point({2.0, 0.0})};
+  EXPECT_EQ(dg::detail::independent_vertices(line, 1), (std::array<std::size_t, 4>{0, 2, 1, 1}));
 
-  const std::vector<Point> triangle = {make_point({0.0, 0.0}), make_point({1.0, 0.0}),
-                                       make_point({0.0, 1.0})};
-  const auto basis = independent_vertices(triangle, 2);
+  const std::vector<dg::detail::Point> triangle = {make_point({0.0, 0.0}), make_point({1.0, 0.0}),
+                                                   make_point({0.0, 1.0})};
+  const auto basis = dg::detail::independent_vertices(triangle, 2);
   EXPECT_EQ(basis[0], 0);
   const auto first = triangle[basis[1]] - triangle[basis[0]];
   const auto second = triangle[basis[2]] - triangle[basis[0]];
   EXPECT_GT(std::abs(first(0) * second(1) - first(1) * second(0)),
             std::numeric_limits<double>::epsilon());
 
-  const std::vector<Point> points_3d = {make_point({0.0, 0.0, 0.0}), make_point({1.0, 0.0, 0.0}),
-                                        make_point({0.0, 1.0, 0.0}), make_point({0.0, 0.0, 1.0}),
-                                        make_point({0.0, 0.0, 2.0})};
+  const std::vector<dg::detail::Point> points_3d = {
+      make_point({0.0, 0.0, 0.0}), make_point({1.0, 0.0, 0.0}), make_point({0.0, 1.0, 0.0}),
+      make_point({0.0, 0.0, 1.0}), make_point({0.0, 0.0, 2.0})};
   const std::array<std::size_t, 4> largest_basis = {0, 1, 2, 4};
-  EXPECT_EQ(independent_vertices(points_3d, 3), largest_basis);
+  EXPECT_EQ(dg::detail::independent_vertices(points_3d, 3), largest_basis);
 
-  EXPECT_THROW(independent_vertices(
+  EXPECT_THROW(dg::detail::independent_vertices(
                    {make_point({0.0, 0.0}), make_point({1.0, 0.0}), make_point({2.0, 0.0})}, 2),
                std::logic_error);
 }
 
 TEST(test_dg_geometry, triangle_area) {
-  using oiseau::dg::detail::triangle_area;
+  using dg::detail::triangle_area;
   const auto a = make_point({1.0, 2.0, 3.0});
   const auto b = make_point({4.0, 2.0, 3.0});
   const auto c = make_point({1.0, 6.0, 6.0});
@@ -127,7 +126,7 @@ TEST(test_dg_geometry, triangle_area) {
 }
 
 TEST(test_dg_geometry, face_measure) {
-  using oiseau::dg::detail::face_measure;
+  using dg::detail::face_measure;
   EXPECT_DOUBLE_EQ(face_measure({make_point({2.0})}, 0), 1.0);
   EXPECT_DOUBLE_EQ(face_measure({make_point({0.0, 0.0}), make_point({3.0, 4.0})}, 1), 5.0);
   EXPECT_DOUBLE_EQ(face_measure({make_point({0.0, 0.0, 0.0}), make_point({2.0, 0.0, 0.0}),
@@ -142,16 +141,16 @@ TEST(test_dg_geometry, face_measure) {
 }
 
 TEST(test_dg_geometry, centroid) {
-  const std::vector<oiseau::dg::detail::Point> triangle = {
+  const std::vector<dg::detail::Point> triangle = {
       make_point({0.0, 0.0, 0.0}), make_point({2.0, 0.0, 0.0}), make_point({0.0, 3.0, 0.0})};
-  const auto center = oiseau::dg::detail::centroid(triangle);
+  const auto center = dg::detail::centroid(triangle);
   EXPECT_DOUBLE_EQ(center(0), 2.0 / 3.0);
   EXPECT_DOUBLE_EQ(center(1), 1.0);
   EXPECT_DOUBLE_EQ(center(2), 0.0);
 }
 
 TEST(test_dg_geometry, face_normal) {
-  using oiseau::dg::detail::face_normal;
+  using dg::detail::face_normal;
   const auto normal_1d = face_normal({make_point({1.0})}, make_point({0.0}), 1);
   EXPECT_DOUBLE_EQ(normal_1d(0), 1.0);
   const auto normal_2d =
@@ -189,8 +188,8 @@ $Elements
 1 1 2
 2 3 2
 $EndElements)";
-  const auto mesh = oiseau::io::gmsh_read_from_string(mesh_text);
-  const oiseau::dg::Geometry geometry(mesh);
+  const auto mesh = io::gmsh_read_from_string(mesh_text);
+  const dg::Geometry geometry(mesh);
 
   for (std::size_t cell_index = 0; cell_index < 2; ++cell_index) {
     SCOPED_TRACE(cell_index);
@@ -236,8 +235,8 @@ $Elements
 2 0 2 1
 1 1 2 3
 $EndElements)";
-  const auto mesh = oiseau::io::gmsh_read_from_string(mesh_text);
-  const oiseau::dg::Geometry geometry(mesh);
+  const auto mesh = io::gmsh_read_from_string(mesh_text);
+  const dg::Geometry geometry(mesh);
 
   ASSERT_TRUE(geometry.has_cell(0));
   const auto& cell = geometry.cell(0);
@@ -267,7 +266,7 @@ $EndElements)";
 }
 
 TEST(test_dg_geometry, quadrilaterals_of_the_same_type_keep_their_own_geometry) {
-  const auto mesh = oiseau::io::gmsh_read_from_string(R"($MeshFormat
+  const auto mesh = io::gmsh_read_from_string(R"($MeshFormat
 4.1 0 8
 $EndMeshFormat
 $Nodes
@@ -296,7 +295,7 @@ $Elements
 1 1 2 3 4
 2 5 6 7 8
 $EndElements)");
-  const oiseau::dg::Geometry geometry(mesh);
+  const dg::Geometry geometry(mesh);
   const auto& rectangle = geometry.cell(0);
   const auto& skew = geometry.cell(1);
 
@@ -319,16 +318,15 @@ $EndElements)");
 }
 
 TEST(test_dg_geometry, rejects_degenerate_and_non_affine_cells) {
-  using oiseau::dg::Geometry;
-  using namespace oiseau::mesh;
+  const mesh::Mesh degenerate{
+      mesh::Topology({{0, 1, 2}}, {mesh::get_cell_type(mesh::CellKind::Triangle)}),
+      mesh::Geometry({0.0, 0.0, 1.0, 0.0, 2.0, 0.0}, 2)};
+  EXPECT_THROW(dg::Geometry{degenerate}, std::invalid_argument);
 
-  const Mesh degenerate{Topology({{0, 1, 2}}, {get_cell_type(CellKind::Triangle)}),
-                        oiseau::mesh::Geometry({0.0, 0.0, 1.0, 0.0, 2.0, 0.0}, 2)};
-  EXPECT_THROW(Geometry{degenerate}, std::invalid_argument);
-
-  const Mesh non_affine{Topology({{0, 1, 2, 3}}, {get_cell_type(CellKind::Quadrilateral)}),
-                        oiseau::mesh::Geometry({0.0, 0.0, 2.0, 0.0, 1.0, 1.0, 0.0, 1.0}, 2)};
-  EXPECT_THROW(Geometry{non_affine}, std::invalid_argument);
+  const mesh::Mesh non_affine{
+      mesh::Topology({{0, 1, 2, 3}}, {mesh::get_cell_type(mesh::CellKind::Quadrilateral)}),
+      mesh::Geometry({0.0, 0.0, 2.0, 0.0, 1.0, 1.0, 0.0, 1.0}, 2)};
+  EXPECT_THROW(dg::Geometry{non_affine}, std::invalid_argument);
 }
 
 TEST(test_dg_geometry, one_tetrahedron_has_outward_face_normals) {
@@ -352,8 +350,8 @@ $Elements
 3 0 4 1
 1 1 2 3 4
 $EndElements)";
-  const auto mesh = oiseau::io::gmsh_read_from_string(mesh_text);
-  const oiseau::dg::Geometry geometry(mesh);
+  const auto mesh = io::gmsh_read_from_string(mesh_text);
+  const dg::Geometry geometry(mesh);
 
   ASSERT_TRUE(geometry.has_cell(0));
   const auto& cell = geometry.cell(0);

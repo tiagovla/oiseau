@@ -23,14 +23,14 @@ namespace {
 
 TEST(test_ref_hexahedron, get_order) {
   for (unsigned order = 1; order <= 5; ++order) {
-    auto ref = oiseau::dg::nodal::RefHexahedron(order);
+    auto ref = dg::nodal::RefHexahedron(order);
     EXPECT_EQ(ref.order(), order);
   }
 }
 
 TEST(test_ref_hexahedron, get_number_of_nodes) {
   for (unsigned order = 1; order <= 5; ++order) {
-    auto ref = oiseau::dg::nodal::RefHexahedron(order);
+    auto ref = dg::nodal::RefHexahedron(order);
     unsigned n = (order + 1) * (order + 1) * (order + 1);
     EXPECT_EQ(ref.number_of_nodes(), n);
   }
@@ -39,9 +39,9 @@ TEST(test_ref_hexahedron, get_number_of_nodes) {
 TEST(test_ref_hexahedron, vandermonde_interpolation) {
   for (unsigned order = 2; order <= 3; ++order) {
     // Coarse and fine reference elements
-    const oiseau::dg::nodal::RefHexahedron coarse_element(order);
-    const oiseau::dg::nodal::RefElement& coarse_ref = coarse_element;
-    auto fine_ref = oiseau::dg::nodal::RefHexahedron(order + 2);
+    const dg::nodal::RefHexahedron coarse_element(order);
+    const dg::nodal::RefElement& coarse_ref = coarse_element;
+    auto fine_ref = dg::nodal::RefHexahedron(order + 2);
 
     // Vandermonde matrices at coarse and fine nodes
     auto V_coarse = coarse_ref.v();
@@ -69,7 +69,7 @@ TEST(test_ref_hexahedron, vandermonde_interpolation) {
 }
 
 TEST(test_ref_hexahedron, differentiation_matrix_differentiates_polynomials) {
-  const oiseau::dg::nodal::RefHexahedron ref(4);
+  const dg::nodal::RefHexahedron ref(4);
   auto r = xt::col(ref.r(), 0);
   auto s = xt::col(ref.r(), 1);
   auto t = xt::col(ref.r(), 2);

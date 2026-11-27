@@ -68,7 +68,7 @@ struct RecordingSystem {
 };
 
 struct DgDecaySystem {
-  static oiseau::dg::solver::State rhs(const oiseau::dg::solver::State& state) {
+  static dg::solver::State rhs(const dg::solver::State& state) {
     auto derivative = state;
     derivative.groups[0](0) = -state.groups[0](0);
     return derivative;
@@ -97,35 +97,34 @@ struct StateSystem {
   }
 };
 
-static_assert(oiseau::time::AddScaledState<ScalarState>);
-static_assert(oiseau::time::ScaleAddInPlaceState<ScalarState>);
-static_assert(oiseau::time::AddScaledState<oiseau::dg::solver::State>);
-static_assert(oiseau::time::ScaleAddInPlaceState<oiseau::dg::solver::State>);
-static_assert(!oiseau::time::AddScaledState<double>);
-static_assert(!oiseau::time::ScaleAddInPlaceState<double>);
-static_assert(!oiseau::time::AddScaledState<WrongStateOperations>);
-static_assert(!oiseau::time::ScaleAddInPlaceState<WrongStateOperations>);
-static_assert(oiseau::time::TimeIntegrator<oiseau::time::RK4, StateSystem, AddScaledOnlyState>);
-static_assert(!oiseau::time::TimeIntegrator<oiseau::time::LSRK54, StateSystem, AddScaledOnlyState>);
-static_assert(!oiseau::time::TimeIntegrator<oiseau::time::RK4, StateSystem, InPlaceOnlyState>);
-static_assert(oiseau::time::TimeIntegrator<oiseau::time::LSRK54, StateSystem, InPlaceOnlyState>);
-static_assert(!oiseau::time::TimeIntegrator<oiseau::time::RK4, StateSystem, WrongStateOperations>);
-static_assert(
-    !oiseau::time::TimeIntegrator<oiseau::time::LSRK54, StateSystem, WrongStateOperations>);
-static_assert(!oiseau::time::TimeIntegrator<oiseau::time::RK4, StateSystem, double>);
-static_assert(!oiseau::time::TimeIntegrator<oiseau::time::LSRK54, StateSystem, double>);
+static_assert(time::AddScaledState<ScalarState>);
+static_assert(time::ScaleAddInPlaceState<ScalarState>);
+static_assert(time::AddScaledState<dg::solver::State>);
+static_assert(time::ScaleAddInPlaceState<dg::solver::State>);
+static_assert(!time::AddScaledState<double>);
+static_assert(!time::ScaleAddInPlaceState<double>);
+static_assert(!time::AddScaledState<WrongStateOperations>);
+static_assert(!time::ScaleAddInPlaceState<WrongStateOperations>);
+static_assert(time::TimeIntegrator<time::RK4, StateSystem, AddScaledOnlyState>);
+static_assert(!time::TimeIntegrator<time::LSRK54, StateSystem, AddScaledOnlyState>);
+static_assert(!time::TimeIntegrator<time::RK4, StateSystem, InPlaceOnlyState>);
+static_assert(time::TimeIntegrator<time::LSRK54, StateSystem, InPlaceOnlyState>);
+static_assert(!time::TimeIntegrator<time::RK4, StateSystem, WrongStateOperations>);
+static_assert(!time::TimeIntegrator<time::LSRK54, StateSystem, WrongStateOperations>);
+static_assert(!time::TimeIntegrator<time::RK4, StateSystem, double>);
+static_assert(!time::TimeIntegrator<time::LSRK54, StateSystem, double>);
 
-static_assert(oiseau::time::TimeIntegrator<oiseau::time::RK4, GrowthSystem, ScalarState>);
-static_assert(oiseau::time::TimeIntegrator<oiseau::time::LSRK54, GrowthSystem, ScalarState>);
-static_assert(oiseau::time::TimeIntegrator<Euler, GrowthSystem, ScalarState>);
-static_assert(!oiseau::time::TimeIntegrator<NoStep, GrowthSystem, ScalarState>);
+static_assert(time::TimeIntegrator<time::RK4, GrowthSystem, ScalarState>);
+static_assert(time::TimeIntegrator<time::LSRK54, GrowthSystem, ScalarState>);
+static_assert(time::TimeIntegrator<Euler, GrowthSystem, ScalarState>);
+static_assert(!time::TimeIntegrator<NoStep, GrowthSystem, ScalarState>);
 
 TEST(test_time_integrator, rk4_solves_autonomous_equation) {
   GrowthSystem system;
   ScalarState state{1.0};
-  oiseau::time::RK4 integrator;
+  time::RK4 integrator;
 
-  const auto final_time = oiseau::time::run(integrator, system, state, 0.0, 0.1, 10);
+  const auto final_time = time::run(integrator, system, state, 0.0, 0.1, 10);
 
   EXPECT_NEAR(final_time, 1.0, 1e-12);
   EXPECT_NEAR(state.value, std::exp(1.0), 3e-6);
@@ -134,7 +133,7 @@ TEST(test_time_integrator, rk4_solves_autonomous_equation) {
 TEST(test_time_integrator, rk4_passes_stage_times_to_rhs) {
   TimeDependentSystem system;
   ScalarState state;
-  oiseau::time::RK4 integrator;
+  time::RK4 integrator;
 
   integrator.step(system, state, 2.0, 0.5);
 
@@ -144,7 +143,7 @@ TEST(test_time_integrator, rk4_passes_stage_times_to_rhs) {
 TEST(test_time_integrator, rk4_rejects_nonfinite_time_and_invalid_time_step) {
   GrowthSystem system;
   ScalarState state{1.0};
-  oiseau::time::RK4 integrator;
+  time::RK4 integrator;
   const auto infinity = std::numeric_limits<double>::infinity();
   const auto nan = std::numeric_limits<double>::quiet_NaN();
 
@@ -160,7 +159,7 @@ TEST(test_time_integrator, rk4_rejects_nonfinite_time_and_invalid_time_step) {
 TEST(test_time_integrator, lsrk54_matches_nodaldg_stage_times) {
   RecordingSystem system;
   ScalarState state{3.0};
-  oiseau::time::LSRK54 integrator;
+  time::LSRK54 integrator;
 
   integrator.step(system, state, 2.0, 0.5);
 
@@ -181,7 +180,7 @@ TEST(test_time_integrator, lsrk54_matches_nodaldg_stage_times) {
 TEST(test_time_integrator, lsrk54_integrates_time_dependent_rhs) {
   TimeDependentSystem system;
   ScalarState state;
-  oiseau::time::LSRK54 integrator;
+  time::LSRK54 integrator;
 
   integrator.step(system, state, 2.0, 0.5);
 
@@ -191,7 +190,7 @@ TEST(test_time_integrator, lsrk54_integrates_time_dependent_rhs) {
 TEST(test_time_integrator, lsrk54_rejects_nonfinite_time_and_invalid_time_step) {
   GrowthSystem system;
   ScalarState state{1.0};
-  oiseau::time::LSRK54 integrator;
+  time::LSRK54 integrator;
   const auto infinity = std::numeric_limits<double>::infinity();
   const auto nan = std::numeric_limits<double>::quiet_NaN();
 
@@ -208,9 +207,9 @@ TEST(test_time_integrator, lsrk54_has_fourth_order_convergence) {
   const auto error = [](std::size_t step_count) {
     GrowthSystem system;
     ScalarState state{1.0};
-    oiseau::time::LSRK54 integrator;
-    (void)oiseau::time::run(integrator, system, state, 0.0, 1.0 / static_cast<double>(step_count),
-                            step_count);
+    time::LSRK54 integrator;
+    (void)time::run(integrator, system, state, 0.0, 1.0 / static_cast<double>(step_count),
+                    step_count);
     return std::abs(state.value - std::exp(1.0));
   };
 
@@ -226,7 +225,7 @@ TEST(test_time_integrator, shared_driver_accepts_another_scheme) {
   Euler integrator;
   std::ostringstream progress;
 
-  const auto final_time = oiseau::time::run(integrator, system, state, 0.0, 0.1, 10, &progress);
+  const auto final_time = time::run(integrator, system, state, 0.0, 0.1, 10, &progress);
 
   EXPECT_NEAR(final_time, 1.0, 1e-12);
   EXPECT_NEAR(state.value, std::pow(1.1, 10), 1e-12);
@@ -236,30 +235,28 @@ TEST(test_time_integrator, shared_driver_accepts_another_scheme) {
 TEST(test_time_integrator, run_rejects_nonfinite_start_time_and_invalid_time_step) {
   GrowthSystem system;
   ScalarState state{1.0};
-  oiseau::time::RK4 integrator;
+  time::RK4 integrator;
   const auto infinity = std::numeric_limits<double>::infinity();
   const auto nan = std::numeric_limits<double>::quiet_NaN();
 
-  EXPECT_THROW(oiseau::time::run(integrator, system, state, infinity, 0.1, 1),
-               std::invalid_argument);
-  EXPECT_THROW(oiseau::time::run(integrator, system, state, nan, 0.1, 1), std::invalid_argument);
-  EXPECT_THROW(oiseau::time::run(integrator, system, state, 0.0, 0.0, 1), std::invalid_argument);
-  EXPECT_THROW(oiseau::time::run(integrator, system, state, 0.0, -0.1, 1), std::invalid_argument);
-  EXPECT_THROW(oiseau::time::run(integrator, system, state, 0.0, infinity, 1),
-               std::invalid_argument);
-  EXPECT_THROW(oiseau::time::run(integrator, system, state, 0.0, nan, 1), std::invalid_argument);
+  EXPECT_THROW(time::run(integrator, system, state, infinity, 0.1, 1), std::invalid_argument);
+  EXPECT_THROW(time::run(integrator, system, state, nan, 0.1, 1), std::invalid_argument);
+  EXPECT_THROW(time::run(integrator, system, state, 0.0, 0.0, 1), std::invalid_argument);
+  EXPECT_THROW(time::run(integrator, system, state, 0.0, -0.1, 1), std::invalid_argument);
+  EXPECT_THROW(time::run(integrator, system, state, 0.0, infinity, 1), std::invalid_argument);
+  EXPECT_THROW(time::run(integrator, system, state, 0.0, nan, 1), std::invalid_argument);
   EXPECT_DOUBLE_EQ(state.value, 1.0);
 }
 
 TEST(test_time_integrator, rk4_integrates_dg_state) {
-  oiseau::dg::solver::State state;
+  dg::solver::State state;
   auto values = xt::xarray<double>::from_shape({1});
   values(0) = 1.0;
   state.groups.push_back(std::move(values));
   DgDecaySystem system;
-  oiseau::time::RK4 integrator;
+  time::RK4 integrator;
 
-  const auto final_time = oiseau::time::run(integrator, system, state, 0.0, 0.1, 10);
+  const auto final_time = time::run(integrator, system, state, 0.0, 0.1, 10);
 
   EXPECT_NEAR(final_time, 1.0, 1e-12);
   EXPECT_NEAR(state.groups[0](0), std::exp(-1.0), 3e-6);
@@ -267,13 +264,13 @@ TEST(test_time_integrator, rk4_integrates_dg_state) {
 
 TEST(test_time_integrator, lsrk54_integrates_dg_state) {
   DgDecaySystem system;
-  oiseau::dg::solver::State state;
+  dg::solver::State state;
   auto values = xt::xarray<double>::from_shape({1});
   values(0) = 1.0;
   state.groups.push_back(std::move(values));
-  oiseau::time::LSRK54 integrator;
+  time::LSRK54 integrator;
 
-  const auto final_time = oiseau::time::run(integrator, system, state, 0.0, 0.1, 10);
+  const auto final_time = time::run(integrator, system, state, 0.0, 0.1, 10);
 
   EXPECT_NEAR(final_time, 1.0, 1e-12);
   EXPECT_NEAR(state.groups[0](0), std::exp(-1.0), 1e-5);

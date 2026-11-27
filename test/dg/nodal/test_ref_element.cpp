@@ -16,8 +16,8 @@
 namespace oiseau {
 namespace {
 
-using oiseau::dg::nodal::RefElement;
-using oiseau::dg::nodal::RefLine;
+using dg::nodal::RefElement;
+using dg::nodal::RefLine;
 using std::unique_ptr;
 
 TEST(test_ref_element, invalid_order) {

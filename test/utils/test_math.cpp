@@ -26,7 +26,7 @@ TEST(test_utils, test_jacobi_p) {
   double alpha = 1.0, beta = 2.0;
   std::vector<double> input = {0.1, 0.3, 0.7, 0.9};
   std::vector<double> expected = {-0.77365811, -0.6641136, 0.70519279, 1.96495468};
-  auto output = oiseau::utils::jacobi_p(n, alpha, beta, input);
+  auto output = utils::jacobi_p(n, alpha, beta, input);
   EXPECT_FLOATS_NEARLY_EQ(output, expected, 0.0001);
 }
 
@@ -35,7 +35,7 @@ TEST(test_utils, test_grad_jacobi_p) {
   double alpha = 1.0, beta = 2.0;
   std::vector<double> input = {0.1, 0.3, 0.7, 0.9};
   std::vector<double> expected = {-0.41079192, 1.50623703, 5.34029494, 7.25732389};
-  auto output = oiseau::utils::grad_jacobi_p(n, alpha, beta, input);
+  auto output = utils::grad_jacobi_p(n, alpha, beta, input);
   EXPECT_FLOATS_NEARLY_EQ(output, expected, 0.0001);
 }
 
