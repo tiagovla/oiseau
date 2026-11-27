@@ -27,7 +27,7 @@
 
 #include "oiseau/dg/connectivity.hpp"
 #include "oiseau/dg/detail/cell_mapping.hpp"
-#include "oiseau/dg/detail/integration.hpp"
+#include "oiseau/dg/detail/face_quadrature.hpp"
 #include "oiseau/dg/geometry.hpp"
 #include "oiseau/dg/nodal/ref_element.hpp"
 #include "oiseau/dg/space.hpp"

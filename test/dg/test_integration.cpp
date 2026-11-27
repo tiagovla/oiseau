@@ -25,7 +25,7 @@
 #include <xtensor/views/xview.hpp>
 
 #include "oiseau/dg/connectivity.hpp"
-#include "oiseau/dg/detail/integration.hpp"
+#include "oiseau/dg/detail/face_quadrature.hpp"
 #include "oiseau/dg/equation.hpp"
 #include "oiseau/dg/field.hpp"
 #include "oiseau/dg/geometry.hpp"
