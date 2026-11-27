@@ -1,0 +1,115 @@
+---
+// Copyright (C) 2026 Tiago V. L. Amorim (@tiagovla)
+//
+// This file is part of oiseau (https://github.com/tiagovla/oiseau)
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import DisplayEquation from '../../components/DisplayEquation.astro';
+import { sitePath } from '../../site';
+
+const affineMap = String.raw`\boxed{\mathbf{x}=J\boldsymbol{\xi}+\mathbf{b}}`;
+const intervalMap = String.raw`x(\xi) = \frac{1 - \xi}{2} a + \frac{1 + \xi}{2} b`;
+const intervalAffineForm = String.raw`x(\xi) = J\xi + c`;
+const intervalEndpointConditions = String.raw`\begin{aligned}
+  a &= -J + c \\
+  b &= J + c
+\end{aligned}`;
+const intervalCoefficients = String.raw`\begin{aligned}
+  J &= \frac{b-a}{2} \\
+  c &= \frac{a+b}{2}
+\end{aligned}`;
+const intervalSubstitution = String.raw`x(\xi) = \frac{b-a}{2}\xi + \frac{a+b}{2}`;
+const intervalJacobian = String.raw`J = \frac{\mathrm{d}x}{\mathrm{d}\xi} = \frac{b-a}{2}`;
+---
+
+<p>
+  A reference element is a standard cell shape, such as an interval or a
+  triangle. We define nodes and polynomial basis functions on that shape once
+  for each polynomial order, then map them to the physical mesh cells of the
+  same kind.
+</p>
+
+<div>
+  <h3 class="text-xl font-semibold text-oiseau-light-text">
+    Affine mapping
+  </h3>
+  <p class="mt-2">
+    Oiseau uses affine maps to send reference intervals and triangles to
+    straight-sided mesh cells. An affine map applies a linear transformation
+    followed by a translation.
+  </p>
+  <DisplayEquation tex={affineMap} class="mt-3" />
+  <p class="mt-3">
+    Here <strong>ξ</strong> is the reference point, <strong>x</strong> is the
+    physical point, and <strong>b</strong> is the translation. The constant
+    Jacobian <var>J</var> gives the linear part of the map.
+  </p>
+</div>
+<div>
+  <h3 class="text-xl font-semibold text-oiseau-light-text">
+    Reference interval
+  </h3>
+  <p class="mt-2">
+    For a mesh cell with endpoints <var>a</var> and <var>b</var>, the affine map
+    converts the reference coordinate <var>ξ</var> into the physical coordinate{' '}
+    <var>x</var>.
+  </p>
+  <figure class="mx-auto mt-3 max-w-2xl">
+    <img
+      src={sitePath('theory/interval-map.svg')}
+      alt="The reference interval [−1, 1] maps to the physical interval [a, b]. Arrows connect ξ = −1 to x = a and ξ = 1 to x = b. Matching dots mark the midpoints ξ = 0 and x = (a + b)/2."
+      width="990"
+      height="420"
+      class="w-full rounded-md border border-gray-700/50"
+      loading="lazy"
+    />
+  </figure>
+  <p class="mt-3">
+    The map interpolates between <var>a</var> and <var>b</var>. The weight of{' '}
+    <var>b</var> is the distance from −1 to <var>ξ</var> divided by the reference
+    interval length of 2. The weight of <var>a</var> makes the two weights add
+    up to 1.
+  </p>
+  <DisplayEquation tex={intervalMap} class="mt-3" />
+  <details class="mt-3 rounded-md border border-gray-700/50">
+    <summary class="cursor-pointer px-3 py-2 font-medium text-oiseau-teal-accent hover:underline">
+      Derive the interval map
+    </summary>
+    <ol class="list-inside list-decimal space-y-4 px-3 pb-3 pt-1">
+      <li>
+        <strong>Write the affine map in one dimension.</strong> Let <var>J</var>{' '}
+        be the slope and <var>c</var> the translation.
+        <DisplayEquation tex={intervalAffineForm} class="mt-2" />
+      </li>
+      <li>
+        <strong>Match the two endpoints.</strong> Set <var>ξ</var> to −1 and 1
+        to get <var>a</var> and <var>b</var>, respectively.
+        <DisplayEquation tex={intervalEndpointConditions} class="mt-2" />
+      </li>
+      <li>
+        <strong>Solve for the slope and translation.</strong> Subtract the first
+        endpoint equation from the second to find <var>J</var>. Add the two
+        equations to find <var>c</var>.
+        <DisplayEquation tex={intervalCoefficients} class="mt-2" />
+      </li>
+      <li>
+        <strong>Substitute into the map.</strong> Insert the values of <var>J</var>{' '}
+        and <var>c</var>.
+        <DisplayEquation tex={intervalSubstitution} class="my-2" />
+        Collect the terms multiplying <var>a</var> and <var>b</var>.
+        <DisplayEquation tex={intervalMap} class="mt-2" />
+      </li>
+    </ol>
+  </details>
+  <p class="mt-3">
+    Differentiating the map gives the scalar Jacobian.
+  </p>
+  <DisplayEquation tex={intervalJacobian} class="mt-3" />
+  <p class="mt-3">
+    A positive <var>J</var> preserves orientation, and a negative <var>J</var>{' '}
+    reverses it. The absolute value |<var>J</var>| scales lengths when
+    integrating over the physical cell. If <var>J</var> = 0, both endpoints
+    map to the same point, so the cell has zero length.
+  </p>
+</div>

@@ -1,0 +1,51 @@
+<!--
+ Copyright (C) 2026 Tiago V. L. Amorim (@tiagovla)
+
+ This file is part of oiseau (https://github.com/tiagovla/oiseau)
+
+ SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 420" role="img" aria-labelledby="title description">
+  <title id="title">Reference interval mapped to a physical interval</title>
+  <desc id="description">The interval from minus one to one maps to the physical interval from a to b. The midpoint zero maps to the midpoint between a and b.</desc>
+  <defs>
+    <marker id="arrow-teal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10" fill="none" stroke="#64FFDA" stroke-width="1.6" />
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10" fill="none" stroke="#A9BAFF" stroke-width="1.6" />
+    </marker>
+  </defs>
+  <rect width="990" height="420" rx="12" fill="#0A192F" />
+
+  <g font-family="Inter, Arial, sans-serif" text-anchor="middle">
+    <text x="495" y="48" fill="#CCD6F6" font-size="40" font-weight="700">Reference interval  [−1, 1]</text>
+    <text x="315" y="108" fill="#64FFDA" font-size="38">ξ = −1</text>
+    <text x="495" y="108" fill="#FFAB5B" font-size="38">ξ = 0</text>
+    <text x="673" y="108" fill="#A9BAFF" font-size="38">ξ = 1</text>
+
+    <text x="495" y="226" fill="#8892B0" font-size="32">Affine map</text>
+
+    <text x="138" y="345" fill="#64FFDA" font-size="38">x = a</text>
+    <text x="495" y="345" fill="#FFAB5B" font-size="34">x = (a + b)/2</text>
+    <text x="851" y="345" fill="#A9BAFF" font-size="38">x = b</text>
+    <text x="495" y="402" fill="#CCD6F6" font-size="40" font-weight="700">Physical interval  [a, b]</text>
+  </g>
+
+  <g fill="none" stroke="#8892B0" stroke-width="3">
+    <path d="M 315 147 H 673" />
+    <path d="M 138 286 H 851" />
+  </g>
+  <g stroke-width="2.5" fill="none">
+    <path d="M 315 170 L 140 261" stroke="#64FFDA" marker-end="url(#arrow-teal)" />
+    <path d="M 673 170 L 849 261" stroke="#A9BAFF" marker-end="url(#arrow-blue)" />
+  </g>
+  <g>
+    <circle cx="315" cy="147" r="9" fill="#64FFDA" />
+    <circle cx="495" cy="147" r="9" fill="#FFAB5B" />
+    <circle cx="673" cy="147" r="9" fill="#A9BAFF" />
+    <circle cx="138" cy="286" r="9" fill="#64FFDA" />
+    <circle cx="495" cy="286" r="9" fill="#FFAB5B" />
+    <circle cx="851" cy="286" r="9" fill="#A9BAFF" />
+  </g>
+</svg>
