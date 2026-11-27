@@ -18,6 +18,9 @@
     EXPECT_NEAR(expected[idx], actual[idx], thresh) << "at index: " << idx;     \
   }
 
+namespace oiseau {
+namespace {
+
 TEST(test_utils, test_jacobi_p) {
   unsigned n = 2;
   double alpha = 1.0, beta = 2.0;
@@ -35,3 +38,6 @@ TEST(test_utils, test_grad_jacobi_p) {
   auto output = oiseau::utils::grad_jacobi_p(n, alpha, beta, input);
   EXPECT_FLOATS_NEARLY_EQ(output, expected, 0.0001);
 }
+
+}  // namespace
+}  // namespace oiseau

@@ -14,6 +14,7 @@
 #include "oiseau/test_macros.hpp"
 #include "oiseau/utils/integration.hpp"
 
+namespace oiseau {
 namespace {
 
 namespace integration = oiseau::utils::integration;
@@ -76,3 +77,4 @@ TEST(IntegrationTest, LobattoJacobiInteriorNodes) {
 }
 
 }  // namespace
+}  // namespace oiseau

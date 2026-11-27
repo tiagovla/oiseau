@@ -8,6 +8,9 @@
 
 #include "oiseau/mesh/cell.hpp"
 
+namespace oiseau {
+namespace {
+
 TEST(test_mesh, triangle_cell) {
   using namespace oiseau::mesh;
   auto tricell = TriangleCell();
@@ -17,3 +20,6 @@ TEST(test_mesh, triangle_cell) {
   EXPECT_EQ(tricell.dimension(), 2);
   auto cell = TriangleCell();
 }
+
+}  // namespace
+}  // namespace oiseau

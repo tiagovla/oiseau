@@ -26,6 +26,7 @@
 #include "oiseau/mesh/geometry.hpp"
 #include "oiseau/mesh/mesh.hpp"
 
+namespace oiseau {
 namespace {
 
 oiseau::dg::detail::Point make_point(std::initializer_list<double> values) {
@@ -33,8 +34,6 @@ oiseau::dg::detail::Point make_point(std::initializer_list<double> values) {
   std::ranges::copy(values, point.begin());
   return point;
 }
-
-}  // namespace
 
 TEST(test_dg_geometry, padded_matrix) {
   const oiseau::dg::detail::Matrix matrix = {{2.0, 1.0}, {1.0, 3.0}};
@@ -383,3 +382,6 @@ $EndElements)";
     }
   }
 }
+
+}  // namespace
+}  // namespace oiseau

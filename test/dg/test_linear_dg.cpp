@@ -32,6 +32,7 @@
 #include "oiseau/time/run.hpp"
 #include "oiseau/utils/integration.hpp"
 
+namespace oiseau {
 namespace {
 
 using namespace oiseau::dg;
@@ -215,3 +216,4 @@ TEST(test_linear_dg, quadratic_advection_converges_at_third_order_in_space) {
 }
 
 }  // namespace
+}  // namespace oiseau

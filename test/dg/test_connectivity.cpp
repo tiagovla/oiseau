@@ -17,6 +17,7 @@
 #include "oiseau/mesh/mesh.hpp"
 #include "oiseau/mesh/topology.hpp"
 
+namespace oiseau {
 namespace {
 
 using oiseau::dg::Connectivity;
@@ -38,8 +39,6 @@ Mesh mixed_mesh(std::vector<std::size_t> triangle_vertices) {
                     get_cell_type(CellKind::Triangle)}),
           Geometry({0, 0, 1, 0, 1, 2, 0, 2, 2, 1}, 2)};
 }
-
-}  // namespace
 
 TEST(test_dg_connectivity, mixed_cells_store_both_directions_of_a_reversed_shared_edge) {
   auto mesh = mixed_mesh({2, 4, 1});
@@ -202,3 +201,6 @@ TEST(test_dg_connectivity, hexahedra_store_reciprocal_face_vertex_permutations) 
   EXPECT_EQ(second[0].neighbor_face, 1);
   EXPECT_EQ(second[0].vertex_permutation, (std::vector<std::size_t>{1, 2, 3, 0}));
 }
+
+}  // namespace
+}  // namespace oiseau

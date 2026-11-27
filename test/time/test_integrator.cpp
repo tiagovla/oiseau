@@ -24,7 +24,8 @@
 #include "oiseau/time/rk4.hpp"
 #include "oiseau/time/run.hpp"
 
-namespace time_integrator_test {
+namespace oiseau {
+namespace {
 
 struct ScalarState {
   double value = 0.0;
@@ -278,4 +279,5 @@ TEST(test_time_integrator, lsrk54_integrates_dg_state) {
   EXPECT_NEAR(state.groups[0](0), std::exp(-1.0), 1e-5);
 }
 
-}  // namespace time_integrator_test
+}  // namespace
+}  // namespace oiseau

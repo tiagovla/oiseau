@@ -17,6 +17,7 @@
 #include "oiseau/mesh/mesh.hpp"
 #include "oiseau/mesh/topology.hpp"
 
+namespace oiseau {
 namespace {
 
 using oiseau::dg::Space;
@@ -75,8 +76,6 @@ Mesh volume_mesh() {
       Geometry({0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 2, 0, 0},
                3)};
 }
-
-}  // namespace
 
 TEST(test_dg_space, uniform_order_broadcasts_and_maps_order_two_line_nodes) {
   const auto mesh = line_mesh();
@@ -185,3 +184,6 @@ TEST(test_dg_space, rejects_invalid_orders_cell_types_and_vertices) {
                             Geometry({0.0}, 1)};
   EXPECT_THROW(Space(invalid_vertex, 1), std::out_of_range);
 }
+
+}  // namespace
+}  // namespace oiseau

@@ -13,6 +13,9 @@
 #include "oiseau/dg/nodal/ref_line.hpp"
 #include "oiseau/test_macros.hpp"
 
+namespace oiseau {
+namespace {
+
 using oiseau::dg::nodal::RefElement;
 using oiseau::dg::nodal::RefLine;
 using std::unique_ptr;
@@ -20,3 +23,6 @@ using std::unique_ptr;
 TEST(test_ref_element, invalid_order) {
   EXPECT_THROW({ std::make_unique<RefLine>(0); }, std::invalid_argument);
 }
+
+}  // namespace
+}  // namespace oiseau

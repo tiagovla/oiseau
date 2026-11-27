@@ -19,6 +19,9 @@
 #include "oiseau/dg/nodal/ref_line.hpp"
 #include "oiseau/test_macros.hpp"
 
+namespace oiseau {
+namespace {
+
 TEST(test_ref_line, get_order) {
   for (unsigned order = 1; order <= 5; ++order) {
     auto ref = oiseau::dg::nodal::RefLine(order);
@@ -118,3 +121,6 @@ TEST(test_ref_line, differentiation_matrix_reproduces_basis_gradients) {
     EXPECT_FLOATS_NEARLY_EQ(differentiated, ref.gv(), 1e-10);
   }
 }
+
+}  // namespace
+}  // namespace oiseau

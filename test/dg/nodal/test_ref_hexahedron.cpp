@@ -18,6 +18,9 @@
 #include "oiseau/dg/nodal/ref_hexahedron.hpp"
 #include "oiseau/test_macros.hpp"
 
+namespace oiseau {
+namespace {
+
 TEST(test_ref_hexahedron, get_order) {
   for (unsigned order = 1; order <= 5; ++order) {
     auto ref = oiseau::dg::nodal::RefHexahedron(order);
@@ -94,3 +97,6 @@ TEST(test_ref_hexahedron, differentiation_matrix_differentiates_polynomials) {
   EXPECT_FLOATS_NEARLY_EQ(df_ds, df_ds_expected, 1e-10);
   EXPECT_FLOATS_NEARLY_EQ(df_dt, df_dt_expected, 1e-10);
 }
+
+}  // namespace
+}  // namespace oiseau

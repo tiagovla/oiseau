@@ -19,6 +19,9 @@
 #include "oiseau/dg/nodal/ref_triangle.hpp"
 #include "oiseau/test_macros.hpp"
 
+namespace oiseau {
+namespace {
+
 TEST(test_ref_triangle, get_order) {
   for (unsigned order = 1; order <= 5; ++order) {
     auto ref = oiseau::dg::nodal::RefTriangle(order);
@@ -221,3 +224,6 @@ TEST(test_ref_triangle, differentiation_matrix_values) {
     EXPECT_FLOATS_NEARLY_EQ(c_output, c_expected, 0.01);
   }
 }
+
+}  // namespace
+}  // namespace oiseau

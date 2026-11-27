@@ -15,6 +15,9 @@
 #include "oiseau/mesh/cell.hpp"
 #include "oiseau/mesh/mesh.hpp"
 
+namespace oiseau {
+namespace {
+
 TEST(test_io, gmsh_read_from_string_3d_tetra_block) {
   // Unit cube split into five tetrahedra. Labels are 1-based Gmsh node tags.
   // Front: y = 0; back: y = 1; bottom: z = 0; top: z = 1.
@@ -148,3 +151,6 @@ TEST(test_io, gmsh_celltype_to_oiseau_celltype) {
             oiseau::mesh::get_cell_type(oiseau::mesh::CellKind::Triangle));
   EXPECT_THROW(oiseau::io::detail::gmsh_celltype_to_oiseau_celltype(420), std::runtime_error);
 }
+
+}  // namespace
+}  // namespace oiseau
