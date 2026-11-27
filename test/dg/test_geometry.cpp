@@ -17,10 +17,10 @@
 #include <vector>
 #include <xtensor/generators/xbuilder.hpp>
 
+#include "oiseau/dg/detail/cell_mapping.hpp"
 #include "oiseau/dg/detail/geometry.hpp"
 #include "oiseau/dg/geometry.hpp"
 #include "oiseau/dg/nodal/ref_element.hpp"
-#include "oiseau/dg/nodal/ref_element_type.hpp"
 #include "oiseau/io/gmsh.hpp"
 #include "oiseau/mesh/cell.hpp"
 #include "oiseau/mesh/geometry.hpp"
@@ -48,7 +48,7 @@ TEST(test_dg_geometry, point_array) {
 }
 
 TEST(test_dg_geometry, ref_type_for) {
-  using oiseau::dg::ref_type_for;
+  using oiseau::dg::detail::ref_type_for;
   using oiseau::dg::nodal::RefElementType;
   using oiseau::mesh::CellKind;
   EXPECT_EQ(ref_type_for(CellKind::Interval), RefElementType::Line);

@@ -23,7 +23,6 @@
 
 #include "oiseau/dg/detail/cell_mapping.hpp"
 #include "oiseau/dg/nodal/ref_element.hpp"
-#include "oiseau/dg/nodal/ref_element_type.hpp"
 #include "oiseau/mesh/cell.hpp"
 #include "oiseau/mesh/geometry.hpp"
 #include "oiseau/mesh/mesh.hpp"
@@ -82,7 +81,7 @@ std::vector<ActiveCell> active_cells(std::span<const mesh::CellType> cell_types,
 
     const auto order = orders[order_index++];
     if (order == 0) throw std::invalid_argument("Polynomial orders must be greater than zero");
-    (void)ref_type_for(type->kind());
+    (void)detail::ref_type_for(type->kind());
     cells.push_back({.mesh_index = mesh_index, .type = type, .order = order});
   }
   return cells;
@@ -106,7 +105,7 @@ Space::Space(const mesh::Mesh& mesh, const std::vector<unsigned>& orders)
   std::map<GroupKey, std::size_t> group_indices;
   for (const auto& [key, count] : group_sizes) {
     const auto node_count =
-        nodal::get_ref_element(ref_type_for(key.first), key.second)->number_of_nodes();
+        nodal::get_ref_element(detail::ref_type_for(key.first), key.second)->number_of_nodes();
     ElementGroup group{
         .kind = key.first,
         .order = key.second,
@@ -131,7 +130,7 @@ Space::Space(const mesh::Mesh& mesh, const std::vector<unsigned>& orders)
       throw std::out_of_range("Cell references a vertex outside the mesh geometry");
     }
 
-    const auto ref_type = ref_type_for(kind);
+    const auto ref_type = detail::ref_type_for(kind);
     const auto interpolation_element = nodal::get_ref_element(ref_type, 1);
     const auto element = nodal::get_ref_element(ref_type, cell.order);
     const auto vertices_view = xt::view(mesh_nodes, xt::keep(vertices), xt::all());

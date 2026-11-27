@@ -30,7 +30,6 @@
 #include "oiseau/dg/detail/integration.hpp"
 #include "oiseau/dg/geometry.hpp"
 #include "oiseau/dg/nodal/ref_element.hpp"
-#include "oiseau/dg/nodal/ref_element_type.hpp"
 #include "oiseau/dg/space.hpp"
 #include "oiseau/mesh/cell.hpp"
 #include "oiseau/mesh/mesh.hpp"
