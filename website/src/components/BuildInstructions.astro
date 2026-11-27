@@ -1,0 +1,51 @@
+---
+// Copyright (C) 2026 Tiago V. L. Amorim (@tiagovla)
+//
+// This file is part of oiseau (https://github.com/tiagovla/oiseau)
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import { repositoryUrl } from '../site';
+
+const commands = `# Clone the repository
+git clone ${repositoryUrl}
+
+# Navigate into the project directory
+cd oiseau
+
+# Configure the project using CMake with Ninja
+cmake -B build -G Ninja .
+
+# Build the project
+cmake --build build`;
+---
+
+<section class="py-16 sm:py-20 bg-oiseau-deep-blue/30">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl sm:text-4xl font-bold text-oiseau-light-text">
+        🔧 <span class="text-oiseau-teal-accent">Build</span> Instructions
+      </h2>
+      <p class="mt-3 text-lg text-oiseau-nav-link">
+        Get Oiseau up and running on your local machine.
+      </p>
+    </div>
+    <pre class="bg-gray-900/70 border border-gray-700 text-white p-6 rounded-lg shadow-xl overflow-auto text-sm sm:text-base"><code class="language-bash">{commands}</code></pre>
+    <p class="text-sm text-oiseau-nav-link mt-4 text-center">
+      Prerequisites: Git, CMake, Ninja, a C compiler, and a C++23-capable
+      compiler. CMake downloads dependencies during configuration, so an
+      internet connection is required.
+    </p>
+    <p class="text-sm text-oiseau-nav-link mt-4 text-center">
+      For detailed installation and usage, refer to the{' '}
+      <a
+        href={`${repositoryUrl}#readme`}
+        class="text-oiseau-teal-accent hover:underline font-medium"
+        target="_blank"
+      >
+        README on GitHub
+      </a>
+      .
+    </p>
+  </div>
+</section>

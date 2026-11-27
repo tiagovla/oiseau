@@ -5,47 +5,30 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 set(WEBSITE_DIR ${CMAKE_BINARY_DIR}/web)
-set(SOURCE_WEBSITE_DIR ${CMAKE_SOURCE_DIR}/website/oiseau)
 set(DOCS_OUTPUT_DIR ${CMAKE_BINARY_DIR}/docs/html)
 set(COVERAGE_OUTPUT_DIR ${CMAKE_BINARY_DIR}/coverage)
 
-add_custom_target(website COMMENT "Generating website content")
-
-add_custom_command(
-    TARGET website
-    PRE_BUILD
+add_custom_target(
+    website
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${WEBSITE_DIR}
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${WEBSITE_DIR}
-    COMMENT "Cleaning and creating website directory"
+    COMMAND npm run build -- --outDir ${WEBSITE_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${DOCS_OUTPUT_DIR} ${WEBSITE_DIR}/docs
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Building the Astro website and copying documentation"
+    VERBATIM
 )
 
 add_dependencies(website docs)
 if(TARGET coverage)
     add_dependencies(website coverage)
-endif()
-
-add_custom_command(
-    TARGET website
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_WEBSITE_DIR} ${WEBSITE_DIR}
-    COMMENT "Copying website source files"
-)
-#
-if(TARGET coverage)
     add_custom_command(
         TARGET website
         POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${COVERAGE_OUTPUT_DIR} ${WEBSITE_DIR}/coverage
         COMMENT "Copying coverage files"
+        VERBATIM
     )
 endif()
-
-add_custom_command(
-    TARGET website
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${DOCS_OUTPUT_DIR} ${WEBSITE_DIR}/docs
-    COMMENT "Copying documentation files"
-)
 
 add_custom_command(
     TARGET website

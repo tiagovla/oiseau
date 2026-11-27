@@ -1,0 +1,22 @@
+---
+// Copyright (C) 2026 Tiago V. L. Amorim (@tiagovla)
+//
+// This file is part of oiseau (https://github.com/tiagovla/oiseau)
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import { ownerUrl } from '../site';
+---
+
+<footer class="bg-oiseau-deep-blue border-t border-gray-700/50 mt-10 py-8 text-center">
+  <p class="text-sm text-oiseau-nav-link">
+    © <span id="current-year">{new Date().getFullYear()}</span> Oiseau Project —
+    Built with ❤️ by{' '}
+    <a
+      href={ownerUrl}
+      class="text-oiseau-teal-accent hover:underline font-medium"
+    >
+      tiagovla
+    </a>
+  </p>
+</footer>

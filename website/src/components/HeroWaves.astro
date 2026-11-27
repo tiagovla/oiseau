@@ -1,0 +1,76 @@
+---
+// Copyright (C) 2026 Tiago V. L. Amorim (@tiagovla)
+//
+// This file is part of oiseau (https://github.com/tiagovla/oiseau)
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+const waves = [
+  { top: 8, duration: 20, delay: 0, color: 'var(--wave-teal)', width: 3 },
+  { top: 25, duration: 25, delay: -5, color: 'var(--wave-orange)', width: 2.5 },
+  { top: 45, duration: 18, delay: -10, color: 'var(--wave-light)', width: 3.5 },
+  { top: 60, duration: 15, delay: -2, color: 'var(--wave-teal)', width: 2 },
+  { top: 85, duration: 30, delay: -7, color: 'var(--wave-orange)', width: 3 },
+];
+---
+
+<div class="sine-wave-container opacity-15" aria-hidden="true">
+  {waves.map(({ top, duration, delay, color, width }) => (
+    <svg
+      class="sine-wave-svg"
+      style={`top: ${top}%; animation-duration: ${duration}s; animation-delay: ${delay}s`}
+      viewBox="0 0 800 100"
+      preserveAspectRatio="none"
+    >
+      <path
+        d="M0,50 C100,0 300,100 400,50 C500,0 700,100 800,50"
+        stroke={color}
+        stroke-width={width}
+      />
+    </svg>
+  ))}
+</div>
+
+<style>
+  .sine-wave-container {
+    --wave-teal: #64ffda;
+    --wave-orange: #ff8c00;
+    --wave-light: #8892b0;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  @keyframes scrollWave {
+    0% {
+      transform: translateX(0%);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  .sine-wave-svg {
+    position: absolute;
+    left: 0;
+    width: 200%;
+    height: 150px;
+    animation-name: scrollWave;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+
+  .sine-wave-svg path {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sine-wave-svg {
+      animation: none !important;
+    }
+  }
+</style>

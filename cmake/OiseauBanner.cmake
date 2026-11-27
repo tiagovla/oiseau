@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# Compact rendering of the faceted bird in website/oiseau/logo.svg.
+# Compact rendering of the faceted bird in website/public/logo.svg.
 message(
     NOTICE
     [=[

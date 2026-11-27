@@ -1,0 +1,137 @@
+---
+// Copyright (C) 2026 Tiago V. L. Amorim (@tiagovla)
+//
+// This file is part of oiseau (https://github.com/tiagovla/oiseau)
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import ReadingProgress from './ReadingProgress.astro';
+import { repositoryUrl, sitePath } from '../site';
+
+const navigation = [
+  { href: sitePath('docs/'), label: 'Documentation', target: '_blank' },
+  { href: sitePath('coverage/'), label: 'Coverage report', target: '_blank' },
+  { href: repositoryUrl, label: 'View on GitHub →', target: '_blank' },
+];
+---
+
+<header class="sticky top-0 z-30 w-full bg-oiseau-dark-bg/80 backdrop-blur-md shadow-lg">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center py-4 md:py-5">
+      <div class="flex justify-start items-center lg:w-0 lg:flex-1">
+        <a href={sitePath('') + '#'} class="flex items-center space-x-3">
+          <img
+            src={sitePath('logo.svg')}
+            alt="Oiseau Project Logo"
+            class="h-12 md:h-14 w-auto"
+          />
+          <span class="text-2xl md:text-3xl font-bold text-oiseau-light-text">
+            oiseau
+          </span>
+        </a>
+      </div>
+      <div class="flex items-center">
+        <button
+          id="menu-toggle"
+          type="button"
+          aria-label="Open menu"
+          aria-controls="primary-navigation"
+          aria-expanded="false"
+          class="lg:hidden bg-oiseau-dark-bg rounded-md p-2 inline-flex items-center justify-center text-oiseau-nav-link hover:text-oiseau-light-text hover:bg-oiseau-deep-blue focus:outline-none focus:ring-2 focus:ring-inset focus:ring-oiseau-teal-accent cursor-pointer"
+        >
+          <svg
+            id="menu-open-icon"
+            class="h-6 w-6"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+          </svg>
+          <svg
+            id="menu-close-icon"
+            class="hidden h-6 w-6"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M6 18 18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+        <nav
+          id="primary-navigation"
+          class="hidden flex-col items-stretch absolute top-full left-0 right-0 bg-oiseau-deep-blue shadow-xl py-2 z-40 lg:flex lg:flex-row lg:space-x-4 lg:items-center lg:static lg:bg-transparent lg:shadow-none lg:py-0 lg:z-auto"
+        >
+          {navigation.map(({ href, label, target }) => (
+            <a
+              href={href}
+              aria-current={href === Astro.url.pathname ? 'page' : undefined}
+              class="px-4 py-3 md:px-3 md:py-2 rounded-md text-base font-medium text-oiseau-nav-link hover:text-oiseau-teal-accent transition-colors block md:inline-block text-center md:text-left"
+              target={target}
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
+      </div>
+    </div>
+  </div>
+  <ReadingProgress />
+</header>
+
+<script>
+  const menuToggleButton = document.getElementById('menu-toggle')!;
+  const primaryNavigation = document.getElementById('primary-navigation')!;
+  const menuOpenIcon = document.getElementById('menu-open-icon')!;
+  const menuCloseIcon = document.getElementById('menu-close-icon')!;
+  const lgBreakpoint = 1024;
+
+  function setMenuOpen(isOpen: boolean) {
+    const shouldOpen = isOpen && window.innerWidth < lgBreakpoint;
+    primaryNavigation.classList.toggle('hidden', !shouldOpen);
+    primaryNavigation.classList.toggle('flex', shouldOpen);
+    menuToggleButton.setAttribute('aria-expanded', `${shouldOpen}`);
+    menuToggleButton.setAttribute(
+      'aria-label',
+      shouldOpen ? 'Close menu' : 'Open menu'
+    );
+    menuOpenIcon.classList.toggle('hidden', shouldOpen);
+    menuCloseIcon.classList.toggle('hidden', !shouldOpen);
+  }
+
+  menuToggleButton.addEventListener('click', () => {
+    setMenuOpen(menuToggleButton.getAttribute('aria-expanded') !== 'true');
+  });
+
+  primaryNavigation.querySelectorAll('a').forEach((link) => {
+    link.addEventListener('click', () => setMenuOpen(false));
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (
+      event.key === 'Escape' &&
+      menuToggleButton.getAttribute('aria-expanded') === 'true'
+    ) {
+      setMenuOpen(false);
+      menuToggleButton.focus();
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth >= lgBreakpoint) {
+      setMenuOpen(false);
+    }
+  });
+</script>

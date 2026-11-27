@@ -1,0 +1,61 @@
+---
+// Copyright (C) 2026 Tiago V. L. Amorim (@tiagovla)
+//
+// This file is part of oiseau (https://github.com/tiagovla/oiseau)
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import HeroWaves from './HeroWaves.astro';
+import { repositoryUrl, sitePath } from '../site';
+---
+
+<section class="relative py-20 sm:py-28 lg:py-36 overflow-hidden">
+  <div class="absolute inset-0 bg-gradient-to-br from-oiseau-dark-bg via-oiseau-deep-blue to-oiseau-dark-bg opacity-80"></div>
+
+  <HeroWaves />
+
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+    <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight hero-text-shadow">
+      <span class="block text-oiseau-teal-accent">A modern</span>{' '}
+      <span class="block text-oiseau-light-text mt-1 sm:mt-2">
+        DGTD <span class="text-oiseau-orange-accent">framework</span>
+      </span>
+    </h1>
+    <p class="mt-6 max-w-lg mx-auto text-lg sm:text-xl text-oiseau-nav-link md:max-w-2xl">
+      Next-generation Discontinuous Galerkin Time-Domain (DGTD) framework
+      designed for cutting-edge computational electromagnetics.
+    </p>
+    <div class="mt-8">
+      <p class="text-xl font-semibold text-red-500 animate-pulse">
+        🚧 UNDER DEVELOPMENT 🚧
+      </p>
+      <p class="text-sm text-gray-400 mt-1">
+        ⚠️ APIs and features are evolving rapidly.
+      </p>
+    </div>
+    <div class="mt-10 flex justify-center space-x-4">
+      <a
+        href={sitePath('docs/')}
+        target="_blank"
+        class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-oiseau-deep-blue bg-oiseau-teal-accent hover:bg-opacity-80 transition-colors"
+      >
+        Get Started
+      </a>
+      <a
+        href={repositoryUrl}
+        target="_blank"
+        class="inline-flex items-center justify-center px-6 py-3 border border-oiseau-nav-link text-base font-medium rounded-md text-oiseau-nav-link hover:bg-oiseau-deep-blue hover:text-oiseau-teal-accent transition-colors"
+      >
+        View on GitHub
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  @media (prefers-reduced-motion: reduce) {
+    .animate-pulse {
+      animation: none !important;
+    }
+  }
+</style>
