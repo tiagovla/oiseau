@@ -4,12 +4,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-add_test(oiseau_test_dg_connectivity test_dg_connectivity.cpp)
+add_test(oiseau_test_dg_connectivity test_connectivity.cpp)
 add_test(oiseau_test_dg_equation test_equation.cpp)
 add_test(oiseau_test_dg_field test_field.cpp)
-add_test(oiseau_test_dg_geometry test_dg_geometry.cpp)
-add_test(oiseau_test_dg_integration test_dg_integration.cpp)
-add_test(oiseau_test_dg_space test_dg_space.cpp)
+add_test(oiseau_test_dg_geometry test_geometry.cpp)
+add_test(oiseau_test_dg_integration test_integration.cpp)
+add_test(oiseau_test_dg_space test_space.cpp)
 add_test(oiseau_test_dg_linear_dg test_linear_dg.cpp)
 
 add_subdirectory(nodal)
