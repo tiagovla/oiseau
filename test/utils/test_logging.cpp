@@ -65,17 +65,17 @@ class ScopedLevel {
 
 TEST(test_utils_logging, set_verbosity_maps_levels) {
   ScopedLevel scoped_level;
-  constexpr std::pair<oiseau::logging::Verbosity, spdlog::level::level_enum> levels[] = {
-      {oiseau::logging::Verbosity::OFF, spdlog::level::off},
-      {oiseau::logging::Verbosity::FATAL, spdlog::level::critical},
-      {oiseau::logging::Verbosity::ERROR, spdlog::level::err},
-      {oiseau::logging::Verbosity::WARNING, spdlog::level::warn},
-      {oiseau::logging::Verbosity::INFO, spdlog::level::info},
-      {oiseau::logging::Verbosity::DEBUG, spdlog::level::debug},
+  constexpr std::pair<logging::Verbosity, spdlog::level::level_enum> levels[] = {
+      {logging::Verbosity::OFF, spdlog::level::off},
+      {logging::Verbosity::FATAL, spdlog::level::critical},
+      {logging::Verbosity::ERROR, spdlog::level::err},
+      {logging::Verbosity::WARNING, spdlog::level::warn},
+      {logging::Verbosity::INFO, spdlog::level::info},
+      {logging::Verbosity::DEBUG, spdlog::level::debug},
   };
 
   for (auto const& [verbosity, expected] : levels) {
-    oiseau::logging::set_verbosity(verbosity);
+    logging::set_verbosity(verbosity);
     EXPECT_EQ(spdlog::get_level(), expected);
   }
 }
@@ -86,7 +86,7 @@ TEST(test_utils_logging, init_sets_default_logger_and_configured_level) {
   char program_name[] = "oiseau_test_utils_logging";
   char* argv[] = {program_name, nullptr};
 
-  oiseau::logging::init(1, argv);
+  logging::init(1, argv);
 
   ASSERT_NE(spdlog::default_logger(), nullptr);
   EXPECT_EQ(spdlog::default_logger()->name(), "oiseau");

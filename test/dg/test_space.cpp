@@ -20,14 +20,14 @@
 namespace oiseau {
 namespace {
 
-using oiseau::dg::Space;
-using oiseau::mesh::CellKind;
-using oiseau::mesh::Geometry;
-using oiseau::mesh::get_cell_type;
-using oiseau::mesh::Mesh;
-using oiseau::mesh::Topology;
+using dg::Space;
+using mesh::CellKind;
+using mesh::Geometry;
+using mesh::get_cell_type;
+using mesh::Mesh;
+using mesh::Topology;
 
-class UnsupportedCell : public oiseau::mesh::Cell {
+class UnsupportedCell : public mesh::Cell {
  public:
   UnsupportedCell() {
     m_kind = CellKind::Undefined;

@@ -20,7 +20,7 @@
 namespace oiseau {
 namespace {
 
-using oiseau::utils::JaggedArray;
+using utils::JaggedArray;
 
 class jagged_array_test_fixture
     : public ::testing::Test {  // Fixture name also in snake_case for consistency

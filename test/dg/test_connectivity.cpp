@@ -20,12 +20,12 @@
 namespace oiseau {
 namespace {
 
-using oiseau::dg::Connectivity;
-using oiseau::mesh::CellKind;
-using oiseau::mesh::Geometry;
-using oiseau::mesh::get_cell_type;
-using oiseau::mesh::Mesh;
-using oiseau::mesh::Topology;
+using dg::Connectivity;
+using mesh::CellKind;
+using mesh::Geometry;
+using mesh::get_cell_type;
+using mesh::Mesh;
+using mesh::Topology;
 
 Mesh mixed_mesh(std::vector<std::size_t> triangle_vertices) {
   // Cell 0 is the quad. Cell 1 is its bottom edge. Cell 2 is the triangle.

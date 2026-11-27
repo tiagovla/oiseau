@@ -24,14 +24,14 @@ namespace {
 
 TEST(test_ref_tetrahedron, get_order) {
   for (unsigned order = 1; order <= 5; ++order) {
-    auto ref = oiseau::dg::nodal::RefTetrahedron(order);
+    auto ref = dg::nodal::RefTetrahedron(order);
     EXPECT_EQ(ref.order(), order);
   }
 }
 
 TEST(test_ref_tetrahedron, get_number_of_nodes) {
   for (unsigned order = 1; order <= 5; ++order) {
-    auto ref = oiseau::dg::nodal::RefTetrahedron(order);
+    auto ref = dg::nodal::RefTetrahedron(order);
     unsigned n = (order + 1) * (order + 2) * (order + 3) / 6;
     EXPECT_EQ(ref.number_of_nodes(), n);
   }
@@ -40,9 +40,9 @@ TEST(test_ref_tetrahedron, get_number_of_nodes) {
 TEST(test_ref_tetrahedron, vandermonde_interpolation) {
   for (unsigned order = 3; order <= 5; ++order) {
     // Coarse and fine reference elements
-    const oiseau::dg::nodal::RefTetrahedron coarse_element(order);
-    const oiseau::dg::nodal::RefElement& coarse_ref = coarse_element;
-    auto fine_ref = oiseau::dg::nodal::RefTetrahedron(order + 2);
+    const dg::nodal::RefTetrahedron coarse_element(order);
+    const dg::nodal::RefElement& coarse_ref = coarse_element;
+    auto fine_ref = dg::nodal::RefTetrahedron(order + 2);
 
     // Vandermonde matrices at coarse and fine nodes
     auto V_coarse = coarse_ref.v();
@@ -71,7 +71,7 @@ TEST(test_ref_tetrahedron, vandermonde_interpolation) {
 
 TEST(test_ref_tetrahedron, equidistant_nodes) {
   unsigned order = 2;
-  auto output = oiseau::dg::nodal::detail::generate_tetrahedron_equidistant_nodes(order);
+  auto output = dg::nodal::detail::generate_tetrahedron_equidistant_nodes(order);
   xt::xarray<double> expected = {{-1, 0, 1, -1, 0, -1, -1, 0, -1, -1},
                                  {-1, -1, -1, 0, 0, 1, -1, -1, 0, -1},
                                  {-1, -1, -1, -1, -1, -1, 0, 0, 0, 1}};
@@ -91,7 +91,7 @@ TEST(test_ref_tetrahedron, eval_warp) {
       -1.2812e-01, 1.2812e-01,  8.3267e-17,  -2.5623e-01, 6.9389e-17,  2.5623e-01, -1.2812e-01,
       1.2812e-01,  6.9389e-17,  -1.2812e-01, 1.2812e-01,  6.9389e-17,  8.3267e-17,
   };
-  auto output = oiseau::dg::nodal::detail::eval_warp(p, xnodes, xout);
+  auto output = dg::nodal::detail::eval_warp(p, xnodes, xout);
   EXPECT_FLOATS_NEARLY_EQ(output, expected, 0.01);
 }
 
@@ -116,18 +116,18 @@ TEST(test_ref_tetrahedron, eval_shift) {
   auto l1 = xt::col(l, 0);
   auto l2 = xt::col(l, 1);
   auto l3 = xt::col(l, 2);
-  auto output = oiseau::dg::nodal::detail::eval_shift(p, pval, l1, l2, l3);
+  auto output = dg::nodal::detail::eval_shift(p, pval, l1, l2, l3);
   EXPECT_FLOATS_NEARLY_EQ(output, expected, 0.01);
 }
 
 TEST(test_ref_tetrahedron, warped_equilateral_nodes) {
-  xt::xarray<double> output_2 = oiseau::dg::nodal::detail::generate_tetrahedron_nodes(2);
+  xt::xarray<double> output_2 = dg::nodal::detail::generate_tetrahedron_nodes(2);
   xt::xarray<double> expected_2 = {
       {-1., -0.577, -0.408}, {0., -0.577, -0.408}, {1., -0.577, -0.408},  {-0.5, 0.289, -0.408},
       {0.5, 0.289, -0.408},  {0., 1.155, -0.408},  {-0.5, -0.289, 0.408}, {0.5, -0.289, 0.408},
       {0., 0.577, 0.408},    {0., 0., 1.225}};
   EXPECT_FLOATS_NEARLY_EQ(output_2, expected_2, 0.01);
-  xt::xarray<double> output_3 = oiseau::dg::nodal::detail::generate_tetrahedron_nodes(3);
+  xt::xarray<double> output_3 = dg::nodal::detail::generate_tetrahedron_nodes(3);
   xt::xarray<double> expected_3 = {
       {-1.0000, -0.5774, -0.408248}, {-0.4472, -0.5774, -0.408248},
       {0.4472, -0.5774, -0.408248},  {1.0000, -0.5774, -0.408248},
@@ -156,7 +156,7 @@ TEST(test_ref_tetrahedron, equilateral_xyz_to_rst) {
       {-0.2764, -0.1596, 0.773397},  {0.2764, -0.1596, 0.773397},
       {-0.0000, 0.3192, 0.773397},   {0, 0, 1.224745},
   };
-  auto output = oiseau::dg::nodal::detail::equilateral_xyz_to_rst(input);
+  auto output = dg::nodal::detail::equilateral_xyz_to_rst(input);
   xt::xarray<double> expected = {
       {-1.0000, -1.0000, -1.0000}, {-0.4472, -1.0000, -1.0000}, {0.4472, -1.0000, -1.0000},
       {1.0000, -1.0000, -1.0000},  {-1.0000, -0.4472, -1.0000}, {-0.3333, -0.3333, -1.0000},
@@ -179,7 +179,7 @@ TEST(test_ref_tetrahedron, rst_to_abc) {
       {-1.0000, 0.4472, -0.4472},  {-1.0000, -1.0000, 0.4472},  {-0.4472, -1.0000, 0.4472},
       {-1.0000, -0.4472, 0.4472},  {-1.0000, -1.0000, 1.0000},
   };
-  auto output = oiseau::dg::nodal::detail::rst_to_abc(input);
+  auto output = dg::nodal::detail::rst_to_abc(input);
   xt::xarray<double> expected = {
       {-1.0000, -1.0000, -1.0000}, {-0.4472, -1.0000, -1.0000}, {0.4472, -1.0000, -1.0000},
       {1.0000, -1.0000, -1.0000},  {-1.0000, -0.4472, -1.0000}, {0.0000, -0.3333, -1.0000},
@@ -194,15 +194,15 @@ TEST(test_ref_tetrahedron, rst_to_abc) {
 
 TEST(test_ref_tetrahedron, basis_function) {
   xt::xarray<double> input = {{1.0, 2.0, 2.0}};
-  auto output = oiseau::dg::nodal::RefTetrahedron::basis_function(input, 1, 2, 3);
+  auto output = dg::nodal::RefTetrahedron::basis_function(input, 1, 2, 3);
   xt::xarray<double> expected = {9575.4};
   EXPECT_FLOATS_NEARLY_EQ(output, expected, 0.05);
 }
 
 TEST(test_ref_tetrahedron, grad_basis_function) {
-  const oiseau::dg::nodal::RefTetrahedron ref(3);
-  const auto abc = oiseau::dg::nodal::detail::rst_to_abc(ref.r());
-  const auto output = oiseau::dg::nodal::RefTetrahedron::grad_basis_function(abc, 1, 1, 3);
+  const dg::nodal::RefTetrahedron ref(3);
+  const auto abc = dg::nodal::detail::rst_to_abc(ref.r());
+  const auto output = dg::nodal::RefTetrahedron::grad_basis_function(abc, 1, 1, 3);
   xt::xarray<double> expected = {
       {5.408, 5.408, 5.408, 5.408, -2.066, -3.606,  -2.066, -14.159, -14.159, -21.633,
        2.614, 4.273, 2.614, -6.41, -6.41,  -10.455, -26.41, -26.41,  105.642, -0.},
@@ -215,7 +215,7 @@ TEST(test_ref_tetrahedron, grad_basis_function) {
 }
 
 TEST(test_ref_tetrahedron, vandermonde_values) {
-  const oiseau::dg::nodal::RefTetrahedron ref(3);
+  const dg::nodal::RefTetrahedron ref(3);
   const auto& output = ref.v();
   xt::xarray<double> expected = {
       {0.8660,  -1.1180, 1.3229,  -1.5000, -1.5811, 1.8708,  -2.1213, 2.2913,  -2.5981, -3.0000,
@@ -262,7 +262,7 @@ TEST(test_ref_tetrahedron, vandermonde_values) {
 }
 
 TEST(test_ref_tetrahedron, vandermonde_gradient_values) {
-  const oiseau::dg::nodal::RefTetrahedron ref(2);
+  const dg::nodal::RefTetrahedron ref(2);
   const auto& output = ref.gv();
   xt::xarray<double> expected_dr = {
       {0, 0, 0, 0, 0, 0, 2.7386, -3.2404, -3.9686, -15.3704},
@@ -309,7 +309,7 @@ TEST(test_ref_tetrahedron, vandermonde_gradient_values) {
 }
 
 TEST(test_ref_tetrahedron, differentiation_matrix_values) {
-  const oiseau::dg::nodal::RefTetrahedron ref(2);
+  const dg::nodal::RefTetrahedron ref(2);
   const auto& output = ref.d();
   xt::xarray<double> expected_dr = {
       {-1.5000, 2.0000, -0.5000, -0.0000, 0.0000, -0.0000, -0.0000, 0.0000, 0, 0},

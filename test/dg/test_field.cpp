@@ -14,7 +14,7 @@
 namespace oiseau {
 namespace {
 
-using oiseau::dg::Field;
+using dg::Field;
 
 TEST(test_dg_field, retains_its_name) {
   const Field field{"Ez"};

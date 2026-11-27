@@ -17,7 +17,7 @@
 namespace oiseau {
 namespace {
 
-namespace integration = oiseau::utils::integration;
+namespace integration = utils::integration;
 
 TEST(IntegrationTest, GaussQuadratureIntegratesMonomials) {
   constexpr int order = 50;

@@ -65,7 +65,7 @@ $Elements
 4 2 5 6 7
 5 4 5 7 8
 $EndElements)";
-  oiseau::mesh::Mesh mesh = oiseau::io::gmsh_read_from_string(str);
+  mesh::Mesh mesh = io::gmsh_read_from_string(str);
   auto conn = mesh.topology().conn();
   std::vector<std::vector<size_t>> actual(conn.begin(), conn.end());
   std::vector<std::vector<size_t>> expected = {
@@ -136,7 +136,7 @@ $Elements
 2 2 9 3 6
 3 6 3 9 12
 $EndElements)";
-  oiseau::mesh::Mesh mesh = oiseau::io::gmsh_read_from_string(str);
+  mesh::Mesh mesh = io::gmsh_read_from_string(str);
   auto conn = mesh.topology().conn();
   std::vector<std::vector<size_t>> actual(conn.begin(), conn.end());
   std::vector<std::vector<size_t>> expected = {
@@ -145,11 +145,11 @@ $EndElements)";
 }
 
 TEST(test_io, gmsh_celltype_to_oiseau_celltype) {
-  EXPECT_EQ(oiseau::io::detail::gmsh_celltype_to_oiseau_celltype(15),
-            oiseau::mesh::get_cell_type(oiseau::mesh::CellKind::Point));
-  EXPECT_EQ(oiseau::io::detail::gmsh_celltype_to_oiseau_celltype(2),
-            oiseau::mesh::get_cell_type(oiseau::mesh::CellKind::Triangle));
-  EXPECT_THROW(oiseau::io::detail::gmsh_celltype_to_oiseau_celltype(420), std::runtime_error);
+  EXPECT_EQ(io::detail::gmsh_celltype_to_oiseau_celltype(15),
+            mesh::get_cell_type(mesh::CellKind::Point));
+  EXPECT_EQ(io::detail::gmsh_celltype_to_oiseau_celltype(2),
+            mesh::get_cell_type(mesh::CellKind::Triangle));
+  EXPECT_THROW(io::detail::gmsh_celltype_to_oiseau_celltype(420), std::runtime_error);
 }
 
 }  // namespace

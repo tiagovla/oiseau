@@ -19,14 +19,14 @@
 namespace oiseau {
 namespace {
 
-using oiseau::dg::Derivative;
-using oiseau::dg::dt;
-using oiseau::dg::dx;
-using oiseau::dg::dy;
-using oiseau::dg::dz;
-using oiseau::dg::Equation;
-using oiseau::dg::EquationSystem;
-using oiseau::dg::Field;
+using dg::Derivative;
+using dg::dt;
+using dg::dx;
+using dg::dy;
+using dg::dz;
+using dg::Equation;
+using dg::EquationSystem;
+using dg::Field;
 
 TEST(test_dg_equation, tm_maxwell_flux_matrices_follow_declared_field_order) {
   constexpr double epsilon = 2.0;
