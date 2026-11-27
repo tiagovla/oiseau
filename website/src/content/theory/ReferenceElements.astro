@@ -21,6 +21,22 @@ const intervalCoefficients = String.raw`\begin{aligned}
 \end{aligned}`;
 const intervalSubstitution = String.raw`x(\xi) = \frac{b-a}{2}\xi + \frac{a+b}{2}`;
 const intervalJacobian = String.raw`J = \frac{\mathrm{d}x}{\mathrm{d}\xi} = \frac{b-a}{2}`;
+const triangleMap = String.raw`\begin{aligned}
+  \mathbf{x}(\xi,\eta) &= \mathbf{x}_0 + \frac{1+\xi}{2}(\mathbf{x}_1-\mathbf{x}_0) \\
+         &\quad + \frac{1+\eta}{2}(\mathbf{x}_2-\mathbf{x}_0)
+\end{aligned}`;
+const triangleDomain = String.raw`-1 \le \xi \le 1, \qquad -1 \le \eta \le -\xi`;
+const triangleJacobian = String.raw`\begin{aligned}
+  J &= \begin{bmatrix}
+    \dfrac{\partial x}{\partial \xi} & \dfrac{\partial x}{\partial \eta} \\
+    \dfrac{\partial y}{\partial \xi} & \dfrac{\partial y}{\partial \eta}
+  \end{bmatrix} \\
+  &= \dfrac{1}{2}\begin{bmatrix}
+    x_1-x_0 & x_2-x_0 \\
+    y_1-y_0 & y_2-y_0
+  \end{bmatrix}
+\end{aligned}`;
+const triangleArea = String.raw`\mathrm{d}x\,\mathrm{d}y = |\det J|\,\mathrm{d}\xi\,\mathrm{d}\eta`;
 ---
 
 <p>
@@ -46,6 +62,7 @@ const intervalJacobian = String.raw`J = \frac{\mathrm{d}x}{\mathrm{d}\xi} = \fra
     Jacobian <var>J</var> gives the linear part of the map.
   </p>
 </div>
+
 <div>
   <h3 class="text-xl font-semibold text-oiseau-light-text">
     Reference interval
@@ -112,4 +129,48 @@ const intervalJacobian = String.raw`J = \frac{\mathrm{d}x}{\mathrm{d}\xi} = \fra
     integrating over the physical cell. If <var>J</var> = 0, both endpoints
     map to the same point, so the cell has zero length.
   </p>
+</div>
+
+<div>
+  <h3 class="text-xl font-semibold text-oiseau-light-text">
+    Reference triangle
+  </h3>
+  <p class="mt-2">
+    A two-dimensional affine map takes each point (<var>ξ</var>, <var>η</var>)
+    in the reference triangle to a physical point (<var>x</var>, <var>y</var>).
+    Its three corners map to physical node positions (x₀, y₀), (x₁, y₁), and
+    (x₂, y₂).
+  </p>
+  <figure class="mx-auto mt-3 max-w-2xl">
+    <img
+      src={sitePath('theory/triangle-map.svg')}
+      alt="Reference vertices (−1, −1), (1, −1), and (−1, 1) map to physical vertices (x₀, y₀), (x₁, y₁), and (x₂, y₂). Matching vertex colors show the correspondence, and diamonds mark the same point P in each triangle."
+      width="990"
+      height="465"
+      class="w-full rounded-md border border-gray-700/50"
+      loading="lazy"
+    />
+  </figure>
+  <p class="mt-3">
+    Matching colors pair the reference corners with physical nodes. The diamond
+    marks a reference point and its physical image. Its coordinates ξ and η
+    determine the fractions of the vectors from node 0 to nodes 1 and 2 in the
+    map below.
+  </p>
+  <DisplayEquation tex={triangleMap} class="mt-3" />
+  <p class="mt-3">Oiseau uses these limits for the reference triangle.</p>
+  <DisplayEquation tex={triangleDomain} class="mt-2" />
+  <p class="mt-3">
+    The Jacobian maps coordinate differentials from the reference triangle to
+    the physical triangle. Its columns are half of the vectors from physical
+    node 0 to nodes 1 and 2.
+  </p>
+  <DisplayEquation tex={triangleJacobian} class="mt-3" />
+  <p class="mt-3">
+    A positive determinant preserves orientation, and a negative determinant
+    reverses it. A zero determinant means the vertices are collinear and the
+    triangle is degenerate. The absolute determinant scales area in cell
+    integrals.
+  </p>
+  <DisplayEquation tex={triangleArea} class="mt-3" />
 </div>

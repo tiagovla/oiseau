@@ -1,0 +1,49 @@
+<!--
+ Copyright (C) 2026 Tiago V. L. Amorim (@tiagovla)
+
+ This file is part of oiseau (https://github.com/tiagovla/oiseau)
+
+ SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 465" role="img" aria-labelledby="title description">
+  <title id="title">Reference triangle mapped to a physical triangle</title>
+  <desc id="description">Reference vertices minus one minus one, one minus one, and minus one one map to physical vertices x zero y zero, x one y one, and x two y two. Matching colors show vertex correspondence. Diamonds mark the same point in both triangles.</desc>
+  <defs>
+    <marker id="map-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10" fill="none" stroke="#8892B0" stroke-width="1.5" />
+    </marker>
+  </defs>
+  <rect width="990" height="465" rx="12" fill="#0A192F" />
+
+  <g font-family="Inter, Arial, sans-serif">
+    <text x="223" y="47" text-anchor="middle" fill="#CCD6F6" font-size="38" font-weight="700">Reference triangle</text>
+    <text x="742" y="47" text-anchor="middle" fill="#CCD6F6" font-size="38" font-weight="700">Physical triangle</text>
+    <text x="90" y="137" text-anchor="middle" fill="#A9BAFF" font-size="32">(−1, 1)</text>
+    <text x="89" y="430" text-anchor="middle" fill="#64FFDA" font-size="32">(−1, −1)</text>
+    <text x="305" y="430" text-anchor="middle" fill="#FFAB5B" font-size="32">(1, −1)</text>
+
+    <text x="661" y="136" text-anchor="middle" fill="#A9BAFF" font-size="30">(x₂, y₂)</text>
+    <text x="585" y="444" text-anchor="middle" fill="#64FFDA" font-size="30">(x₀, y₀)</text>
+    <text x="904" y="282" text-anchor="middle" fill="#FFAB5B" font-size="30">(x₁, y₁)</text>
+
+    <text x="115" y="344" text-anchor="end" fill="#F2F5FF" font-size="28">P</text>
+    <text x="659" y="336" text-anchor="end" fill="#F2F5FF" font-size="28">P</text>
+    <text x="442" y="214" text-anchor="middle" fill="#8892B0" font-size="30">Affine map</text>
+  </g>
+
+  <g fill="#152845" stroke="#8892B0" stroke-width="2.5" stroke-linejoin="round">
+    <path d="M 83 164 L 299 164 L 83 380 Z" />
+    <path d="M 585 393 L 891 317 L 662 164 Z" />
+  </g>
+  <path d="M 364 244 H 521" fill="none" stroke="#8892B0" stroke-width="2.5" marker-end="url(#map-arrow)" />
+
+  <g>
+    <circle cx="83" cy="380" r="8" fill="#64FFDA" />
+    <circle cx="299" cy="380" r="8" fill="#FFAB5B" />
+    <circle cx="83" cy="164" r="8" fill="#A9BAFF" />
+    <circle cx="585" cy="393" r="8" fill="#64FFDA" />
+    <circle cx="891" cy="317" r="8" fill="#FFAB5B" />
+    <circle cx="662" cy="164" r="8" fill="#A9BAFF" />
+    <path d="M 137 317 l 9 9 -9 9 -9 -9 Z M 681 308 l 9 9 -9 9 -9 -9 Z" fill="#F2F5FF" />
+  </g>
+</svg>
