@@ -1,0 +1,51 @@
+---
+// Copyright (C) 2026 Tiago V. L. Amorim (@tiagovla)
+//
+// This file is part of oiseau (https://github.com/tiagovla/oiseau)
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import DisplayEquation from '../../components/DisplayEquation.astro';
+
+const differentialForm = String.raw`\frac{\partial u}{\partial t} + \nabla \cdot F(u) = 0`;
+const integralForm = String.raw`\frac{\mathrm{d}}{\mathrm{d}t} \int_\Omega u\,\mathrm{d}V = -\int_{\partial\Omega} F(u) \cdot n\,\mathrm{d}S`;
+---
+
+<p>
+  A conservation law tracks a quantity such as mass or charge. Without sources,
+  the amount in a region changes only when the quantity flows across its
+  boundary.
+</p>
+
+<DisplayEquation tex={differentialForm} />
+
+<p>
+  Here <var>u</var> is the conserved quantity per unit volume, and <var>F</var>(
+  <var>u</var>) is its flux. A positive flux divergence means more leaves a
+  small region than enters, so the local density decreases.
+</p>
+
+<div>
+  <h3 class="text-xl font-semibold text-oiseau-light-text">
+    Balance over a region
+  </h3>
+  <p class="mt-2">
+    Integrating over a fixed region Ω gives the rate of change of the total
+    amount. The minus sign makes outward flux a loss. The vector <var>n</var> is
+    the outward unit normal on the boundary ∂Ω.
+  </p>
+  <DisplayEquation tex={integralForm} class="mt-3" />
+</div>
+
+<div>
+  <h3 class="text-xl font-semibold text-oiseau-light-text">
+    How DG applies the balance
+  </h3>
+  <p class="mt-2">
+    Oiseau represents the solution by a polynomial in each mesh element. At a
+    shared face, a numerical flux uses the solution values from both sides. A
+    conservative numerical flux assigns equal and opposite transfers to the two
+    elements, so internal face fluxes cancel when the element balances are
+    summed.
+  </p>
+</div>

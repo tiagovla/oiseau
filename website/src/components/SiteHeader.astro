@@ -9,6 +9,7 @@ import ReadingProgress from './ReadingProgress.astro';
 import { repositoryUrl, sitePath } from '../site';
 
 const navigation = [
+  { href: sitePath('theory/'), label: 'Theory' },
   { href: sitePath('docs/'), label: 'Documentation', target: '_blank' },
   { href: sitePath('coverage/'), label: 'Coverage report', target: '_blank' },
   { href: repositoryUrl, label: 'View on GitHub →', target: '_blank' },

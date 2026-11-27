@@ -1,0 +1,25 @@
+---
+// Copyright (C) 2026 Tiago V. L. Amorim (@tiagovla)
+//
+// This file is part of oiseau (https://github.com/tiagovla/oiseau)
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import { renderToString } from 'katex';
+import 'katex/dist/katex.min.css';
+
+interface Props {
+  tex: string;
+  class?: string;
+}
+
+const { tex, class: className } = Astro.props;
+---
+
+<div
+  class:list={[
+    'overflow-x-auto rounded-md border border-gray-700/50 bg-oiseau-deep-blue px-4 text-base sm:text-xl',
+    className,
+  ]}
+  set:html={renderToString(tex, { displayMode: true })}
+/>

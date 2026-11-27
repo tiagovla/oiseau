@@ -1,0 +1,48 @@
+---
+// Copyright (C) 2026 Tiago V. L. Amorim (@tiagovla)
+//
+// This file is part of oiseau (https://github.com/tiagovla/oiseau)
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import { topics } from '../content/theory/topics';
+import SiteLayout from '../layouts/SiteLayout.astro';
+---
+
+<SiteLayout title="Theory – oiseau">
+  <div class="mx-auto max-w-4xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+    <h1 class="text-4xl sm:text-5xl font-bold text-oiseau-light-text">
+      Theory
+    </h1>
+    <nav aria-label="Theory topics" class="mt-5">
+      <ul class="flex flex-wrap gap-x-5 gap-y-2">
+        {topics.map(({ id, title }) => (
+          <li>
+            <a
+              href={`#${id}`}
+              class="font-medium text-oiseau-teal-accent underline-offset-4 hover:underline focus-visible:underline"
+            >
+              {title}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="mt-12 space-y-12">
+      {topics.map(({ id, title, Content }) => (
+        <section id={id} aria-labelledby={`${id}-heading`} class="scroll-mt-24">
+          <h2
+            id={`${id}-heading`}
+            class="text-3xl sm:text-4xl font-bold text-oiseau-teal-accent"
+          >
+            {title}
+          </h2>
+          <div class="mt-4 space-y-6 leading-relaxed text-oiseau-light-text/90">
+            <Content />
+          </div>
+        </section>
+      ))}
+    </div>
+  </div>
+</SiteLayout>
