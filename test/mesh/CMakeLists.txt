@@ -6,3 +6,4 @@
 
 add_test(oiseau_test_mesh_cell test_cell.cpp)
 add_test(oiseau_test_mesh_geometry test_geometry.cpp)
+add_test(oiseau_test_mesh_regions test_region.cpp)
