@@ -11,6 +11,9 @@
 
 #include "oiseau/dg/field.hpp"
 
+namespace oiseau {
+namespace {
+
 using oiseau::dg::Field;
 
 TEST(test_dg_field, retains_its_name) {
@@ -40,3 +43,6 @@ TEST(test_dg_field, rejects_an_empty_name) {
   EXPECT_THROW((Field{std::string{}}), std::invalid_argument);
   EXPECT_THROW((Field{""}), std::invalid_argument);
 }
+
+}  // namespace
+}  // namespace oiseau

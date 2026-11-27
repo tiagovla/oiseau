@@ -19,6 +19,7 @@
 
 #include "oiseau/utils/logging.hpp"
 
+namespace oiseau {
 namespace {
 
 class CollectingSink final : public spdlog::sinks::base_sink<std::mutex> {
@@ -61,8 +62,6 @@ class ScopedLevel {
  private:
   spdlog::level::level_enum original_;
 };
-
-}  // namespace
 
 TEST(test_utils_logging, set_verbosity_maps_levels) {
   ScopedLevel scoped_level;
@@ -134,3 +133,6 @@ TEST(test_utils_logging, logging_macros_forward_levels_and_formatted_messages) {
   EXPECT_EQ(records[4].message, "fatal 6");
   EXPECT_EQ(off_argument_evaluations, 0);
 }
+
+}  // namespace
+}  // namespace oiseau

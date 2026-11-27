@@ -12,6 +12,9 @@
 
 #include "oiseau/mesh/geometry.hpp"
 
+namespace oiseau {
+namespace {
+
 using oiseau::mesh::Geometry;
 
 TEST(test_mesh_geometry, infers_dimension_and_stores_points_in_order) {
@@ -30,3 +33,6 @@ TEST(test_mesh_geometry, rejects_empty_and_ragged_point_lists) {
   EXPECT_THROW(Geometry({{}}), std::invalid_argument);
   EXPECT_THROW(Geometry({{1, 2}, {3}}), std::invalid_argument);
 }
+
+}  // namespace
+}  // namespace oiseau

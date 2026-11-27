@@ -11,6 +11,9 @@
 
 #include "oiseau/io/gmsh_file.hpp"
 
+namespace oiseau {
+namespace {
+
 TEST(test_io, gmsh_parser_mesh_format_handler) {
   std::string str =
       R"(4.1 0 8
@@ -75,3 +78,6 @@ TEST(test_io, gmsh_parser_nodes_handler) {
   EXPECT_EQ(s.blocks[0].node_coords[1], -1);
   EXPECT_EQ(s.blocks[0].node_coords[2], 0);
 }
+
+}  // namespace
+}  // namespace oiseau

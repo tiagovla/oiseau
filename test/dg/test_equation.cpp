@@ -16,6 +16,7 @@
 #include "oiseau/dg/equation.hpp"
 #include "oiseau/dg/field.hpp"
 
+namespace oiseau {
 namespace {
 
 using oiseau::dg::Derivative;
@@ -26,8 +27,6 @@ using oiseau::dg::dz;
 using oiseau::dg::Equation;
 using oiseau::dg::EquationSystem;
 using oiseau::dg::Field;
-
-}  // namespace
 
 TEST(test_dg_equation, tm_maxwell_flux_matrices_follow_declared_field_order) {
   constexpr double epsilon = 2.0;
@@ -161,3 +160,6 @@ TEST(test_dg_equation, field_identity_and_flux_direction_are_validated) {
                std::invalid_argument);
   EXPECT_THROW(equations.flux_coefficient(u, Derivative::Time, u), std::invalid_argument);
 }
+
+}  // namespace
+}  // namespace oiseau

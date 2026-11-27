@@ -14,11 +14,13 @@
 #include <utility>
 #include <vector>
 
+#include "gtest/gtest.h"
 #include "oiseau/utils/jagged_array.hpp"
 
-using oiseau::utils::JaggedArray;
+namespace oiseau {
+namespace {
 
-#include "gtest/gtest.h"
+using oiseau::utils::JaggedArray;
 
 class jagged_array_test_fixture
     : public ::testing::Test {  // Fixture name also in snake_case for consistency
@@ -426,3 +428,6 @@ TEST(jagged_array_integer, complex_operations) {
   EXPECT_EQ(ja.at(0, 2), 300);
   EXPECT_EQ(ja.total_elements(), 6u);
 }
+
+}  // namespace
+}  // namespace oiseau

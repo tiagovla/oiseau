@@ -37,6 +37,7 @@
 #include "oiseau/mesh/mesh.hpp"
 #include "oiseau/mesh/topology.hpp"
 
+namespace oiseau {
 namespace {
 
 using namespace oiseau::dg;
@@ -420,3 +421,4 @@ TEST(DGIntegrationDimensionTest, rotated_tetrahedral_interface_shares_both_orien
 INSTANTIATE_TEST_SUITE_P(Orientations, DGIntegrationTest, ::testing::Bool());
 
 }  // namespace
+}  // namespace oiseau

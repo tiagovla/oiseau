@@ -19,6 +19,9 @@
 #include "oiseau/dg/nodal/ref_tetrahedron.hpp"
 #include "oiseau/test_macros.hpp"
 
+namespace oiseau {
+namespace {
+
 TEST(test_ref_tetrahedron, get_order) {
   for (unsigned order = 1; order <= 5; ++order) {
     auto ref = oiseau::dg::nodal::RefTetrahedron(order);
@@ -351,3 +354,6 @@ TEST(test_ref_tetrahedron, differentiation_matrix_values) {
     EXPECT_FLOATS_NEARLY_EQ(c_output, c_expected, 0.05);
   }
 }
+
+}  // namespace
+}  // namespace oiseau
